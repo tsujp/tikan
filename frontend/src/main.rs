@@ -35,7 +35,7 @@ pub struct TikanPlugin;
 fn debug_coordinates(
     // Parameter `camera` contains all `Camera` components that also have a
     //   `MainCamera` component.
-    camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    mut camera: Query<(&Camera, &GlobalTransform, &mut Transform), With<MainCamera>>,
 ) {
     // for c in &camera {
     //     println!("camera info: {:?}", c);
@@ -43,9 +43,15 @@ fn debug_coordinates(
 
     // XXX: `get_single()` does not panic if there is a non-single but exception
     //      handling... how best to abort out. Maybe later.
-    let (c, c_transform) = camera.single();
+    let (c, c_globtrans, mut c_trans) = camera.single_mut();
 
-    println!("Camera is at: {:?}", c_transform.translation());
+    println!("Camera is at: {:?}", c_globtrans.translation());
+
+    c_trans.translation = Vec3 {
+        x: 50.,
+        y: 50.,
+        z: 999.9,
+    };
 
     // the size of the area being rendered to
     // let view_dimensions = c.logical_viewport_size().unwrap();
