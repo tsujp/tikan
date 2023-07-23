@@ -1,8 +1,12 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
 
-// Marker component to make querying for our camera easier.
+// Marker (unit) component to make querying for our camera easier.
 #[derive(Component)]
 struct MainCamera;
+
+// Unit component for debug text.
+#[derive(Component)]
+struct DebugText;
 
 fn setup(
     mut commands: Commands,
@@ -28,6 +32,44 @@ fn setup(
         material: materials.add(ColorMaterial::from(Color::PURPLE)),
         ..default()
     });
+
+    // Camera position text.
+    // To construct template-able strings you must use multiple sections for a
+    //   single TextBundle and then set the appropriate section in your system.
+    // You could use a single section and rewrite it but different colours
+    //   per characters and static characters become harder to manage.
+    commands.spawn((
+        TextBundle::from_sections([
+            // TextSection at index 0, used as static text.
+            TextSection::new(
+                "Camera pos: ",
+                TextStyle {
+                    font: TextStyle::default().font,
+                    font_size: 18.,
+                    color: Color::BLACK,
+                },
+            ),
+            // TextSection at index 1, where we'll set the value to be the
+            //   camera's translation in our Update system. Since we don't
+            //   want a default value we'll create a TextSection using the
+            //       `from_style` helper.
+            TextSection::from_style(TextStyle {
+                font_size: 18.,
+                color: Color::RED,
+                ..default()
+            }),
+        ])
+        // Alignment (optional AFAIK).
+        .with_text_alignment(TextAlignment::Left)
+        // Style (optional AFAIK).
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            left: Val::Px(5.),
+            top: Val::Px(5.),
+            ..default()
+        }),
+        DebugText,
+    ));
 }
 
 pub struct TikanPlugin;
@@ -36,6 +78,7 @@ fn debug_coordinates(
     // Parameter `camera` contains all `Camera` components that also have a
     //   `MainCamera` component.
     mut camera: Query<(&Camera, &GlobalTransform, &mut Transform), With<MainCamera>>,
+    mut q_text: Query<&mut Text, With<DebugText>>,
 ) {
     // for c in &camera {
     //     println!("camera info: {:?}", c);
@@ -45,13 +88,16 @@ fn debug_coordinates(
     //      handling... how best to abort out. Maybe later.
     let (c, c_globtrans, mut c_trans) = camera.single_mut();
 
-    println!("Camera is at: {:?}", c_globtrans.translation());
+    // println!("Camera is at: {:?}", c_globtrans.translation());
 
-    c_trans.translation = Vec3 {
-        x: 50.,
-        y: 50.,
-        z: 999.9,
-    };
+    let mut text = q_text.single_mut();
+    text.sections[1].value = format!("{}", c_globtrans.translation());
+
+    // c_trans.translation = Vec3 {
+    //     x: 50.,
+    //     y: 50.,
+    //     z: 999.9,
+    // };
 
     // the size of the area being rendered to
     // let view_dimensions = c.logical_viewport_size().unwrap();
