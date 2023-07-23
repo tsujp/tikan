@@ -1,4 +1,7 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
+use bevy::{
+    math, prelude::*, render::view::NoFrustumCulling, sprite::MaterialMesh2dBundle,
+    window::WindowResolution,
+};
 
 // Marker (unit) component to make querying for our camera easier.
 #[derive(Component)]
@@ -12,26 +15,52 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    q_window: Query<&Window>,
 ) {
+    //
+    let window = q_window.single();
+
     // Queues an entity comprised of the Camera2dBundle (set of components) and
     //   our marker component MainCamera. I.e. the camera we're spawning here
     //   we've added our `MainCamera` component to. The tuple syntax here is for
     //   an anonymous bundle (bundles are just sets of components).
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+    commands.spawn((
+        Camera2dBundle {
+            transform: Transform::from_xyz(window.width() / 2., window.height() / 2. * -1., 500.),
+            // transform: Transform::from_xyz(0., 0., 999.),
+            ..default()
+        },
+        MainCamera,
+    ));
 
     // Board (TODO: entire board and in parent container for easier moving)
-    commands.spawn(MaterialMesh2dBundle {
-        // TODO: What is `.into()`?
-        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-        transform: Transform::default().with_scale(Vec3 {
-            x: 50.,
-            y: 50.,
-            z: 0.,
-        }),
-        // 2d mesh material tinted by given `Color`.
-        material: materials.add(ColorMaterial::from(Color::PURPLE)),
-        ..default()
-    });
+
+    // TODO: Move to constants and/or some config area.
+    let SQUARE_SIZE = 60.;
+    let BOARD_SIZE = 8;
+
+    let square = meshes.add(Mesh::from(shape::Quad::new(
+        (SQUARE_SIZE, SQUARE_SIZE).into(),
+    )));
+    let black = materials.add(ColorMaterial::from(Color::hex("#D18B47").unwrap()));
+    let white = materials.add(ColorMaterial::from(Color::hex("#FFCE9E").unwrap()));
+
+    for i in 0..64 {
+        let x = (i % BOARD_SIZE) as f32 * SQUARE_SIZE;
+        let y = (i / BOARD_SIZE) as f32 * SQUARE_SIZE;
+        let square_idx = i + 1 + (i / BOARD_SIZE);
+
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: square.clone().into(),
+            material: if square_idx % 2 == 0 {
+                white.clone()
+            } else {
+                black.clone()
+            },
+            transform: Transform::from_translation(Vec3 { x, y, z: 0. }),
+            ..default()
+        });
+    }
 
     // Camera position text.
     // To construct template-able strings you must use multiple sections for a
@@ -124,7 +153,7 @@ impl Plugin for TikanPlugin {
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             // Customise window properties as part of DefaultPlugins PluginGroup.
             primary_window: Some(Window {
-                title: "Tikan - Zero Knowledge Fog of War Chess".to_string(),
+                title: "Tikan - Zero Knowledge Fog of War Chess".into(),
                 resolution: WindowResolution::new(1024., 768.),
                 resizable: false,
                 ..default()
