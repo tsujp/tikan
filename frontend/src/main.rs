@@ -1,5 +1,10 @@
+use std::rc::Rc;
+
 use bevy::{
-    math, prelude::*, render::view::NoFrustumCulling, sprite::MaterialMesh2dBundle,
+    math,
+    prelude::*,
+    render::view::NoFrustumCulling,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     window::WindowResolution,
 };
 
@@ -7,9 +12,17 @@ use bevy::{
 #[derive(Component)]
 struct MainCamera;
 
-// Unit component for debug text.
+// Debug text unit component.
 #[derive(Component)]
 struct DebugText;
+
+// Chess board unit component.
+#[derive(Component)]
+struct ChessBoard;
+
+// Chess board square unit component.
+#[derive(Component)]
+struct ChessBoardSquare;
 
 fn setup(
     mut commands: Commands,
@@ -17,8 +30,12 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
     q_window: Query<&Window>,
 ) {
-    //
+    // Default camera origin of 0,0 in the centre I do not want. No corner is
+    //   best but 0,0 at the top-left means +x moves rightwards and -y moves
+    //   downwards. This new origin I'll call: canonical.
     let window = q_window.single();
+    let x_canonical = window.width() / 2.;
+    let y_canonical = window.height() / 2. * -1.;
 
     // Queues an entity comprised of the Camera2dBundle (set of components) and
     //   our marker component MainCamera. I.e. the camera we're spawning here
@@ -26,7 +43,7 @@ fn setup(
     //   an anonymous bundle (bundles are just sets of components).
     commands.spawn((
         Camera2dBundle {
-            transform: Transform::from_xyz(window.width() / 2., window.height() / 2. * -1., 500.),
+            transform: Transform::from_xyz(x_canonical, y_canonical, 500.),
             // transform: Transform::from_xyz(0., 0., 999.),
             ..default()
         },
@@ -39,28 +56,48 @@ fn setup(
     let SQUARE_SIZE = 60.;
     let BOARD_SIZE = 8;
 
+    let board_width = (SQUARE_SIZE * BOARD_SIZE as f32);
+
     let square = meshes.add(Mesh::from(shape::Quad::new(
         (SQUARE_SIZE, SQUARE_SIZE).into(),
     )));
     let black = materials.add(ColorMaterial::from(Color::hex("#D18B47").unwrap()));
     let white = materials.add(ColorMaterial::from(Color::hex("#FFCE9E").unwrap()));
 
-    for i in 0..64 {
-        let x = (i % BOARD_SIZE) as f32 * SQUARE_SIZE;
-        let y = (i / BOARD_SIZE) as f32 * SQUARE_SIZE;
-        let square_idx = i + 1 + (i / BOARD_SIZE);
-
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: square.clone().into(),
-            material: if square_idx % 2 == 0 {
-                white.clone()
-            } else {
-                black.clone()
+    commands
+        .spawn((
+            SpatialBundle {
+                transform: Transform::from_xyz(
+                    x_canonical - ((board_width - SQUARE_SIZE) / 2.),
+                    y_canonical + ((board_width - SQUARE_SIZE) / -2.),
+                    0.,
+                ),
+                ..default()
             },
-            transform: Transform::from_translation(Vec3 { x, y, z: 0. }),
-            ..default()
+            ChessBoard,
+        ))
+        .with_children(|parent| {
+            for i in 0..64 {
+                let x = (i % BOARD_SIZE) as f32 * SQUARE_SIZE;
+                let y = (i / BOARD_SIZE) as f32 * SQUARE_SIZE;
+                let square_idx = i + 1 + (i / BOARD_SIZE);
+
+                // Board squares are children of ChessBoard.
+                parent.spawn((
+                    MaterialMesh2dBundle {
+                        mesh: square.clone().into(),
+                        material: if square_idx % 2 == 0 {
+                            white.clone()
+                        } else {
+                            black.clone()
+                        },
+                        transform: Transform::from_translation(Vec3 { x, y, z: 0. }),
+                        ..default()
+                    },
+                    ChessBoardSquare,
+                ));
+            }
         });
-    }
 
     // Camera position text.
     // To construct template-able strings you must use multiple sections for a
