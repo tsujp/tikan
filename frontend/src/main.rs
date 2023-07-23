@@ -1,11 +1,21 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
 
+// Marker component to make querying for our camera easier.
+#[derive(Component)]
+struct MainCamera;
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn(Camera2dBundle::default());
+    // Queues an entity comprised of the Camera2dBundle (set of components) and
+    //   our marker component MainCamera. I.e. the camera we're spawning here
+    //   we've added our `MainCamera` component to. The tuple syntax here is for
+    //   an anonymous bundle (bundles are just sets of components).
+    commands.spawn((Camera2dBundle::default(), MainCamera));
+
+    // Board (TODO: entire board and in parent container for easier moving)
     commands.spawn(MaterialMesh2dBundle {
         // TODO: What is `.into()`?
         mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
@@ -22,7 +32,35 @@ fn setup(
 
 pub struct TikanPlugin;
 
+fn debug_coordinates(
+    // Parameter `camera` contains all `Camera` components that also have a
+    //   `MainCamera` component.
+    camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+) {
+    // for c in &camera {
+    //     println!("camera info: {:?}", c);
+    // }
+
+    // XXX: `get_single()` does not panic if there is a non-single but exception
+    //      handling... how best to abort out. Maybe later.
+    let (c, c_transform) = camera.single();
+
+    println!("Camera is at: {:?}", c_transform.translation());
+
+    // the size of the area being rendered to
+    // let view_dimensions = c.logical_viewport_size().unwrap();
+
+    // // the top-left and bottom-right coordinates
+    // let (corner1, corner2) = c.logical_viewport_rect().unwrap();
+
+    // println!(
+    //     "View dimen: {:?}, coords {:?} {:?}",
+    //     view_dimensions, corner1, corner2
+    // );
+}
+
 // TODO:
+// - Show camera's coordinates.
 // - Board from Mesh2D.
 // - Button on screen with a callback(?) for when it is clicked.
 // - Rust hello world WASM bundle.
@@ -47,7 +85,8 @@ impl Plugin for TikanPlugin {
             blue: 0.1,
             alpha: 1.,
         }))
-        .add_systems(Startup, setup);
+        .add_systems(Startup, setup)
+        .add_systems(Update, debug_coordinates);
     }
 }
 
