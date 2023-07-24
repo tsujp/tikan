@@ -140,6 +140,12 @@ fn setup(
 
 pub struct TikanPlugin;
 
+fn mouse_button_input(buttons: Res<Input<MouseButton>>) {
+    if buttons.just_pressed(MouseButton::Left) {
+        println!("Left mouse button clicked!");
+    }
+}
+
 fn debug_coordinates(
     // Parameter `camera` contains all `Camera` components that also have a
     //   `MainCamera` component.
@@ -178,8 +184,9 @@ fn debug_coordinates(
 }
 
 // TODO:
-// - Show camera's coordinates.
-// - Board from Mesh2D.
+// - How does Bevy implement it's UI elements? If they are just meshes with
+//   custom hover logic etc consider using them -- however 2d intersection
+//   detection isn't particularly hard.
 // - Button on screen with a callback(?) for when it is clicked.
 // - Rust hello world WASM bundle.
 // - Try and call the hello world bundle from the button callback and display
@@ -204,7 +211,7 @@ impl Plugin for TikanPlugin {
             alpha: 1.,
         }))
         .add_systems(Startup, setup)
-        .add_systems(Update, debug_coordinates);
+        .add_systems(Update, (mouse_button_input, debug_coordinates));
     }
 }
 
