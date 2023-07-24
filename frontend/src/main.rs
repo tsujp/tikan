@@ -1,12 +1,4 @@
-use std::rc::Rc;
-
-use bevy::{
-    math,
-    prelude::*,
-    render::view::NoFrustumCulling,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    window::WindowResolution,
-};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
 
 // Marker (unit) component to make querying for our camera easier.
 #[derive(Component)]
@@ -24,6 +16,10 @@ struct ChessBoard;
 #[derive(Component)]
 struct ChessBoardSquare;
 
+// Move trigger (call Noir circuit) unit component.
+#[derive(Component)]
+struct MoveTrigger;
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -36,22 +32,25 @@ fn setup(
     //       up to chess pieces such that when the player makes a move the
     //       callback to invoke the Noir circuit is run.
     commands
-        .spawn(ButtonBundle {
-            style: Style {
-                width: Val::Px(150.),
-                height: Val::Px(50.),
-                border: UiRect::all(Val::Px(5.)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                position_type: PositionType::Absolute,
-                left: Val::Px(10.),
-                bottom: Val::Px(200.),
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(150.),
+                    height: Val::Px(50.),
+                    border: UiRect::all(Val::Px(5.)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(10.),
+                    bottom: Val::Px(200.),
+                    ..default()
+                },
+                border_color: BorderColor(Color::RED),
+                background_color: BackgroundColor(Color::BLACK),
                 ..default()
             },
-            border_color: BorderColor(Color::RED),
-            background_color: BackgroundColor(Color::BLACK),
-            ..default()
-        })
+            MoveTrigger,
+        ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
                 "Do The Thing",
@@ -173,10 +172,51 @@ fn setup(
 
 pub struct TikanPlugin;
 
-fn mouse_button_input(buttons: Res<Input<MouseButton>>) {
-    if buttons.just_pressed(MouseButton::Left) {
-        println!("Left mouse button clicked!");
+fn mouse_button_input(
+    mut q_triggers: Query<
+        (&Interaction, &mut BackgroundColor),
+        (Changed<Interaction>, With<MoveTrigger>),
+    >,
+    // buttons: Res<Input<MouseButton>>
+) {
+    if let Ok((interaction, mut colour)) = q_triggers.get_single_mut() {
+        // TODO: Why does this work with and without a dereference on the
+        //       variable `interaction` i.e. with or without `*interaction`?
+        match interaction {
+            Interaction::Pressed => {
+                println!("Button pressed");
+                *colour = BackgroundColor(Color::CYAN);
+            }
+            Interaction::Hovered => {
+                println!("Button hovered");
+                *colour = BackgroundColor(Color::GRAY);
+            }
+            Interaction::None => {
+                println!("Button back to normal");
+                *colour = BackgroundColor(Color::BLACK);
+            }
+        }
     }
+
+    // Iteration equivalent.
+    // for (interaction, mut colour, mut border_colour) in &mut q_triggers {
+    //     // TODO: What is the asterisk here?
+    //     match *interaction {
+    //         Interaction::Pressed => {
+    //             println!("Button pressed");
+    //         }
+    //         Interaction::Hovered => {
+    //             println!("Button hovered");
+    //         }
+    //         Interaction::None => {
+    //             println!("Button back to normal");
+    //         }
+    //     }
+    // }
+
+    // if buttons.just_pressed(MouseButton::Left) {
+    //     println!("Left mouse button clicked!");
+    // }
 }
 
 fn debug_coordinates(
