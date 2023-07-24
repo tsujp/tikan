@@ -30,6 +30,39 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
     q_window: Query<&Window>,
 ) {
+    // Basic button element.
+    // TODO: This is a proof of concept for (1) click a thing, (2) something
+    //       happens (3) result is shown back. Eventually this will be hooked
+    //       up to chess pieces such that when the player makes a move the
+    //       callback to invoke the Noir circuit is run.
+    commands
+        .spawn(ButtonBundle {
+            style: Style {
+                width: Val::Px(150.),
+                height: Val::Px(50.),
+                border: UiRect::all(Val::Px(5.)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                left: Val::Px(10.),
+                bottom: Val::Px(200.),
+                ..default()
+            },
+            border_color: BorderColor(Color::RED),
+            background_color: BackgroundColor(Color::BLACK),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                "Do The Thing",
+                TextStyle {
+                    font: TextStyle::default().font,
+                    font_size: 18.,
+                    color: Color::WHITE,
+                },
+            ));
+        });
+
     // Default camera origin of 0,0 in the centre I do not want. No corner is
     //   best but 0,0 at the top-left means +x moves rightwards and -y moves
     //   downwards. This new origin I'll call: canonical.
@@ -56,7 +89,7 @@ fn setup(
     let SQUARE_SIZE = 60.;
     let BOARD_SIZE = 8;
 
-    let board_width = (SQUARE_SIZE * BOARD_SIZE as f32);
+    let board_width = SQUARE_SIZE * BOARD_SIZE as f32;
 
     let square = meshes.add(Mesh::from(shape::Quad::new(
         (SQUARE_SIZE, SQUARE_SIZE).into(),
