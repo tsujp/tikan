@@ -40,6 +40,8 @@ wasm-bindgen-cli
 - [] "Proper" build system for WASM (not just simple shell script currently).
 - [] Optimise WASM build for size.
 - [] Profile game memory usage and Noir WASM backend usage (ceiling is 4GiB).
+- [] WASM multithreading with SharedArrayBuffer? Rayon (a dependency of Bevy) can apparently
+     do this already; alternative are WebWorkers which would require copying memory per call.
 
 ## Other
 
