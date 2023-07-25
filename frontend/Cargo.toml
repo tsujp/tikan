@@ -1,14 +1,40 @@
 [package]
-name = "frontend"
+name = "tikan"
 version = "0.1.0"
 edition = "2021"
 license = "BSD-3-Clause"
 
+[[bin]]
+name = "frontend"
+path = "src/bin/tikan.rs"
+
+[[bin]]
+name = "worker"
+path = "src/bin/coin_flip.rs"
+
 # TODO: Author, version, descriptions etc.
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# [workspace]
+# members = [
+#   "coin_flip",
+#   "coin_flip_worker"
+# ]
+
+# TODO: Non-JavaScript environments for threading for true portability.
+# Currently Tikan is WASM only within a JavaScript environment (browser), set
+#   features as such.
+[features]
+default = ["console_error_panic_hook"]
+# futures = ["gloo-worker/futures"]
+
 [dependencies]
 bevy = "0.11.0"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+gloo-worker = { version = "0.3.0", features = ["futures"] }
+rand = "0.8.5"
+# coin_flip = { path = "coin_flip" }
+gloo-console = "0.2.3"
 
 # Enable a small amount of optimisation in debug mode.
 [profile.dev]

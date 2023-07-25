@@ -1,4 +1,8 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
+use gloo_console::log;
+use gloo_worker::Spawnable;
+// use tikan::CoinFlip;
+use tikan::Multiplier;
 
 // Marker (unit) component to make querying for our camera easier.
 #[derive(Component)]
@@ -267,6 +271,36 @@ fn debug_coordinates(
 
 impl Plugin for TikanPlugin {
     fn build(&self, app: &mut App) {
+        // console::log_1("Executing TikanPlugin".into());
+
+        // Noir WASM backend is intimately tied to Tikan, I could make it
+        //   optional in the future so that without the Noir WASM backend
+        //   Tikan can be played in which case Tikan would be like any other
+        //   Fog of War Chess implementation as there would be no guaranteed
+        //   lack of information sharing; no zero-knowledge.
+        // So, Noir WASM backend required.
+        console_error_panic_hook::set_once();
+
+        log!("Hello from Tikan!");
+
+        let bridge = Multiplier::spawner()
+            .callback(move |((a, b), result)| {
+                log!(format!("{} * {} = {}", a, b, result));
+            })
+            .spawn("./worker.js");
+        let bridge = Box::leak(Box::new(bridge));
+
+        bridge.send((2, 5));
+        bridge.send((3, 3));
+        bridge.send((50, 5));
+
+        // async {
+        //     let mut coin_flip_bridge = CoinFlip::spawner().spawn("coin_flip.js");
+        //     let res = coin_flip_bridge.run(5).await;
+        //     log!("Waiting for future completion");
+        //     assert_eq!(res, 10);
+        // };
+
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             // Customise window properties as part of DefaultPlugins PluginGroup.
             primary_window: Some(Window {
