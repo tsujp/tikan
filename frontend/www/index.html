@@ -24,15 +24,13 @@
       }
     </style>
 
-    <link data-trunk rel="rust" data-type="worker" data-bin="worker" />
-    <link data-trunk rel="rust" data-type="main" data-bin="frontend" />
   </head>
-  <script type="module">
-    console.log('html script module')
-    // import init from './frontend/coin_flip.js'
-    // init()
-    
-    // import init from './frontend/frontend.js'
-    // init()
-  </script>
+  <body>
+    <script src="./frontend/frontend.js"></script>
+    <script type="text/javascript">
+      wasm_bindgen('./frontend/frontend_bg.wasm').then((wasm) => {
+        wasm.run()
+      })
+    </script>
+  </body>
 </html>

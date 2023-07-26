@@ -1,8 +1,10 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
 use gloo_console::log;
-use gloo_worker::Spawnable;
-// use tikan::CoinFlip;
-use tikan::Multiplier;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread;
+#[cfg(target_arch = "wasm32")]
+use wasm_thread as thread;
 
 // Marker (unit) component to make querying for our camera easier.
 #[derive(Component)]
@@ -30,6 +32,10 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
     q_window: Query<&Window>,
 ) {
+    thread::spawn(|| {
+        log!("Hello from a web worker thread!");
+    });
+
     // Basic button element.
     // TODO: This is a proof of concept for (1) click a thing, (2) something
     //       happens (3) result is shown back. Eventually this will be hooked
@@ -282,17 +288,6 @@ impl Plugin for TikanPlugin {
         console_error_panic_hook::set_once();
 
         log!("Hello from Tikan!");
-
-        let bridge = Multiplier::spawner()
-            .callback(move |((a, b), result)| {
-                log!(format!("{} * {} = {}", a, b, result));
-            })
-            .spawn("./worker.js");
-        let bridge = Box::leak(Box::new(bridge));
-
-        bridge.send((2, 5));
-        bridge.send((3, 3));
-        bridge.send((50, 5));
 
         // async {
         //     let mut coin_flip_bridge = CoinFlip::spawner().spawn("coin_flip.js");
