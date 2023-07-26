@@ -46,11 +46,13 @@ default = ["console_error_panic_hook"]
 # futures = ["gloo-worker/futures"]
 
 [dependencies]
-bevy = "0.11.0"
 console_error_panic_hook = { version = "0.1.7", optional = true }
-rand = "0.8.5"
+console_log = "1.0.0"
+# rand = "0.8.5"
 # coin_flip = { path = "coin_flip" }
 gloo-console = "0.2.3"
+log = "0.4.19"
+wasm-bindgen = "0.2.87"
 wasm_thread = "0.2.0"
 
 # Enable a small amount of optimisation in debug mode.
