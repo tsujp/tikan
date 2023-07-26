@@ -1,8 +1,28 @@
+# https://doc.rust-lang.org/cargo/reference/manifest.html
 [package]
 name = "tikan"
 version = "0.1.0"
+authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"]
+
 edition = "2021"
+rust-version = "1.71.0"
+
+readme = "README.md"
 license = "BSD-3-Clause"
+license-file = "LICENCE"
+
+description = "Chess and Fog of War Chess implemented in Aztec's ZK language: Noir."
+repository = "https://github.com/tsujp/tikan"
+homepage = "TODO"
+documentation = "TODO"
+
+# Describe package: max 5, anything.
+keywords = ["chess", "zero-knowledge", "noir-lang", "wasm", "game"]
+
+# Crate.io slugs for categorisation: max 5, https://crates.io/category_slugs
+# The `cryptography::cryptocurrencies` category name sucks, there's no CURRENCY
+#   here and there's nothing to sell.
+categories = ["games", "cryptography", "cryptography::cryptocurrencies", "wasm"]
 
 [[bin]]
 name = "frontend"
@@ -11,9 +31,6 @@ path = "src/bin/tikan.rs"
 [[bin]]
 name = "worker"
 path = "src/bin/coin_flip.rs"
-
-# TODO: Author, version, descriptions etc.
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # [workspace]
 # members = [
