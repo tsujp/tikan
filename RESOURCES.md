@@ -75,3 +75,17 @@ is WebWorker.postMessage() slow?
 
 contains some discussion on webworkers in bevy
 - https://github.com/bevyengine/bevy/issues/88
+
+
+TODO: Brotli compress.
+
+profile        no wasm-opt   wasm-opt   brotli -Z       config
+debug          30            -          -            -
+release (a)    24.6          15.7       -            s, thin   | Os
+release (b)    23.6          13.2       -            z, thin   | Os
+release (c)    16.1          10.9       -            z, fat    | Os
+release (d)    16.1          10         -            z, fat    | Oz
+release (e)    14.1          9.2        2.5          z, fat, 1 | Oz
+release (f)    10            6.4        1.9          z, fat, 1 | Oz | core_pipeline, ui, asset, winit, webgl2
+release (g)    9.3           5.7        1.3          z, fat, 1 | Oz | core_pipeline, ui, asset, winit
+

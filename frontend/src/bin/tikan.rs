@@ -1,4 +1,8 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::WindowResolution};
+use crossbeam_channel::{bounded, select, Receiver, Sender};
+use rand::Rng;
+use std::time::Duration;
+use tikan::Multiplier;
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread;
@@ -25,17 +29,73 @@ struct ChessBoardSquare;
 #[derive(Component)]
 struct MoveTrigger;
 
+// TODO: Can specify payload type here too I think.
+// TODO: Deriving Event type is required (I think) even though docs don't mention?
+#[derive(Event)]
+struct NoirEvent;
+
+// fn worker_thread() {
+//     // Spawn thread for Noir's WASM backend at startup, it then awaits events
+//     //   to perform proving computation, verification, etc.
+//     let (send, recv) = bounded::<u32>(1);
+
+//     thread::spawn(move || {
+//         log::info!("Worker thread spawned, id {:?}", thread::current().id());
+
+//         loop {
+//             select! {
+//                 recv()
+//             }
+//         }
+//     });
+// }
+
+#[derive(Resource, Deref)]
+struct NoirBackendSend(Sender<String>);
+
+#[derive(Resource, Deref)]
+struct NoirBackendRead(Receiver<String>);
+
+// Use Crossbeam's async access here to prevent blocking.
+fn read_from_noir_backend(receiver: Res<NoirBackendRead>) {
+    for noir_response in receiver.try_iter() {
+        log::info!("Got response from Noir backend: {:?}", noir_response);
+    }
+}
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     q_window: Query<&Window>,
 ) {
-    thread::spawn(|| {
-        log::info!(
-            "Hello from a web worker thread! {:?}",
-            thread::current().id()
-        );
+    // worker_thread();
+    let (noir_send, noir_recv) = bounded(1);
+    let (main_send, main_recv) = bounded(1);
+
+    commands.insert_resource(NoirBackendSend(noir_send));
+    commands.insert_resource(NoirBackendRead(main_recv));
+
+    thread::spawn(move || {
+        log::info!("Worker thread spawned, id {:?}", thread::current().id());
+
+        // Blocking loop so long as we use Crossbeam's non-try select! macro
+        //   channel operations. So `recv` blocks, `try_recv` won't (bad).
+        loop {
+            select! {
+                        recv(noir_recv) -> msg => {
+                            log::info!("Received message: {:?}", msg);
+
+                            let mut rng = rand::thread_rng();
+                            let res = rng.gen_range(0..2);
+
+                    thread::sleep(Duration::from_millis(1000));
+
+            log::info!("Coin flipped as: {:?}", res);
+                    main_send.send(res.to_string()).unwrap();
+                        }
+                    }
+        }
     });
 
     // Basic button element.
@@ -184,11 +244,33 @@ fn setup(
 
 pub struct TikanPlugin;
 
+fn process_noir_event(
+    mut events: EventReader<NoirEvent>,
+    mut noir_backend_send: Res<NoirBackendSend>,
+) {
+    if !events.is_empty() {
+        events.clear();
+
+        log::info!("Saw NoirEvent, calling backend thread...");
+        noir_backend_send.send("foobar".into()).unwrap();
+
+        // thread::spawn(|| {
+        //     log::info!(
+        //         "Hello from a web worker thread! {:?}",
+        //         thread::current().id()
+        //     );
+
+        //     Multiplier::do_something();
+        // });
+    }
+}
+
 fn mouse_button_input(
     mut q_triggers: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<MoveTrigger>),
     >,
+    mut writer: EventWriter<NoirEvent>,
     // buttons: Res<Input<MouseButton>>
 ) {
     if let Ok((interaction, mut colour)) = q_triggers.get_single_mut() {
@@ -196,15 +278,19 @@ fn mouse_button_input(
         //       variable `interaction` i.e. with or without `*interaction`?
         match interaction {
             Interaction::Pressed => {
-                println!("Button pressed");
+                log::info!("Button pressed");
                 *colour = BackgroundColor(Color::CYAN);
+
+                // Send NoirEvent which will be picked up by an EventReader
+                //   and trigger the Noir backend.
+                writer.send(NoirEvent);
             }
             Interaction::Hovered => {
-                println!("Button hovered");
+                // log::info!("Button hovered");
                 *colour = BackgroundColor(Color::GRAY);
             }
             Interaction::None => {
-                println!("Button back to normal");
+                // log::info!("Button back to normal");
                 *colour = BackgroundColor(Color::BLACK);
             }
         }
@@ -292,6 +378,13 @@ impl Plugin for TikanPlugin {
         console_log::init().unwrap();
         console_error_panic_hook::set_once();
 
+        // // this code is compiled only if debug assertions are disabled (release mode)
+        // #[cfg(not(debug_assertions))]
+        // app.add_plugins(DefaultPlugins.set(LogPlugin {
+        //     level: bevy::log::Level::INFO,
+        //     filter: "info,wgpu_core=warn,wgpu_hal=warn".into(),
+        // }));
+
         log::info!("Hello from Tikan!");
 
         // async {
@@ -301,24 +394,38 @@ impl Plugin for TikanPlugin {
         //     assert_eq!(res, 10);
         // };
 
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            // Customise window properties as part of DefaultPlugins PluginGroup.
-            primary_window: Some(Window {
-                title: "Tikan - Zero Knowledge Fog of War Chess".into(),
-                resolution: WindowResolution::new(1024., 768.),
-                resizable: false,
-                ..default()
-            }),
-            ..default()
-        }))
-        .insert_resource(ClearColor(Color::Rgba {
-            red: 0.,
-            green: 1.,
-            blue: 0.1,
-            alpha: 1.,
-        }))
-        .add_systems(Startup, setup)
-        .add_systems(Update, (mouse_button_input, debug_coordinates));
+        app.add_event::<NoirEvent>()
+            .add_plugins(
+                DefaultPlugins.set(WindowPlugin {
+                    // Customise window properties as part of DefaultPlugins PluginGroup.
+                    primary_window: Some(Window {
+                        title: "Tikan - Zero Knowledge Fog of War Chess".into(),
+                        resolution: WindowResolution::new(1024., 768.),
+                        resizable: false,
+                        ..default()
+                    }),
+                    ..default()
+                }), // TODO: Turn off the verbose logging.
+                    // TODO: Requires a shim and/or AudioWorklet for in-browser audio.
+                    // See: https://github.com/RustAudio/cpal/issues/656
+                    // .disable::<bevy::audio::AudioPlugin>(),
+            )
+            .insert_resource(ClearColor(Color::Rgba {
+                red: 0.,
+                green: 1.,
+                blue: 0.1,
+                alpha: 1.,
+            }))
+            .add_systems(Startup, setup)
+            .add_systems(
+                Update,
+                (
+                    mouse_button_input,
+                    process_noir_event,
+                    read_from_noir_backend,
+                    debug_coordinates,
+                ),
+            );
     }
 }
 
