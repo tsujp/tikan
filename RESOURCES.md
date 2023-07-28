@@ -89,3 +89,85 @@ release (e)    14.1          9.2        2.5          z, fat, 1 | Oz
 release (f)    10            6.4        1.9          z, fat, 1 | Oz | core_pipeline, ui, asset, winit, webgl2
 release (g)    9.3           5.7        1.3          z, fat, 1 | Oz | core_pipeline, ui, asset, winit
 
+Google's wasm-bindgen rayon useful snippets and insight
+- https://github.com/GoogleChromeLabs/wasm-bindgen-rayon/blob/e13485d6d64a062b890f5bb3a842b1fe609eb3c1/demo/index.js#L25-L29
+- https://github.com/GoogleChromeLabs/wasm-bindgen-rayon/blob/e13485d6d64a062b890f5bb3a842b1fe609eb3c1/demo/wasm-worker.js#L28-L31
+- https://github.com/GoogleChromeLabs/wasm-bindgen-rayon/blob/main/src/workerHelpers.js
+
+- https://docs.rs/spmc/latest/spmc/ (Single Producer Multiple Consumer ; work-stealing)
+
+- https://web.dev/webassembly-threads/#rust
+- https://surma.dev/things/is-postmessage-slow/
+- https://www.chromium.org/developers/design-documents/inter-process-communication/
+
+- https://doc.rust-lang.org/std/process/index.html
+
+- https://nextjs-bbjs.netlify.app/ (bb.js example)
+- https://github.com/noir-lang/nextjs-bbjs-demo/blob/main/src/app/multithreading.tsx
+
+Aztec NPM packages
+- https://www.npmjs.com/package/@aztec/barretenberg?activeTab=code
+- https://www.npmjs.com/package/@aztec/sdk?activeTab=code
+
+- https://github.com/richardanaya/wasm-service/blob/main/index.html
+
+Rust wasm-opt bindings, use this to construct a build.rs later on
+- https://github.com/brson/wasm-opt-rs
+- https://docs.rs/wasm-opt/latest/wasm_opt/
+- https://github.com/w3f/Grants-Program/pull/1070
+- https://github.com/bevyengine/bevy/blob/0566e73af460b9d128354a20970b1e1e0cc3b719/tools/build-wasm-example/src/main.rs#L35 (Bevy build.rs wasm example)
+
+Wasm tools (incl wasm-opt)
+- https://github.com/WebAssembly/binaryen
+
+Wasm size optimisation
+- https://rustwasm.github.io/docs/book/reference/code-size.html
+- https://github.com/bevyengine/bevy/issues/3800 (feature removal)
+- https://github.com/bevyengine/bevy/tree/main/examples#2-use-wasm-opt-from-the-binaryen-package
+- https://rustwasm.github.io/book/reference/code-size.html
+
+Cargo features
+- https://doc.rust-lang.org/cargo/reference/features.html
+- https://dev.to/rimutaka/cargo-features-explained-with-examples-194g
+
+Cargo profiles
+- https://doc.rust-lang.org/cargo/reference/profiles.html
+
+Bevy's features
+- https://github.com/bevyengine/bevy/blob/main/Cargo.toml#L62
+
+Rust wasm
+- https://surma.dev/things/rust-to-webassembly/
+
+Rust threading
+- https://doc.rust-lang.org/book/ch16-02-message-passing.html
+- https://doc.rust-lang.org/book/ch13-01-closures.html#capturing-references-or-moving-ownership (threads and `move`)
+- https://github.com/crossbeam-rs/crossbeam
+- https://github.com/bevyengine/bevy/blob/main/examples/async_tasks/async_compute.rs (Bevy)
+- https://github.com/bevyengine/bevy/blob/main/examples/async_tasks/external_source_external_thread.rs (Bevy)
+- https://docs.rs/crossbeam-channel/latest/crossbeam_channel/
+- https://docs.rs/crossbeam-channel/latest/crossbeam_channel/macro.select.html
+- https://github.com/crossbeam-rs/crossbeam/blob/master/crossbeam-channel/tests/same_channel.rs
+- https://github.com/crossbeam-rs/crossbeam/issues/470
+- https://github.com/crossbeam-rs/crossbeam/issues/966
+- https://github.com/chemicstry/wasm_thread
+- https://github.com/chemicstry/wasm_thread/issues/8
+- https://github.com/chemicstry/wasm_thread/issues/6 (useful info on channels)
+- https://www.tweag.io/blog/2022-11-24-wasm-threads-and-messages/
+
+Other rust wasm crates
+- https://github.com/daxpedda/wasm-worker/blob/main/examples/testing.rs
+- https://docs.rs/gloo-worker/0.3.0/gloo_worker/
+- https://github.com/rustwasm/twiggy (doesnt work with multithreaded wasm)
+- https://github.com/rustwasm/gloo/pull/340/files#diff-2e9d962a08321605940b5a657135052fbcef87b5e360662bb527c96d9a615542 (useful type example)
+
+Bevy examples/crates
+- https://github.com/johanhelsing/bevy_sparse_grid_2d
+
+Rust logging
+- https://docs.rs/fern/latest/fern/
+
+- https://github.com/thedodd/trunk/blob/master/src/pipelines/rust.rs (build scripts)
+
+Rust networking
+- https://docs.rs/tower/0.4.13/tower/index.html
