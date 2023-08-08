@@ -1,0 +1,43 @@
+[[language]]
+name = "javascript"
+shebangs = ["deno", "node"]
+roots = ["deno.json", "package.json", "tsconfig.json"]
+config = { enable = true, lint = true, unstable = true }
+indent = { tab-width = 3, unit = "   " }
+language-server = { command = "deno", args = ["lsp"], language-id = "javascript" }
+formatter = { command = 'dprint', args = ["fmt", "--stdin", "js"] }
+auto-format = true
+
+[[language]]
+name = "json"
+formatter = { command = 'dprint', args = ["fmt", "--stdin", "md"] }
+
+[[language]]
+name = "typescript"
+shebangs = ["deno", "node"]
+roots = ["deno.json", "package.json", "tsconfig.json"]
+config = { enable = true, lint = true, unstable = true }
+indent = { tab-width = 3, unit = "   " }
+language-server = { command = "deno", args = ["lsp"], language-id = "typescript" }
+formatter = { command = 'dprint', args = ["fmt", "--stdin", "ts"] }
+auto-format = true
+
+[[language]]
+name = "jsx"
+shebangs = ["deno", "node"]
+roots = ["deno.json", "package.json", "tsconfig.json"]
+config = { enable = true, lint = true, unstable = true }
+indent = { tab-width = 3, unit = "   " }
+language-server = { command = "deno", args = ["lsp"], language-id = "javascriptreact" }
+formatter = { command = 'dprint', args = ["fmt", "--stdin", "jsx"] }
+auto-format = true
+
+[[language]]
+name = "tsx"
+shebangs = ["deno", "node"]
+roots = ["deno.json", "package.json", "tsconfig.json"]
+config = { enable = true, lint = true, unstable = true }
+indent = { tab-width = 3, unit = "   " }
+language-server = { command = "deno", args = ["lsp"], language-id = "typescriptreact" }
+formatter = { command = 'dprint', args = ["fmt", "--stdin", "tsx"] }
+auto-format = true

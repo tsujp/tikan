@@ -1,0 +1,71 @@
+{
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  //                     !!! FAIR WARNING READ ME !!!
+  // Unless a rule here is introducing bugs or making their appearance more
+  // frequent nothing here is up for discussion in any issues or emails. Bike
+  // shedding over formatting is a waste of time. dprint is extremely fast so
+  // you can easily have your own dprint.jsonc which you can apply when
+  // working on the codebase before applying the repo's canonical dprint.jsonc
+  // before submitting a pull request or sending a patch via email.
+  //
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  "incremental": true,
+  "typescript": {
+    "locked": true,
+    // Normal bike shedding configuration.
+    "indentWidth": 3, // Satanic I know, trying it out instead of 2.
+    "lineWidth": 85,
+    "useTabs": false,
+    "semiColons": "asi",
+    "newLineKind": "lf",
+    // ---/
+    "preferSingleLine": true,
+    "objectExpression.preferSingleLine": false,
+    "singleBodyPosition": "sameLine",
+    "memberExpression.linePerExpression": true,
+    "arrowFunction.useParentheses": "force",
+    "binaryExpression.operatorPosition": "sameLine",
+    "bracePosition": "sameLineUnlessHanging",
+    "commentLine.forceSpaceAfterSlashes": true,
+    "enumDeclaration.memberSpacing": "newLine",
+    "ifStatement.singleBodyPosition": "nextLine",
+    "ifStatement.spaceAfterIfKeyword": true,
+    "ifStatement.useBraces": "always",
+    "importDeclaration.spaceSurroundingNamedImports": true,
+    "operatorPosition": "nextLine",
+    "preferHanging": false,
+    "quoteStyle": "preferSingle",
+    "spaceSurroundingProperties": true,
+    "trailingCommas": "onlyMultiLine",
+    "typeAnnotation.spaceBeforeColon": false,
+    "quoteProps": "asNeeded",
+    // Modules.
+    "exportDeclaration.forceSingleLine": true,
+    "importDeclaration.forceSingleLine": true,
+    "exportDeclaration.sortNamedExports": "caseSensitive",
+    "importDeclaration.sortNamedImports": "caseSensitive",
+    "module.sortImportDeclarations": "caseSensitive",
+    "module.sortExportDeclarations": "caseSensitive",
+    // ---/
+    // Function-esque force: space when declaring; no-space when invoking.
+    "constructor.spaceBeforeParentheses": true,
+    "functionDeclaration.spaceBeforeParentheses": true,
+    "functionExpression.spaceBeforeParentheses": false,
+    "functionExpression.spaceAfterFunctionKeyword": true,
+    "getAccessor.spaceBeforeParentheses": true,
+    "setAccessor.spaceBeforeParentheses": true,
+    "method.spaceBeforeParentheses": true,
+    "typeAssertion.spaceBeforeExpression": false
+    // ---/
+    // Object-literals always multiline for easier editing and reading.
+    // TODO: Option does not exist yet.
+    // JSX properties on multiple lines when more than one?
+    // Spacing between function definitions? (ideally 2)
+  },
+  "includes": [
+    "**/*.{ts,js,tsx,jsx,mts,mjs,cts,cjs}"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.85.1.wasm"
+  ]
+}
