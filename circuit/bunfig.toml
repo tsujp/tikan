@@ -1,0 +1,3 @@
+[install]
+# Currently packages are a bit brittle, when better this can be removed.
+frozenLockfile = true

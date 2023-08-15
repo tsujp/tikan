@@ -1,6 +1,6 @@
+import chalk from 'chalk'
+
 const roseChar = '-'
-const wd = Deno.cwd()
-import { cyan, gray, red, reset, yellow } from 'https://deno.land/std@0.197.0/fmt/colors.ts'
 
 class NonZeroReturnError extends Error {
    constructor (message: string, cause: string) {
@@ -26,7 +26,7 @@ export function padCentre (str: string, padStr: string, max = 80) {
 
 // Prints pre-formatted test environment item for sanity preamble.
 function logItem (item: string, str: string) {
-   return console.log(`${cyan(item)}${gray(':')} ${reset(str)}`)
+   return console.log(`${chalk.cyan(item)}${chalk.gray(':')} ${chalk.reset(str)}`)
 }
 
 function logItemError (item: string, str: string) {
@@ -35,19 +35,22 @@ function logItemError (item: string, str: string) {
    //   perfect logging etc. Outputting to console.error (stderr) will require
    //   explicit buffer synchronisation which is way too much for _orchestrating
    //   nargo_.
-   return console.log(`${red('[ERROR]')} ${cyan(item)}${gray(':')} ${reset(str)}`)
+   return console.log(
+      `${chalk.red('[ERROR]')} ${chalk.cyan(item)}${chalk.gray(':')} ${
+         chalk.reset(str)
+      }`,
+   )
 }
 
 function logCommand (
-   cmdDef: ConstructorParameters<typeof Deno.Command>,
+   cmdDef: Parameters<typeof Bun.spawnSync>,
    item: string,
    errMsg: string,
 ) {
    try {
-      const cmd = new Deno.Command(...cmdDef)
-      const { code, stdout, stderr } = cmd.outputSync()
+      const { exitCode, stdout, stderr } = Bun.spawnSync(...cmdDef)
 
-      if (code !== 0) {
+      if (exitCode !== 0) {
          throw new NonZeroReturnError(
             errMsg,
             new TextDecoder().decode(stderr).trim(),
@@ -56,7 +59,6 @@ function logCommand (
          logItem(item, new TextDecoder().decode(stdout).trim())
       }
    } catch (e: unknown) {
-      // Docs for error types at: https://deno.land/api@v1.36.0?s=Deno.errors
       // XXX: TypeScript has cursed exception type-narrowing in switch-case even
       //      though JavaScript uses non-value exceptions, hilarious. Hey guys
       //      let's have an exception system where you cannot even narrow on
@@ -79,24 +81,20 @@ function logCommand (
 // Block while printing chosen Nargo information; this is extremely important
 //   being that Nargo comprises the system under test and having to guess
 //   what version (e.g. multiple installs) is being used sucks, so print it.
-export function printTestEnvironment (wd: string) {
-   console.log(
-      // `%c${padCentre('Check test environment', roseChar)}`,
-      // 'color: yellow;',
-      yellow(padCentre('Check test environment', roseChar)),
-   )
+export function checkTestEnvironment (wd: string) {
+   console.log(chalk.yellow(padCentre('Check test environment', roseChar)))
 
    logItem('cwd', wd)
 
    // This executes immediately and fills prechecks with true/false values.
    const prechecks = [
       logCommand(
-         ['command', { cwd: wd, args: ['-v', 'nargo'] }],
+         [['command', '-v', 'nargo'], { cwd: wd }],
          'nargo executable',
          'Nargo executable not found in $PATH',
       ),
       logCommand(
-         ['nargo', { cwd: wd, args: ['--version'] }],
+         [['nargo', '--version'], { cwd: wd }],
          'nargo ver',
          'could not determine Nargo version',
       ),
@@ -104,12 +102,11 @@ export function printTestEnvironment (wd: string) {
 
    const precheckSuccess = prechecks.every((res) => res === true)
 
-   console.log(yellow(roseChar.repeat(80)))
+   console.log(chalk.yellow(roseChar.repeat(80)))
 
    if (precheckSuccess === false) {
-      console.log(red('Check had errors, aborting (EXIT_FAILURE)!'))
-      Deno.exit(1)
+      console.log(chalk.red('PRE-CHECKS FAILED!'))
    }
-}
 
-printTestEnvironment(wd)
+   return precheckSuccess
+}
