@@ -61,7 +61,8 @@ global REQUIRED_LENGTH: u32 = 87;
 // TODO: Replace `str` with `[u8; MAX_LENGTH];`
 // type Fen = str<REQUIRED_LENGTH>;
 type Char = u8;
-type Fen = [Char; REQUIRED_LENGTH];
+type Chars<N> = [Char; N];
+type Fen = Chars<REQUIRED_LENGTH>;
 
 struct Corpus {
     // u8 for characters as that is their backing datatype in Noir.
@@ -70,30 +71,30 @@ struct Corpus {
     // - - Pawns.
     w_pawn: Char,
     b_pawn: Char,
-    pawn: [Char; 2], // NB: Cannot use a type alias for this, compiler panic.
+    pawn: Chars<2>,
     // - - Knights.
     w_knight: Char,
     b_knight: Char,
-    knight: [Char; 2],
+    knight: Chars<2>,
     // - - Bishops.
     w_bishop: Char,
     b_bishop: Char,
-    bishop: [Char; 2],
+    bishop: Chars<2>,
     // - - Rooks.
     w_rook: Char,
     b_rook: Char,
-    rook: [Char; 2],
+    rook: Chars<2>,
     // - - Queens.
     w_queen: Char,
     b_queen: Char,
-    queen: [Char; 2],
+    queen: Chars<2>,
     // - - Kings.
     w_king: Char,
     b_king: Char,
-    king: [Char; 2],
+    king: Chars<2>,
     // - - Successive empty squares (in rank).
     // TODO: [OPT] Slice and .any() instead for 1-8? Compare circuit gate sizing.
-    empty_n: [Char; 8],
+    empty_n: Chars<8>,
     // - - - - Grammar.
     // - - Empty segment value.
     empty_value: Char,

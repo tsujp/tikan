@@ -4,14 +4,11 @@ use dep::std::option::Option;
 // Common idiom from Ruby to intentionally misspell a reserved keyword when
 //   used internally as part of some abstracted functionality. There you may
 //   spell `class` as `clazz` if it needs to be held in a variable for example.
+// TODO: Maybe rename `as FEN`?
 use crate::types as Tipe;
 
-// use dep::state::Foo;
-// mod statez;
-// use crate::statez::Board;
 use dep::state::board::Board as Board;
 use dep::state::board::Piece as Piece;
-
 
 // Ideally an array of unit structs (or an enum) which can be pattern-matched
 //   over (unit structs better as a type system) but neither approach is easily
@@ -30,8 +27,6 @@ mod Stage {
 
     // TODO: Stages for Pedersen hash when fog of war.
 }
-
-// bitboard: ~/programming/~aztec/tikan/circuit/lib/state/src/board/bitboard.nr
 
 fn custom_any<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
     let mut ret = Option::none();
@@ -75,14 +70,6 @@ impl Parser {
     }
 }
 
-// NB: Until bitshifting with a mix of constants and parameterised values is fixed
-//     use this wrapper (and the corresponding for right-shifts) since it magically
-//     fixes the problem and allows base-1 bitshifts.
-// NB: Tracking issue: https://github.com/noir-lang/noir/issues/2399
-fn bs_l(rdx: u64, n: u64) -> u64 {
-    (rdx as u64) << n
-}
-
 
 fn parse_board_stage(p: &mut Parser, c: u8) {
     let __idx = p.square; // No expressions allowed in println.
@@ -95,12 +82,10 @@ fn parse_board_stage(p: &mut Parser, c: u8) {
     } else {
         let is_p = of_pieces(Tipe::CORPUS.pawn, c);
         if is_p.is_some() {
-            // let (plyr_idx, the_p): (u8, u8) = { is_p.unwrap() };
             let (plyr_idx, the_p): (u8, u8) = is_p.unwrap();
             println(f"    -> FOUND: c{the_p} for player: u{plyr_idx}");
             // NB: When bitshifting inline works again this can be replaced
             //     with `... |= 1 << a.square_index;`
-            // p.pawn_bb |= bs_l(1, p.square);
             p.board.put_player_piece(plyr_idx, Piece::PAWN, p.square);
         }
 
@@ -238,10 +223,6 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
         let fg_w = bits_w[(i_w * 8) + 6];
         let fh_w = bits_w[(i_w * 8) + 7];
                 
-        // No type-formatting yet (e.g. print as integer not hex) so tag
-        //   manually and pipe through sed for a poor man's version.
-        // println(f"u{i}    b{fa} b{fb} b{fc} b{fd} b{fe} b{ff} b{fg} b{fh}");
-
         // NB: No expressions in format strings currently.
         let i_disp_w = i_w + 1;
         println(f"u{i_disp_w}    u{fa_w} u{fb_w} u{fc_w} u{fd_w} u{fe_w} u{ff_w} u{fg_w} u{fh_w}");
@@ -252,9 +233,7 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
     fenParser.board
 }
 
-// NB: Cannot use custom type for `want` (see NB for `Corpus` struct; the
-//     compiler will panic).
-fn of_pieces(want: [Tipe::Char; 2], check: Tipe::Char) -> Option<(u8, Tipe::Char)> {
+fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)> {
     let mut ret = Option::none();
 
     let mut idx = 0;
