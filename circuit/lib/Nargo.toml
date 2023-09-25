@@ -1,0 +1,14 @@
+[package]
+name = 'tikan_lib'
+authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"]
+compiler_version = '0.13.0'
+type = 'lib'
+
+[workspace]
+members = ['fen', 'state']
+# With no `default-members` key specified the workspace includes all `members`
+#   by default. Great success!
+
+[dependencies]
+fen = { path = 'fen' }
+state = { path = 'state' }

@@ -1,0 +1,9 @@
+[package]
+name = 'tikan_lib_state'
+authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"]
+compiler_version = '0.13.0'
+type = 'lib'
+
+[dependencies]
+# fen = { path = 'fen' }
+# state = { path = 'state' }
