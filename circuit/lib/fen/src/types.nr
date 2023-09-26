@@ -64,6 +64,7 @@ type Char = u8;
 type Chars<N> = [Char; N];
 type Fen = Chars<REQUIRED_LENGTH>;
 
+
 struct Corpus {
     // u8 for characters as that is their backing datatype in Noir.
     //
@@ -144,3 +145,14 @@ global CORPUS = Corpus {
     rank_delimit: 0x2f,
     segment_delimit: 0x20,
 };
+
+// This feels dirty but having a nice way to associate a piece with its
+//   proper index on deserialisation is key.
+global PIECE_SEARCH_ORDER = [
+    CORPUS.pawn,
+    CORPUS.knight,
+    CORPUS.bishop,
+    CORPUS.rook,
+    CORPUS.queen,
+    CORPUS.king,
+];

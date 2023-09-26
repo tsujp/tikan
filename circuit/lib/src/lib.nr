@@ -6,6 +6,7 @@ use dep::std::option::Option;
 type Char = u8;
 
 use dep::fen::parser::parse_fen;
+use dep::fen::types as Tipe;
 use dep::fen::types::REQUIRED_LENGTH;
 
 use dep::state::board::Board;
@@ -56,6 +57,39 @@ use dep::state::board::Board;
 
 // Normal starting fen:
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+
+
+
+fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)> {
+    let mut ret = Option::none();
+
+    let mut idx = 0;
+    for w in want {
+        if check == w {
+            ret = Option::some((idx, check));
+        }
+
+        idx += 1;
+    };
+
+    ret
+}
+
+// #[test]
+// fn test_of_pieces() {
+//     // let t_1 = of_pieces(Tipe::CORPUS.pawn, Tipe::CORPUS.w_pawn);
+//     // // assert(t_1.unwrap().0 == 0);
+//     // assert_eq(t_1.unwrap().0, 1);
+
+//     // let t_2 = of_pieces(Tipe::CORPUS.pawn, 0x00);
+//     // // assert(t_2.is_some(), "NUL byte is not a valid FEN piece character");
+//     // assert(t_2.is_some() == true);
+
+//     // if t_1.is_some() {
+//     //     let (plyr_idx, the_p): (u8, u8) = t_1.unwrap();
+//     //     assert(plyr_idx == 0);
+//     // }
+// }
 
 // Lazy helper for tests to avoid typing `as_bytes()` everywhere. Hopefully
 //   this is recognised by Nargo as unused in non-test code and erased from

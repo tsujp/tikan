@@ -24,7 +24,7 @@ struct Board {
 
 
 impl Board {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             pieces: [Bitboard::new(); REQUIRED_BITBOARDS],
         }
@@ -32,7 +32,8 @@ impl Board {
 
     // Places piece for player at location (by square index).
     // TODO: In which order are we indexing squares?
-    fn put_player_piece(&mut self, player: u8, piece: Field, idx: u64) {
+    // TODO: When enums param `piece` should be constrained.
+    pub fn put_player_piece(&mut self, player: Field, piece: Field, idx: u64) {
         println(f"Place piece for player u{player} at u{idx}");
         self.pieces[player].data |= 1 << idx;
         self.pieces[piece].data |= 1 << idx;

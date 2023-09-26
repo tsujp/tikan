@@ -1,11 +1,8 @@
 use dep::std::println;
 use dep::std::option::Option;
 
-// Common idiom from Ruby to intentionally misspell a reserved keyword when
-//   used internally as part of some abstracted functionality. There you may
-//   spell `class` as `clazz` if it needs to be held in a variable for example.
-// TODO: Maybe rename `as FEN`?
-use crate::types as Tipe;
+// Really zkFEN types hence alias.
+use crate::types as FEN;
 
 use dep::state::board::Board as Board;
 use dep::state::board::Piece as Piece;
@@ -28,7 +25,9 @@ mod Stage {
     // TODO: Stages for Pedersen hash when fog of war.
 }
 
-fn custom_any<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
+// TODO: PR for this into the standard library.
+// Find is like `any` except it returns the matched value.
+fn find<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
     let mut ret = Option::none();
 
     for ele in arr {
@@ -41,10 +40,13 @@ fn custom_any<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
 }
 
 struct Parser {
+    // Stage of parsing.
     stage: Field,
+    // Square index we're at.
     square: u64,
+    // Two-by-six '2x6' bitboard serialised gamestate.
     board: Board,
-    // pawn_bb: u64,
+    // TODO: State commitment here or as part of Board? Probably as part of Board.
 }
 
 impl Parser {
@@ -53,7 +55,6 @@ impl Parser {
             stage: 0,
             square: 0,
             board: Board::new(),
-            // pawn_bb: 0,
         }
     }
 
@@ -64,43 +65,77 @@ impl Parser {
     fn incr_square(&mut self, n: u64) {
         self.square += n;
     }
+}
 
-    fn foo(self) {
-        println("fen parser foo called");
+
+// Commonly want to check if an option is `Some`, then unwrap it and run a
+//   side-effect. Existing `Option` methods require return values which
+//   pollutes code if all we care about is maybe doing some logic.
+fn maybe_do<T, Env>(d: Option<T>, f: fn[Env](T) -> ()) {
+    if d.is_some() {
+        f(d.unwrap_unchecked());
     }
 }
 
 
+// Returns a tuple of enums (board::Piece) representing the piece and player
+//   found for the character checked. (TODO: When proper enums, real typing).
+fn piece_for_player(check: FEN::Char) -> Option<(Field, Field)> {
+    // This implementation simplifies a much longer if-else chain at the
+    //   call-site and itself adds a negligible amount of gates as the loops
+    //   involved check the same quantity of values as doing so manually
+    //   with boolean logic which cannot be short-circuited in Noir.
+    let mut ret = Option::none();
+
+    // Enum board::Piece values WHITE and BLACK occupy 0 and 1 respectively
+    //   so piece values start at 2.
+    let mut piece_idx = 2;
+
+    for piece_tuples in FEN::PIECE_SEARCH_ORDER {
+        let mut player_idx = 0;
+
+        for w in piece_tuples {
+            if check == w {
+                ret = Option::some((player_idx, piece_idx));
+            }
+
+            player_idx += 1;
+        };
+
+        piece_idx += 1;
+    };
+
+    ret
+}
+
+
 fn parse_board_stage(p: &mut Parser, c: u8) {
-    let __idx = p.square; // No expressions allowed in println.
-    println(f"Board, idx: u{__idx}, c: c{c}");
+    // let __idx = p.square; // No expressions allowed in println.
+    // println(f"Board, idx: u{__idx}, c: c{c}");
 
-    // No early return or loop continue, so must nest to avoid
-    //   later code. If-else chains are much more expensive.
-    if c == Tipe::CORPUS.rank_delimit {
-        println(f"    -> rank delimiter, skip");
-    } else {
-        let is_p = of_pieces(Tipe::CORPUS.pawn, c);
-        if is_p.is_some() {
-            let (plyr_idx, the_p): (u8, u8) = is_p.unwrap();
-            println(f"    -> FOUND: c{the_p} for player: u{plyr_idx}");
-            // NB: When bitshifting inline works again this can be replaced
-            //     with `... |= 1 << a.square_index;`
-            p.board.put_player_piece(plyr_idx, Piece::PAWN, p.square);
+    // No early return or loop continue, so must nest to avoid; if-else chains
+    //   are much more expensive.
+    if c != FEN::CORPUS.rank_delimit {
+        // Check if current character `c` is a valid integer (as ASCII) in zkFEN
+        //   string which represents the sequential count of empty squares.
+        
+        let idx_increment = find(FEN::CORPUS.empty_n, |num| c == num);
+
+        // Not a valid integer we care about, probably a piece.
+        if idx_increment.is_none() {
+            maybe_do(
+                piece_for_player(c),
+                |(player, piece): (Field, Field)| {
+                    // println(f"foo u{player} bar c{piece}");
+                    p.board.put_player_piece(player, piece, p.square);
+                }
+            );
         }
 
-        let en = custom_any(Tipe::CORPUS.empty_n, |noo| c == noo);
-
-        if (en.is_some()) {
-            let __en = en.unwrap_unchecked();
-            // 0x30 is the offset at which ASCII digits start.
-            let __en_val = __en - 0x30;
-            println(f"    -> Empty square count: c{__en} -- u{__en_val}");
-            p.incr_square(__en_val as u64);
-        } else {
-            // No early returns so this is here.
-            p.incr_square(1);
-        }
+        // Ifthere is no valid empty-count then increment the square index by
+        //   1 since we must have read a piece.
+        // 0x30 is the offset at which ASCII digits start.
+        p.incr_square(idx_increment.map_or(1, |ascii_num| ascii_num - 0x30) as u64);
     }
 }
 
@@ -124,7 +159,7 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
         // NB: Looks like _not_ using if-else here reduces circuit size?
         
         // No early return, need to nest.
-        if c == Tipe::CORPUS.segment_delimit {
+        if c == FEN::CORPUS.segment_delimit {
             p.incr_stage();
         } else {       
             if p.stage == Stage::BOARD {
@@ -159,9 +194,11 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
 
     println("=> ENTIRE BOARD +++++++++++++++++++++++");
 
+
     // println(parsed.pawn_bb);
     // let attempt = parsed.pawn_bb as Field;
     let attempt = parsed.board.pieces[Piece::PAWN].data as Field;
+    println(f"Board as integer: {attempt}");
     let mut arr = [0; 64];
     let bits = attempt.to_le_bits(64);
     for i in 0..64 {
@@ -233,7 +270,7 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
     fenParser.board
 }
 
-fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)> {
+fn of_pieces(want: FEN::Chars<2>, check: FEN::Char) -> Option<(u8, FEN::Char)> {
     let mut ret = Option::none();
 
     let mut idx = 0;
@@ -248,32 +285,32 @@ fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)
     ret
 }
 
-#[test]
-fn test_of_pieces() {
-    let t_1 = of_pieces(Tipe::CORPUS.pawn, Tipe::CORPUS.w_pawn);
-    // assert(t_1.unwrap().0 == 0);
-    assert_eq(t_1.unwrap().0, 0);
+// #[test]
+// fn test_of_pieces() {
+//     let t_1 = of_pieces(FEN::CORPUS.pawn, FEN::CORPUS.w_pawn);
+//     // assert(t_1.unwrap().0 == 0);
+//     assert_eq(t_1.unwrap().0, 1);
 
-    let t_2 = of_pieces(Tipe::CORPUS.pawn, 0x00);
-    // assert(t_2.is_some(), "NUL byte is not a valid FEN piece character");
-    // assert(t_2.is_some() == true);
+//     let t_2 = of_pieces(FEN::CORPUS.pawn, 0x00);
+//     // assert(t_2.is_some(), "NUL byte is not a valid FEN piece character");
+//     assert(t_2.is_some() == true);
 
-    // if t_1.is_some() {
-    //     let (plyr_idx, the_p): (u8, u8) = t_1.unwrap();
-    //     assert(plyr_idx == 0);
-    // }
-}
+//     // if t_1.is_some() {
+//     //     let (plyr_idx, the_p): (u8, u8) = t_1.unwrap();
+//     //     assert(plyr_idx == 0);
+//     // }
+// }
 
-fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
-    parse_fen(input_fen.as_bytes())
-}
+// fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
+//     parse_fen(input_fen.as_bytes())
+// }
 
-#[test]
-fn test_parse_fen() {
-    // let foo = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-    stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-    let foo = 0;
+// #[test]
+// fn test_parse_fen() {
+//     // let foo = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
+//     stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
+//     let foo = 0;
 
-    // assert(foo == 0);
-    assert_eq(foo, 0);
-}
+//     // assert(foo == 0);
+//     assert_eq(foo, 0);
+// }

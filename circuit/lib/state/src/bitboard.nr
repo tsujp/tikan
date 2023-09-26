@@ -6,13 +6,15 @@ mod Player {
     global BLACK: Field = 1;
 }
 
+
 // 64 bits used for the 64 squares in a chess board.
 type Bitfield = u64;
 
-// A 'six-two' bitboard.
+
 struct Bitboard {
     data: Bitfield,
 }
+
 
 impl Bitboard {
     pub fn new() -> Self {
