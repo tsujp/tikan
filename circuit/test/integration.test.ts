@@ -19,7 +19,9 @@ test('prove 1 != 2', async () => {
 })
 
 // Imported circuit is compressed by default, need to decompress it with fflate.
-// import circuit from '../white/target/main.json' assert { type: 'json' }
+import circuit from '../white/target/tikan_white.json' assert { type: 'json' }
+
+const goodCircuitBytecode = circuit.bytecode
 
 // NodeJS specific API steps would be:
 //   ```
@@ -35,8 +37,8 @@ test('prove 1 != 2', async () => {
 
 // TODO: Move all of this into a pre-check.
 
-const goodCircuitBytecode =
-   'H4sIAAAAAAAA/7WTMRLEIAhFMYkp9ywgGrHbq6yz5v5H2JkdCyaxC9LgWDw+H9gBwMM91p7fPeOzIKdYjEeMLYdGTB8MpUrCmOohJJQkfYMwN4mSSy0ZC0VudKbCZ4cthqzVrsc/yw28dMZeWmrWerfBexnsxD6hJ7jUufr4GvyZFp8xpG0C14Pd8s/q29vPCBXypvmpDx7sD8opnfqIfsM1RNtxBQAA'
+// const goodCircuitBytecode =
+//    'H4sIAAAAAAAA/7WTMRLEIAhFMYkp9ywgGrHbq6yz5v5H2JkdCyaxC9LgWDw+H9gBwMM91p7fPeOzIKdYjEeMLYdGTB8MpUrCmOohJJQkfYMwN4mSSy0ZC0VudKbCZ4cthqzVrsc/yw28dMZeWmrWerfBexnsxD6hJ7jUufr4GvyZFp8xpG0C14Pd8s/q29vPCBXypvmpDx7sD8opnfqIfsM1RNtxBQAA'
 
 // Get circuit bytecode and do t3h decompression.
 const acirBuffer = new Uint8Array(
@@ -64,10 +66,38 @@ async function foo () {
 
    // Witness
    // const input = { move: 2 }
-   const input = { x: 1, y: 2 }
+   // const input = { x: 1, y: 2 }
+   const input = {
+      before_board: [0, 2, 4, 8],
+      after_board: [0, 2, 5, 8],
+      move: 2,
+   }
    const initialWitness = new Map<number, string>()
-   initialWitness.set(1, ethers.utils.hexZeroPad(`0x${input.x.toString(16)}`, 32))
-   initialWitness.set(2, ethers.utils.hexZeroPad(`0x${input.y.toString(16)}`, 32))
+   initialWitness.set(
+      1,
+      input.before_board.reduce(
+         (accumulator, byte) => accumulator + byte.toString(16).padStart(2, '0'),
+         '',
+      ),
+   )
+   initialWitness.set(
+      2,
+      input.after_board.reduce(
+         (accumulator, byte) => accumulator + byte.toString(16).padStart(2, '0'),
+         '',
+      ),
+   )
+   initialWitness.set(3, ethers.utils.hexZeroPad(`0x${input.move.toString(16)}`, 32))
+
+   initialWitness.set(4, '')
+   initialWitness.set(5, '')
+   initialWitness.set(6, '')
+   initialWitness.set(7, '')
+   initialWitness.set(8, '')
+   initialWitness.set(9, '')
+   // initialWitness.set(10, '')
+   // initialWitness.set(11, '')
+   // initialWitness.set(12, '')
 
    const witnessMap = await executeCircuit(acirBuffer, initialWitness, () => {
       throw Error('unexpected oracle')

@@ -58,23 +58,6 @@ use dep::state::board::Board;
 // Normal starting fen:
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-
-
-fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)> {
-    let mut ret = Option::none();
-
-    let mut idx = 0;
-    for w in want {
-        if check == w {
-            ret = Option::some((idx, check));
-        }
-
-        idx += 1;
-    };
-
-    ret
-}
-
 // #[test]
 // fn test_of_pieces() {
 //     // let t_1 = of_pieces(Tipe::CORPUS.pawn, Tipe::CORPUS.w_pawn);
@@ -101,16 +84,82 @@ fn of_pieces(want: Tipe::Chars<2>, check: Tipe::Char) -> Option<(u8, Tipe::Char)
 //       the calee's `parse_fen` (currently u64). Higher order functions look
 //       like they still require explicit return types; only their parameters
 //       (and in the case of closures) can be generic (I think).
+// fn stb_parse_fen<T, N>(input_fen: str<N>) -> () {
+//     println(f""); // Fix for missing newline from default Nargo stdout.
+//     let board = parse_fen(input_fen.as_bytes());
+//     dump_board(board); // TODO: Uncomment later.
+// }
+
 fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
     parse_fen(input_fen.as_bytes())
 }
 
+
+// Test helper to dump board state as bitfields which can be trivially
+//   serialised by a simple web frontend to visually show board state. This
+//   is being done instead of printing to stdout as with many tests such a
+//   long output will be tedious to explore.
+// This isn't on the Board struct since it's a _test_ helper not an
+//   implementation detail.
+fn dump_board(b: Board) -> () {
+    println(f"dump board called\n");
+
+    // println("=========== With original");
+    // println(f"u0x22"); // Dec 34
+    // println(f"u0x3a"); // Dec 58
+
+    // println("=========== With original");
+    // println(f"c0x22"); // Dec 34
+    // println(f"c0x3a"); // Dec 58
+
+    // println("=========== Without original");
+    // println(f"c-0x22"); // Dec 34
+    // println(f"c-0x3a"); // Dec 58
+    
+    // println("========== Without original");
+    // println(f"u-0x22");
+    // println(f"u-0x3a");
+
+    
+    println("========== With original");
+    // println(f"k0xff00ff k0xabcabc");
+
+    println("========== Without original");
+    println(f"k-0xCAFE001 k-0xff00ff k-0xaabbcc k-0x123123");
+    println(f"k-0xCAFE002 k-0xff00ff");
+    println(f"k-0xCAFE003 k-0xaabbcc");
+
+    // println("========= Without original");
+    // println(f"k-0xff00ff");
+    
+    // for bb in b.pieces {
+    //     let d = bb.data;
+    //     println(f"k{d}");
+    // };
+}
+
+
+// XXX: Test-helper only.
+fn check_bb_from_fen(board: Board, check_bbs: [u64; 6]) {
+    for bb in board.pieces {
+        println(f"foo {bb}");
+    }
+}
+
+
 #[test]
 fn test_parse_fen() {
-    println("Bitboard value:");
-    let foo = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-    println("-------");
-
+    println(f""); // Fix for missing newline from default Nargo stdout.
+    // Minimum valid FEN board.
+    let board = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
+    check_bb_from_fen(board, [
+        0xff00000000ff00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0xff00000000ff00
+    ]);
     assert(0 == 0);
 }
 

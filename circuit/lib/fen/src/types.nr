@@ -16,7 +16,7 @@
 //       * Rook   = R
 //       * Queen  = Q
 //       * King   = K
-//   - Described "top-left" to "bottom-right" from rank a8 to h1 (rank, file).
+//   - Described "top-left" to "bottom-right" from a8 to h1 (rank, file).
 //   - White pieces in uppercase, black pieces in lowercase.
 //   - If no pieces are present along a rank (row) a number (1-8) is given to
 //     indicate the count of successive empty squares.

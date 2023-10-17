@@ -7,6 +7,14 @@ use crate::types as FEN;
 use dep::state::board::Board as Board;
 use dep::state::board::Piece as Piece;
 
+// TODO: Eventually zkFEN _input_ can be removed and replaced with a more
+//       compact board representation that does not require parsing characters.
+//       It will probably take up to 200 bits which is a good maximum and
+//       will be more directly useable with zkFEN being a Rust crate, TS package
+//       etc which can serve as a frontend for that new input/output. Not doing
+//       it now since that will wipe out everything that currently works for
+//       an _optimisation_ enhancement.
+
 // Ideally an array of unit structs (or an enum) which can be pattern-matched
 //   over (unit structs better as a type system) but neither approach is easily
 //   possible in Noir currently (0.10.3) so a simple integer to control parsing
@@ -25,6 +33,8 @@ mod Stage {
     // TODO: Stages for Pedersen hash when fog of war.
 }
 
+
+// TODO: Put in a general utility module.
 // TODO: PR for this into the standard library.
 // Find is like `any` except it returns the matched value.
 fn find<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
@@ -39,6 +49,7 @@ fn find<T, N, Env>(arr: [T; N], f: fn[Env](T) -> (bool)) -> Option<T> {
     ret
 }
 
+
 struct Parser {
     // Stage of parsing.
     stage: Field,
@@ -48,6 +59,7 @@ struct Parser {
     board: Board,
     // TODO: State commitment here or as part of Board? Probably as part of Board.
 }
+
 
 impl Parser {
     fn new() -> Self {
@@ -68,6 +80,7 @@ impl Parser {
 }
 
 
+// TODO: Put in a general utility module.
 // Commonly want to check if an option is `Some`, then unwrap it and run a
 //   side-effect. Existing `Option` methods require return values which
 //   pollutes code if all we care about is maybe doing some logic.
@@ -110,8 +123,8 @@ fn piece_for_player(check: FEN::Char) -> Option<(Field, Field)> {
 
 
 fn parse_board_stage(p: &mut Parser, c: u8) {
-    // let __idx = p.square; // No expressions allowed in println.
-    // println(f"Board, idx: u{__idx}, c: c{c}");
+    let __idx = p.square; // No expressions allowed in println.
+    println(f"Board, idx: u{__idx}, c: c{c}");
 
     // No early return or loop continue, so must nest to avoid; if-else chains
     //   are much more expensive.
@@ -126,13 +139,19 @@ fn parse_board_stage(p: &mut Parser, c: u8) {
             maybe_do(
                 piece_for_player(c),
                 |(player, piece): (Field, Field)| {
-                    // println(f"foo u{player} bar c{piece}");
-                    p.board.put_player_piece(player, piece, p.square);
+                    // TODO: Put this magic number somewhere. 64 is the count
+                    //       of squares on a chess board but as it's an index
+                    //       (from zero) 63 is the maximum.
+                    // let bitfield_square = 64 - p.square;
+                    // println(f"player u{player} / piece c{piece} / square_idx u{bitfield_square}");
+                    let bitfield_square = p.square;
+                    println(f"player u{player}  piece u{piece}  square_idx u{bitfield_square}");
+                    p.board.put_player_piece(player, piece, bitfield_square);
                 }
             );
         }
 
-        // Ifthere is no valid empty-count then increment the square index by
+        // If there is no valid empty-count then increment the square index by
         //   1 since we must have read a piece.
         // 0x30 is the offset at which ASCII digits start.
         p.incr_square(idx_increment.map_or(1, |ascii_num| ascii_num - 0x30) as u64);
@@ -192,6 +211,10 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
         p
     });
 
+    parsed.board
+}
+
+/*{
     println("=> ENTIRE BOARD +++++++++++++++++++++++");
 
 
@@ -268,49 +291,4 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
     println("+++++++++++++++++++++++++++++++++++++++");
 
     fenParser.board
-}
-
-fn of_pieces(want: FEN::Chars<2>, check: FEN::Char) -> Option<(u8, FEN::Char)> {
-    let mut ret = Option::none();
-
-    let mut idx = 0;
-    for w in want {
-        if check == w {
-            ret = Option::some((idx, check));
-        }
-
-        idx += 1;
-    };
-
-    ret
-}
-
-// #[test]
-// fn test_of_pieces() {
-//     let t_1 = of_pieces(FEN::CORPUS.pawn, FEN::CORPUS.w_pawn);
-//     // assert(t_1.unwrap().0 == 0);
-//     assert_eq(t_1.unwrap().0, 1);
-
-//     let t_2 = of_pieces(FEN::CORPUS.pawn, 0x00);
-//     // assert(t_2.is_some(), "NUL byte is not a valid FEN piece character");
-//     assert(t_2.is_some() == true);
-
-//     // if t_1.is_some() {
-//     //     let (plyr_idx, the_p): (u8, u8) = t_1.unwrap();
-//     //     assert(plyr_idx == 0);
-//     // }
-// }
-
-// fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
-//     parse_fen(input_fen.as_bytes())
-// }
-
-// #[test]
-// fn test_parse_fen() {
-//     // let foo = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-//     stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-//     let foo = 0;
-
-//     // assert(foo == 0);
-//     assert_eq(foo, 0);
-// }
+}*/
