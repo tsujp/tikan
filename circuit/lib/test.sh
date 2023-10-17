@@ -58,6 +58,39 @@ declare -Ar _bitfield=(
   ["$k_run"]='bitfield_frontend_debug'
 )
 
+# Noir's in-built test behaviour is not very useful currently and makes
+#   makes testing extremely hard by swallowing all output and refusing to
+#   print test-values that failed; so we'll implement our own test framework.
+declare -Ar _test=(
+  ["$k_pfx"]='t'
+  ["$k_cnv"]='%u;0x'
+  ["$k_run"]='annotate_tests'
+)
+
+
+declare -gi contiguous_passes=0
+annotate_tests ()
+{
+  declare -n conv="$1"
+
+  if (( "$conv" == 69 )); then
+    contiguous_passes=0
+  fi
+
+  # Output is from a programming language (not shell): 0 means failure.
+  if (( "$conv" == 0 )); then
+    contiguous_passes=0
+    printf -v conv '\033[38;5;196m[FAIL]\033[0m' 
+  elif (( "$conv" == 1 )); then
+    if (( "$contiguous_passes" > 0 )); then
+      printf '\033[1F\033[%dC' "$contiguous_passes"
+    fi
+
+    printf -v conv '\033[38;5;118m.\033[0m'
+    ((contiguous_passes++))
+  fi
+}
+
 
 write_bitfield_data ()
 {
@@ -99,6 +132,7 @@ declare -ar convs=(
   '_unsigned'
   '_char'
   '_bitfield'
+  '_test'
 )
 
 
