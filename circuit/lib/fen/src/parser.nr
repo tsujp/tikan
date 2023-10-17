@@ -123,8 +123,8 @@ fn piece_for_player(check: FEN::Char) -> Option<(Field, Field)> {
 
 
 fn parse_board_stage(p: &mut Parser, c: u8) {
-    let __idx = p.square; // No expressions allowed in println.
-    println(f"Board, idx: u{__idx}, c: c{c}");
+    // let __idx = p.square; // No expressions allowed in println.
+    // println(f"Board, idx: u{__idx}, c: c{c}");
 
     // No early return or loop continue, so must nest to avoid; if-else chains
     //   are much more expensive.
@@ -139,14 +139,8 @@ fn parse_board_stage(p: &mut Parser, c: u8) {
             maybe_do(
                 piece_for_player(c),
                 |(player, piece): (Field, Field)| {
-                    // TODO: Put this magic number somewhere. 64 is the count
-                    //       of squares on a chess board but as it's an index
-                    //       (from zero) 63 is the maximum.
-                    // let bitfield_square = 64 - p.square;
-                    // println(f"player u{player} / piece c{piece} / square_idx u{bitfield_square}");
-                    let bitfield_square = p.square;
-                    println(f"player u{player}  piece u{piece}  square_idx u{bitfield_square}");
-                    p.board.put_player_piece(player, piece, bitfield_square);
+                    // println(f"player u{player}  piece u{piece}  square_idx u{p.square}");
+                    p.board.put_player_piece(player, piece, p.square);
                 }
             );
         }

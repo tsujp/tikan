@@ -42,37 +42,19 @@ impl Board {
 
 
 // FEN is read left-to-right and indexes the board top-left to bottom-right
-//   so we need to convert those indices to bitfield-order which is bottom-
-//   left to top-right.
-
-
-// Chess board is laid out A1 bottom-left H8 top-right so for a 64-bit bitfield
-// representation of a board we will lay out the index as:
+//   we'll keep this ordering when populating, and using bitboards.
+// This means the bitfields are in big-endian order rank-wise, and little-endian
+//   order file-wise. A.K.A. BERLEF square mapping.
 
 //    [RANK]          [INDICES]
 //
-//       8    56  57  58  59  60  61  62  63
-//       7    48  49  50  51  52  53  54  55
-//       6    40  41  42  43  44  45  46  47
-//       5    32  33  34  35  36  37  38  39
-//       4    24  25  26  27  28  29  30  31
-//       3    16  17  18  19  20  21  22  23
-//       2     8   9  10  11  12  13  14  15
-//       1     0   1   2   3   4   5   6   7
-//
-//             a   b   c   d   e   f   g   h   [FILE]
-
-
-
-//    [RANK]          [INDICES]
-//
-//       1     0   1   2   3   4   5   6   7
-//       2     8   9  10  11  12  13  14  15
-//       3    16  17  18  19  20  21  22  23
-//       4    24  25  26  27  28  29  30  31
-//       5    32  33  34  35  36  37  38  39
-//       6    40  41  42  43  44  45  46  47
-//       7    48  49  50  51  52  53  54  55
-//       8    56  57  58  59  60  61  62  63
+//       8     0   1   2   3   4   5   6   7
+//       7     8   9  10  11  12  13  14  15
+//       6    16  17  18  19  20  21  22  23
+//       5    24  25  26  27  28  29  30  31
+//       4    32  33  34  35  36  37  38  39
+//       3    40  41  42  43  44  45  46  47
+//       2    48  49  50  51  52  53  54  55
+//       1    56  57  58  59  60  61  62  63
 //
 //             a   b   c   d   e   f   g   h   [FILE]
