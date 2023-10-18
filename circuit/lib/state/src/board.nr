@@ -1,4 +1,5 @@
 use dep::std::println;
+// use dep::std::unsafe::zeroed;
 
 use crate::bitboard::Bitboard as Bitboard;
 
@@ -35,8 +36,10 @@ impl Board {
     // TODO: When enums param `piece` should be constrained.
     pub fn put_player_piece(&mut self, player: Field, piece: Field, idx: u64) {
         // println(f"Place piece for player u{player} at u{idx}");
-        self.pieces[player].data |= 1 << idx;
-        self.pieces[piece].data |= 1 << idx;
+        // self.pieces[player].data |= 1 << idx;
+        // self.pieces[piece].data |= 1 << idx;
+        self.pieces[player].data |= 1 << (63 - idx); // BERLEF indexing.
+        self.pieces[piece].data |= 1 << (63 - idx); // BERLEF indexing.
     }
 }
 

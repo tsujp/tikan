@@ -73,8 +73,10 @@ annotate_tests ()
 {
   declare -n conv="$1"
 
-  if (( "$conv" == 69 )); then
+  if (( "$conv" == 105 )); then
     contiguous_passes=0
+    unset conv
+    return
   fi
 
   # Output is from a programming language (not shell): 0 means failure.

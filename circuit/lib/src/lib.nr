@@ -120,7 +120,6 @@ fn dump_board(b: Board) -> () {
     // println(f"u-0x22");
     // println(f"u-0x3a");
 
-    
     println("========== With original");
     // println(f"k0xff00ff k0xabcabc");
 
@@ -140,28 +139,117 @@ fn dump_board(b: Board) -> () {
 
 
 // XXX: Test-helper only.
-fn check_bb_from_fen(board: Board, check_bbs: [u64; 6]) {
+// TODO: Noir doesn't allow template strings in assertion messages and also
+//       does not print if an assertion fails and also assertions do not
+//       display the actual values, only that it failed (arguably useless)
+//       so this convoluted workaround is employed.
+fn check_bb_from_fen(board: Board, check_bbs: [u64; 8]) {
+    let mut idx = 0;
+
     for bb in board.pieces {
-        println(f"foo {bb}");
+        // FIXME: No expressions in template strings so pollution with temp
+        //        values is required.
+        let bb_data = bb.data;
+        let check_bb = check_bbs[idx];
+
+        if bb_data == check_bb {
+            println(f"t-0x01");
+        } else {
+            println(f"t-0x00 Expected equal values, '{bb_data}' == '{check_bb}' (given) bb index: u-{idx}");
+        }
+
+        idx += 1;
     }
 }
 
 
+// TODO: Simple higher order function which takes a lambda to run stuff
+//       and wraps that lambda in `println(f"t-0x69"); lambda; assert(true);`
+
+
 #[test]
 fn test_parse_fen() {
-    println(f""); // Fix for missing newline from default Nargo stdout.
-    // Minimum valid FEN board.
-    let board = stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
-    check_bb_from_fen(board, [
-        0xff00000000ff00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0xff00000000ff00
-    ]);
-    assert(0 == 0);
+    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // TODO: On turn 1 hardcode valid starting position bitboard serialisation
+    //       state (because we're not a generic engine).
+
+    
+    // Minimum valid starting board.
+    check_bb_from_fen(
+        stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"),
+        [
+            0xff08,
+            0x08ff000000000000,
+            0x00ff00000000ff00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x0800000000000008
+        ]
+    );
+
+    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // Removing pawns should remove them as-by BERLEF indexing. So, here on the
+    //   second rank first 3 pawns should be missing with the bitboard for
+    //   those pawns missing the BERLEF-indexed 1s. The 7th rank is also
+    //   altered, and so should miss the last 4 BERLEF-indexed 1s.
+    check_bb_from_fen(
+        stb_parse_fen("4k3/3ppppp/8/8/8/8/PPPP4/4K3 w - - 0 1"),
+        [
+            0xf008,
+            0x081f000000000000,
+            0x001f00000000f000,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x0800000000000008
+        ]
+    );
+
+    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // Proper starting board.
+    check_bb_from_fen(
+        stb_parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+        [
+            0xffff,
+            0xffff000000000000,
+            0x00ff00000000ff00,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x1000000000000010,
+            0x0800000000000008
+        ]
+    );
+
+//     And after the move 1. e4:
+
+// rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
+
+// And then after 1. ... c5:
+
+// rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2
+
+// And then after 2. Nf3:
+
+// rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
+
+    // Various FEN strings taken from: https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
+    // 4k3/8/8/8/8/8/4P3/4K3 w - - 5 39
+    
+    
+
+    // XXX: Not necessarily the case.
+    // TODO: Add failure output and detection (to say failed test suite overall)
+    //       in the conversions script.
+    assert(true);
 }
+
 
 fn assert_valid_move(before_board: [u32; 4], after_board: [u32; 4], move: u32) {
     // Hardcoded +1 value, i.e. a "move" here is adding 1 and only 1 to some number
