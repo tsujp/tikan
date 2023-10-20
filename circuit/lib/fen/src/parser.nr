@@ -180,23 +180,28 @@ pub fn parse_fen<T, N>(fen: [u8; N]) -> Board {
             }
 
             if p.stage == Stage::TURN {
-                println("parse turn");
+                // TODO: Parse whose turn it is.
+                // println("parse turn");
             } 
 
             if p.stage == Stage::CASTLE {
-                println("parse castle");
+                // TODO: Parse castling rights.
+                // println("parse castle");
             } 
 
             if p.stage == Stage::PASSANT {
-                println("parse en passant");
+                // TODO: Parse en passant _target_.
+                // println("parse en passant");
             } 
 
             if p.stage == Stage::HALFMOVE {
-                println("parse halfmove");
+                // TODO: Parse count of halfmoves.
+                // println("parse halfmove");
             } 
 
             if p.stage == Stage::FULLMOVE {
-                println("parse fullmove");
+                // TODO: Parse count of fullmoves.
+                // println("parse fullmove");
             }
         }
 

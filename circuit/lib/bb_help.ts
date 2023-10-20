@@ -89,9 +89,9 @@ function print_bb (bb: bigint, with_indices: boolean = false) {
    console.log(`${title_file}\n\n`)
 }
 
-print_bb(x)
+// print_bb(x)
 
-// print_bb(x, true)
+print_bb(x, true)
 
 // console.log(
 //    `black bb: ${blackPawns.toString(2).padStart(digits, '0')} (${blackPawns})`,

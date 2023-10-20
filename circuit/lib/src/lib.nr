@@ -1,6 +1,5 @@
 use dep::std::println;
 use dep::std::collections::vec::Vec;
-// use dep::std::unsafe::zeroed;
 use dep::std::option::Option;
 
 type Char = u8;
@@ -9,6 +8,9 @@ use dep::fen::parser::parse_fen;
 use dep::fen::types as Tipe;
 use dep::fen::types::REQUIRED_LENGTH;
 
+use dep::io::berlefn::parse_berlefn;
+
+use dep::state::move::Move;
 use dep::state::board::Board;
 
 // TODO: Does the compiler remove println statements when compiled properly or
@@ -18,17 +20,6 @@ use dep::state::board::Board;
 // Mailbox representations require signed integers.
 // Bitboard represents do not require signed integers.
 // Want maximum _lack_ of third-party dependency (stdlib only).
-
-// struct FenDynamic {
-//     // - - - - Pieces.
-//     // - - En passant.
-//     en_passant: [Char; 2],
-//     // - - - - Turns.
-//     // - - Halfmove, fullmove counters.
-//     halfmove: u16, // 16 bits is 65k moves, match _probably_ won't go that long.
-//     fullmove: u16,
-// }
-
 
 // Bitboard:
 //   - 2 colour bitboards; white and black with all their pieces.
@@ -51,12 +42,6 @@ use dep::state::board::Board;
 //   so you're able to debug and solve problems.
 
 // -------------------
-
-// Only pawns and one king each:
-// 4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1
-
-// Normal starting fen:
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 // #[test]
 // fn test_of_pieces() {
@@ -90,10 +75,13 @@ use dep::state::board::Board;
 //     dump_board(board); // TODO: Uncomment later.
 // }
 
-fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
-    parse_fen(input_fen.as_bytes())
+fn stb_parse_fen<T, N>(input: str<N>) -> Board {
+    parse_fen(input.as_bytes())
 }
 
+fn stb_parse_berlefn<T, N>(input: str<N>) -> Move {
+    parse_berlefn(input.as_bytes())
+}
 
 // Test helper to dump board state as bitfields which can be trivially
 //   serialised by a simple web frontend to visually show board state. This
@@ -102,35 +90,8 @@ fn stb_parse_fen<T, N>(input_fen: str<N>) -> Board {
 // This isn't on the Board struct since it's a _test_ helper not an
 //   implementation detail.
 fn dump_board(b: Board) -> () {
+    let _ = b; // To temp silence unused var message.
     println(f"dump board called\n");
-
-    // println("=========== With original");
-    // println(f"u0x22"); // Dec 34
-    // println(f"u0x3a"); // Dec 58
-
-    // println("=========== With original");
-    // println(f"c0x22"); // Dec 34
-    // println(f"c0x3a"); // Dec 58
-
-    // println("=========== Without original");
-    // println(f"c-0x22"); // Dec 34
-    // println(f"c-0x3a"); // Dec 58
-    
-    // println("========== Without original");
-    // println(f"u-0x22");
-    // println(f"u-0x3a");
-
-    println("========== With original");
-    // println(f"k0xff00ff k0xabcabc");
-
-    println("========== Without original");
-    println(f"k-0xCAFE001 k-0xff00ff k-0xaabbcc k-0x123123");
-    println(f"k-0xCAFE002 k-0xff00ff");
-    println(f"k-0xCAFE003 k-0xaabbcc");
-
-    // println("========= Without original");
-    // println(f"k-0xff00ff");
-    
     // for bb in b.pieces {
     //     let d = bb.data;
     //     println(f"k{d}");
@@ -162,9 +123,77 @@ fn check_bb_from_fen(board: Board, check_bbs: [u64; 8]) {
     }
 }
 
+// fn print_berlefn_error<T, N>(input: fmtstr<T, N>) {
+fn print_berlefn_error<T, N>(ass: str<N>, assert_val: u8, parsed_val: u8) {
+    println(f"t-0x00 Test asserted {ass} value '{assert_val}' does not match parsed '{parsed_val}'");
+}
+
+fn check_move_from_berlefn(
+    move: Move,
+    check_from_piece: u8,
+    check_from_square: u8,
+    check_to_square: u8,
+    check_capture: bool,
+    check_promotion_piece: u8 
+) {
+    // TODO: Assert instead when that stops swallowing println.
+
+    // Needs to be done this (verbose) way because format strings will have
+    //   different lengths, try array of tuples or whatever later.
+    if move.from_piece == check_from_piece {
+        println(f"t-0x01");
+    } else {
+        print_berlefn_error("from_piece", check_from_piece, move.from_piece);
+    }
+
+    if move.from_square == check_from_square {
+        println(f"t-0x01");
+    } else {
+        print_berlefn_error("trom_square", check_from_square, move.from_square);
+    }
+
+    if move.to_square == check_to_square {
+        println(f"t-0x01");
+    } else {
+        print_berlefn_error("to_square", check_to_square, move.to_square);
+    }
+    
+    if move.capture == check_capture {
+        println(f"t-0x01");
+    } else {
+        print_berlefn_error("capture", check_capture as u8, move.capture as u8);
+    }
+
+    if move.promotion_piece == check_promotion_piece {
+        println(f"t-0x01");
+    } else {
+        print_berlefn_error("promotion_piece", check_promotion_piece, move.promotion_piece);
+    }
+}
+
 
 // TODO: Simple higher order function which takes a lambda to run stuff
 //       and wraps that lambda in `println(f"t-0x69"); lambda; assert(true);`
+
+#[test]
+fn test_parse_berlefn() {
+    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // Black pawn double-push from idx 11 (d7) to idx 27 (d5).
+    check_move_from_berlefn(
+        stb_parse_berlefn("2 ; K - -"),
+        2,
+        11,
+        27,
+        false, // Stubbed until implemented (TODO in parser).
+        999 // Stubbed until impemented (TODO in parser).
+    );
+
+    // XXX: Not necessarily the case.
+    // TODO: Add failure output and detection (to say failed test suite overall)
+    //       in the conversions script.
+    assert(true);
+}
 
 
 #[test]
@@ -174,7 +203,6 @@ fn test_parse_fen() {
     // TODO: On turn 1 hardcode valid starting position bitboard serialisation
     //       state (because we're not a generic engine).
 
-    
     // Minimum valid starting board.
     check_bb_from_fen(
         stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"),
@@ -190,7 +218,7 @@ fn test_parse_fen() {
         ]
     );
 
-    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
 
     // Removing pawns should remove them as-by BERLEF indexing. So, here on the
     //   second rank first 3 pawns should be missing with the bitboard for
@@ -210,7 +238,7 @@ fn test_parse_fen() {
         ]
     );
 
-    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
 
     // Proper starting board.
     check_bb_from_fen(
@@ -227,22 +255,17 @@ fn test_parse_fen() {
         ]
     );
 
-//     And after the move 1. e4:
+    // And after the move 1. e4:
+    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
 
-// rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
+    // And then after 1. ... c5:
+    // rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2
 
-// And then after 1. ... c5:
-
-// rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2
-
-// And then after 2. Nf3:
-
-// rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
+    // And then after 2. Nf3:
+    // rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
 
     // Various FEN strings taken from: https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
-    // 4k3/8/8/8/8/8/4P3/4K3 w - - 5 39
-    
-    
+    // 4k3/8/8/8/8/8/4P3/4K3 w - - 5 39 
 
     // XXX: Not necessarily the case.
     // TODO: Add failure output and detection (to say failed test suite overall)
@@ -251,6 +274,12 @@ fn test_parse_fen() {
 }
 
 
+// Circuit should take input as current board (which both players accept as correct) and 
+//   a private witness move. The resulting circuit output is the new FEN board state
+//   and the private witness move which, if doing a move in fog, is blinded by a
+//   Pedersen hash state-commitment; else the private witness move is made public as
+//   it does not contain sensitive information.
+// Example: Input `FEN ; SAN` ... Output `NEW_FEN ; [ SAN_BLINDED | SAN ]`
 fn assert_valid_move(before_board: [u32; 4], after_board: [u32; 4], move: u32) {
     // Hardcoded +1 value, i.e. a "move" here is adding 1 and only 1 to some number
     //   in the board, adding nothing or adding 2 or -1 etc is invalid!
