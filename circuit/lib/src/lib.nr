@@ -4,14 +4,136 @@ use dep::std::option::Option;
 
 type Char = u8;
 
-use dep::fen::parser::parse_fen;
-use dep::fen::types as Tipe;
-use dep::fen::types::REQUIRED_LENGTH;
+// use dep::io::berlefn::parse_berlefn;
 
-use dep::io::berlefn::parse_berlefn;
-
-use dep::state::move::Move;
+// use dep::state::move::Move;
 use dep::state::board::Board;
+
+
+#[test]
+fn test_valid_input_gamestate() {
+    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // TODO: On turn 1 hardcode valid starting position bitboard serialisation
+    //       state (because we're not a generic engine).
+
+    // Minimum valid starting board.
+    //   * FEN: `4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1`
+    // let b1 = Board::from_serial([
+    //     0xff10,
+    //     0x10ff000000000000,
+    //     0x00ff00000000ff00,
+    //     0x00,
+    //     0x00,
+    //     0x00,
+    //     0x00,
+    //     0x1000000000000010,
+    //     0x0,
+    //     0x0000,
+    //     0x0,
+    //     0x0,
+    //     0x1
+    // ]);
+
+    // Proper starting board.
+    //   * FEN: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`
+    let b2 = Board::from_serial(
+        [
+            0xffff, // White board
+            0xffff000000000000, // Black board
+            0x00ff00000000ff00, // Pawns
+            0x4200000000000042, // Knights
+            0x2400000000000024, // Bishops
+            0x8100000000000081, // Rooks
+            0x0800000000000008, // Queens
+            0x1000000000000010 // Kings
+        ],
+        0, // Current army's turn (Board::Piece enum index 0 = white, 1 = black)
+        0x1111, // Bitmask castle rights K Q k q, 1 = can, 0 = cannot
+        0, // En-passant target square index (LERLEF index, 6-bits),
+        0, // Halfmove count
+        1 // Fullmove count
+    );
+
+    // TODO: Can board validation come from previous proof?
+    // TODO: Within `Board` is has validated that board state
+    //       is not illegal, now we can apply a maybe illegal
+    //       move. If illegal then fail an assert.
+
+    // Legal move (white's turn, as b2 specifies current army's turn).
+    b2.apply_move(
+        3, // knight (piece ID of 3)
+        6, // g1
+        21, // f3
+        0, // no capture
+        0 // no promotion
+    );
+
+        // 0x200000, // f3
+    // Illegal move.
+    // 0x800, // d2
+
+    // A move encoded as array of 5 required fields:
+        // Piece ID: 3-bits,          (Board::Piece enum)
+        // From square: 64-bits,      (LERLEF)
+        // To square: 64-bits,        (LERLEF)
+        // Capture: 1-bit,            (0 false, 1 true)
+        // Promotion piece: 3-bits,   (Board::Piece enum)
+    
+
+    // let xyz = Board::new();
+
+    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+
+    // Removing pawns should remove them as-by BERLEF indexing. So, here on the
+    //   second rank first 3 pawns should be missing with the bitboard for
+    //   those pawns missing the BERLEF-indexed 1s. The 7th rank is also
+    //   altered, and so should miss the last 4 BERLEF-indexed 1s.
+    // check_bb_from_fen(
+    //     stb_parse_fen("4k3/3ppppp/8/8/8/8/PPPP4/4K3 w - - 0 1"),
+    //     [
+    //         0xf008,
+    //         0x081f000000000000,
+    //         0x001f00000000f000,
+    //         0x00,
+    //         0x00,
+    //         0x00,
+    //         0x00,
+    //         0x0800000000000008
+    //     ]
+    // );
+
+    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
+    // And after the move 1. e4:
+    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
+
+    // And then after 1. ... c5:
+    // rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2
+
+    // And then after 2. Nf3:
+    // rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
+
+    // Various FEN strings taken from: https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
+    // 4k3/8/8/8/8/8/4P3/4K3 w - - 5 39 
+
+    // XXX: Not necessarily the case.
+    // TODO: Add failure output and detection (to say failed test suite overall)
+    //       in the conversions script.
+    assert(true);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // TODO: Does the compiler remove println statements when compiled properly or
 //       do they remain? If the latter pipe through awk to remove lines with
@@ -43,22 +165,6 @@ use dep::state::board::Board;
 
 // -------------------
 
-// #[test]
-// fn test_of_pieces() {
-//     // let t_1 = of_pieces(Tipe::CORPUS.pawn, Tipe::CORPUS.w_pawn);
-//     // // assert(t_1.unwrap().0 == 0);
-//     // assert_eq(t_1.unwrap().0, 1);
-
-//     // let t_2 = of_pieces(Tipe::CORPUS.pawn, 0x00);
-//     // // assert(t_2.is_some(), "NUL byte is not a valid FEN piece character");
-//     // assert(t_2.is_some() == true);
-
-//     // if t_1.is_some() {
-//     //     let (plyr_idx, the_p): (u8, u8) = t_1.unwrap();
-//     //     assert(plyr_idx == 0);
-//     // }
-// }
-
 // Lazy helper for tests to avoid typing `as_bytes()` everywhere. Hopefully
 //   this is recognised by Nargo as unused in non-test code and erased from
 //   compiled ACIR (TODO: Check that) but this is tiny and a one-off in the
@@ -75,28 +181,20 @@ use dep::state::board::Board;
 //     dump_board(board); // TODO: Uncomment later.
 // }
 
-fn stb_parse_fen<T, N>(input: str<N>) -> Board {
-    parse_fen(input.as_bytes())
-}
-
-fn stb_parse_berlefn<T, N>(input: str<N>) -> Move {
-    parse_berlefn(input.as_bytes())
-}
-
 // Test helper to dump board state as bitfields which can be trivially
 //   serialised by a simple web frontend to visually show board state. This
 //   is being done instead of printing to stdout as with many tests such a
 //   long output will be tedious to explore.
 // This isn't on the Board struct since it's a _test_ helper not an
 //   implementation detail.
-fn dump_board(b: Board) -> () {
-    let _ = b; // To temp silence unused var message.
-    println(f"dump board called\n");
-    // for bb in b.pieces {
-    //     let d = bb.data;
-    //     println(f"k{d}");
-    // };
-}
+// fn dump_board(b: Board) -> () {
+//     let _ = b; // To temp silence unused var message.
+//     println(f"dump board called\n");
+//     // for bb in b.pieces {
+//     //     let d = bb.data;
+//     //     println(f"k{d}");
+//     // };
+// }
 
 
 // XXX: Test-helper only.
@@ -104,174 +202,29 @@ fn dump_board(b: Board) -> () {
 //       does not print if an assertion fails and also assertions do not
 //       display the actual values, only that it failed (arguably useless)
 //       so this convoluted workaround is employed.
-fn check_bb_from_fen(board: Board, check_bbs: [u64; 8]) {
-    let mut idx = 0;
+// fn check_bb_from_fen(board: Board, check_bbs: [u64; 8]) {
+//     let mut idx = 0;
 
-    for bb in board.pieces {
-        // FIXME: No expressions in template strings so pollution with temp
-        //        values is required.
-        let bb_data = bb.data;
-        let check_bb = check_bbs[idx];
+//     for bb in board.pieces {
+//         // FIXME: No expressions in template strings so pollution with temp
+//         //        values is required.
+//         let bb_data = bb.data;
+//         let check_bb = check_bbs[idx];
 
-        if bb_data == check_bb {
-            println(f"t-0x01");
-        } else {
-            println(f"t-0x00 Expected equal values, '{bb_data}' == '{check_bb}' (given) bb index: u-{idx}");
-        }
+//         if bb_data == check_bb {
+//             println(f"t-0x01");
+//         } else {
+//             println(f"t-0x00 Expected equal values, '{bb_data}' == '{check_bb}' (given) bb index: u-{idx}");
+//         }
 
-        idx += 1;
-    }
-}
+//         idx += 1;
+//     }
+// }
 
-// fn print_berlefn_error<T, N>(input: fmtstr<T, N>) {
-fn print_berlefn_error<T, N>(ass: str<N>, assert_val: u8, parsed_val: u8) {
-    println(f"t-0x00 Test asserted {ass} value '{assert_val}' does not match parsed '{parsed_val}'");
-}
-
-fn check_move_from_berlefn(
-    move: Move,
-    check_from_piece: u8,
-    check_from_square: u8,
-    check_to_square: u8,
-    check_capture: bool,
-    check_promotion_piece: u8 
-) {
-    // TODO: Assert instead when that stops swallowing println.
-
-    // Needs to be done this (verbose) way because format strings will have
-    //   different lengths, try array of tuples or whatever later.
-    if move.from_piece == check_from_piece {
-        println(f"t-0x01");
-    } else {
-        print_berlefn_error("from_piece", check_from_piece, move.from_piece);
-    }
-
-    if move.from_square == check_from_square {
-        println(f"t-0x01");
-    } else {
-        print_berlefn_error("trom_square", check_from_square, move.from_square);
-    }
-
-    if move.to_square == check_to_square {
-        println(f"t-0x01");
-    } else {
-        print_berlefn_error("to_square", check_to_square, move.to_square);
-    }
-    
-    if move.capture == check_capture {
-        println(f"t-0x01");
-    } else {
-        print_berlefn_error("capture", check_capture as u8, move.capture as u8);
-    }
-
-    if move.promotion_piece == check_promotion_piece {
-        println(f"t-0x01");
-    } else {
-        print_berlefn_error("promotion_piece", check_promotion_piece, move.promotion_piece);
-    }
-}
 
 
 // TODO: Simple higher order function which takes a lambda to run stuff
 //       and wraps that lambda in `println(f"t-0x69"); lambda; assert(true);`
-
-#[test]
-fn test_parse_berlefn() {
-    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
-
-    // Black pawn double-push from idx 11 (d7) to idx 27 (d5).
-    check_move_from_berlefn(
-        stb_parse_berlefn("2 ; K - -"),
-        2,
-        11,
-        27,
-        false, // Stubbed until implemented (TODO in parser).
-        999 // Stubbed until impemented (TODO in parser).
-    );
-
-    // XXX: Not necessarily the case.
-    // TODO: Add failure output and detection (to say failed test suite overall)
-    //       in the conversions script.
-    assert(true);
-}
-
-
-#[test]
-fn test_parse_fen() {
-    println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
-
-    // TODO: On turn 1 hardcode valid starting position bitboard serialisation
-    //       state (because we're not a generic engine).
-
-    // Minimum valid starting board.
-    check_bb_from_fen(
-        stb_parse_fen("4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1"),
-        [
-            0xff08,
-            0x08ff000000000000,
-            0x00ff00000000ff00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x0800000000000008
-        ]
-    );
-
-    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
-
-    // Removing pawns should remove them as-by BERLEF indexing. So, here on the
-    //   second rank first 3 pawns should be missing with the bitboard for
-    //   those pawns missing the BERLEF-indexed 1s. The 7th rank is also
-    //   altered, and so should miss the last 4 BERLEF-indexed 1s.
-    check_bb_from_fen(
-        stb_parse_fen("4k3/3ppppp/8/8/8/8/PPPP4/4K3 w - - 0 1"),
-        [
-            0xf008,
-            0x081f000000000000,
-            0x001f00000000f000,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x0800000000000008
-        ]
-    );
-
-    // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
-
-    // Proper starting board.
-    check_bb_from_fen(
-        stb_parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-        [
-            0xffff,
-            0xffff000000000000,
-            0x00ff00000000ff00,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x1000000000000010,
-            0x0800000000000008
-        ]
-    );
-
-    // And after the move 1. e4:
-    // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1
-
-    // And then after 1. ... c5:
-    // rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2
-
-    // And then after 2. Nf3:
-    // rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2
-
-    // Various FEN strings taken from: https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
-    // 4k3/8/8/8/8/8/4P3/4K3 w - - 5 39 
-
-    // XXX: Not necessarily the case.
-    // TODO: Add failure output and detection (to say failed test suite overall)
-    //       in the conversions script.
-    assert(true);
-}
 
 
 // Circuit should take input as current board (which both players accept as correct) and 
@@ -280,19 +233,19 @@ fn test_parse_fen() {
 //   Pedersen hash state-commitment; else the private witness move is made public as
 //   it does not contain sensitive information.
 // Example: Input `FEN ; SAN` ... Output `NEW_FEN ; [ SAN_BLINDED | SAN ]`
-fn assert_valid_move(before_board: [u32; 4], after_board: [u32; 4], move: u32) {
-    // Hardcoded +1 value, i.e. a "move" here is adding 1 and only 1 to some number
-    //   in the board, adding nothing or adding 2 or -1 etc is invalid!
+// fn assert_valid_move(before_board: [u32; 4], after_board: [u32; 4], move: u32) {
+//     // Hardcoded +1 value, i.e. a "move" here is adding 1 and only 1 to some number
+//     //   in the board, adding nothing or adding 2 or -1 etc is invalid!
 
-    // TODO: Check `move` can index before and after board
+//     // TODO: Check `move` can index before and after board
     
-    // let applied_board = {
-    //     before_board[move] += 1;
-    //     before_board
-    // };
+//     // let applied_board = {
+//     //     before_board[move] += 1;
+//     //     before_board
+//     // };
 
-    let mut applied_board = before_board;
-    applied_board[move] += 1;
+//     let mut applied_board = before_board;
+//     applied_board[move] += 1;
 
-    assert(applied_board == after_board);
-}
+//     assert(applied_board == after_board);
+// }
