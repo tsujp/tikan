@@ -1,14 +1,9 @@
 use dep::std::println;
-use dep::std::collections::vec::Vec;
-use dep::std::option::Option;
 
-type Char = u8;
-
-// use dep::io::berlefn::parse_berlefn;
-
-// use dep::state::move::Move;
 use dep::state::board::Board;
 
+// type Char = u8;
+// mod ns;
 
 #[test]
 fn test_valid_input_gamestate() {
@@ -61,7 +56,7 @@ fn test_valid_input_gamestate() {
     //       move. If illegal then fail an assert.
 
     // Legal move (white's turn, as b2 specifies current army's turn).
-    b2.apply_move(
+    let wat = b2.apply_move(
         3, // knight (piece ID of 3)
         6, // g1
         21, // f3
@@ -69,7 +64,7 @@ fn test_valid_input_gamestate() {
         0 // no promotion
     );
 
-        // 0x200000, // f3
+    // 0x200000, // f3
     // Illegal move.
     // 0x800, // d2
 
@@ -249,3 +244,4 @@ fn test_valid_input_gamestate() {
 
 //     assert(applied_board == after_board);
 // }
+

@@ -5,5 +5,4 @@ compiler_version = '0.16.0'
 type = 'lib'
 
 [dependencies]
-# fen = { path = 'fen' }
-# state = { path = 'state' }
+util = { path = '../util' }

@@ -5,10 +5,10 @@ compiler_version = '0.16.0'
 type = 'lib'
 
 [workspace]
-members = ['state', 'io']
+members = ['state', 'util']
 # With no `default-members` key specified the workspace includes all `members`
 #   by default. Great success!
 
 [dependencies]
 state = { path = 'state' }
-io = { path = 'io' }
+util = { path = 'util' }

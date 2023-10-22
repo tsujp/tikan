@@ -1,3 +1,3 @@
-mod bitboard;
+mod types;
 mod board;
 mod move;

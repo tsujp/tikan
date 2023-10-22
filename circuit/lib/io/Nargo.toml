@@ -1,8 +1,0 @@
-[package]
-name = 'tikan_lib_parsers'
-authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"]
-compiler_version = '0.16.0'
-type = 'lib'
-
-[dependencies]
-state = { path = '../state' }
