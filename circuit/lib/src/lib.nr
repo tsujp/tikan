@@ -1,9 +1,8 @@
 use dep::std::println;
 
 use dep::state::board::Board;
-
-// type Char = u8;
-// mod ns;
+use dep::state::move::Move;
+use dep::state::types::Piece;
 
 #[test]
 fn test_valid_input_gamestate() {
@@ -12,17 +11,21 @@ fn test_valid_input_gamestate() {
     // TODO: On turn 1 hardcode valid starting position bitboard serialisation
     //       state (because we're not a generic engine).
 
+    // TODO: In future any overflow input will be checked when used in-code,
+    //       until then we do nothing since when used externally input is
+    //       checked as expected. Tracked via #3227.
+
     // Minimum valid starting board.
     //   * FEN: `4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1`
     // let b1 = Board::from_serial([
     //     0xff10,
     //     0x10ff000000000000,
-    //     0x00ff00000000ff00,
     //     0x00,
     //     0x00,
     //     0x00,
     //     0x00,
     //     0x1000000000000010,
+    //     0x00ff00000000ff00,
     //     0x0,
     //     0x0000,
     //     0x0,
@@ -32,23 +35,25 @@ fn test_valid_input_gamestate() {
 
     // Proper starting board.
     //   * FEN: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`
-    let b2 = Board::from_serial(
-        [
-            0xffff, // White board
+    let b2 = Board {
+        bbs: [
+            0xffff,             // White board
             0xffff000000000000, // Black board
-            0x00ff00000000ff00, // Pawns
             0x4200000000000042, // Knights
             0x2400000000000024, // Bishops
             0x8100000000000081, // Rooks
             0x0800000000000008, // Queens
-            0x1000000000000010 // Kings
+            0x1000000000000010, // Kings
+            0x00ff00000000ff00  // Pawns
         ],
-        0, // Current army's turn (Board::Piece enum index 0 = white, 1 = black)
-        0x1111, // Bitmask castle rights K Q k q, 1 = can, 0 = cannot
-        0, // En-passant target square index (LERLEF index, 6-bits),
-        0, // Halfmove count
-        1 // Fullmove count
-    );
+        army: 0,      // Current army's turn (Board::Piece enum index 0 = white, 1 = black)
+        castle_rights: 0x1111, // Bitmask castle rights K Q k q, 1 = can, 0 = cannot
+        en_passant: 0,      // En-passant target square index (LERLEF index, 6-bits),
+        halfmove: 0,      // Halfmove count
+        fullmove: 1       // Fullmove count
+    };
+
+    dump_gamestate(0x00, b2);
 
     // TODO: Can board validation come from previous proof?
     // TODO: Within `Board` is has validated that board state
@@ -56,13 +61,22 @@ fn test_valid_input_gamestate() {
     //       move. If illegal then fail an assert.
 
     // Legal move (white's turn, as b2 specifies current army's turn).
-    let wat = b2.apply_move(
-        3, // knight (piece ID of 3)
-        6, // g1
-        21, // f3
-        0, // no capture
-        0 // no promotion
+    let new_b2 = b2.apply(
+        Move {
+            piece: Piece::KNIGHT,
+            from: 6, // g1
+            to: 21, // f3
+            promotion_piece: 0 // No promotion (implicitly knight though).
+        }
     );
+
+    println(f"t-0x01");
+
+    dump_gamestate(0x01, new_b2);
+
+    dump_gamestate(0xFF, new_b2);
+
+
 
     // 0x200000, // f3
     // Illegal move.
@@ -114,7 +128,7 @@ fn test_valid_input_gamestate() {
     // XXX: Not necessarily the case.
     // TODO: Add failure output and detection (to say failed test suite overall)
     //       in the conversions script.
-    assert(true);
+    // assert(true);
 }
 
 
@@ -182,40 +196,24 @@ fn test_valid_input_gamestate() {
 //   long output will be tedious to explore.
 // This isn't on the Board struct since it's a _test_ helper not an
 //   implementation detail.
-// fn dump_board(b: Board) -> () {
-//     let _ = b; // To temp silence unused var message.
-//     println(f"dump board called\n");
-//     // for bb in b.pieces {
-//     //     let d = bb.data;
-//     //     println(f"k{d}");
-//     // };
-// }
+fn dump_gamestate(t: Field, b: Board) -> () {
+    let tag = 0xCAFE00 + t;
+    
+    let b0 = b.bbs[0];
+    let b1 = b.bbs[1];
+    let b2 = b.bbs[2];
+    let b3 = b.bbs[3];
+    let b4 = b.bbs[4];
+    let b5 = b.bbs[5];
+    let b6 = b.bbs[6];
+    let b7 = b.bbs[7];
 
+    // It needs to be on one line of output for our little helper script to nab.
+    println(f"k-{tag} k-{b0} k-{b1} k-{b2} k-{b3} k-{b4} k-{b5} k-{b6} k-{b7}");
 
-// XXX: Test-helper only.
-// TODO: Noir doesn't allow template strings in assertion messages and also
-//       does not print if an assertion fails and also assertions do not
-//       display the actual values, only that it failed (arguably useless)
-//       so this convoluted workaround is employed.
-// fn check_bb_from_fen(board: Board, check_bbs: [u64; 8]) {
-//     let mut idx = 0;
-
-//     for bb in board.pieces {
-//         // FIXME: No expressions in template strings so pollution with temp
-//         //        values is required.
-//         let bb_data = bb.data;
-//         let check_bb = check_bbs[idx];
-
-//         if bb_data == check_bb {
-//             println(f"t-0x01");
-//         } else {
-//             println(f"t-0x00 Expected equal values, '{bb_data}' == '{check_bb}' (given) bb index: u-{idx}");
-//         }
-
-//         idx += 1;
-//     }
-// }
-
+    // Plus horrible hack k-0x0 to prevent spamming bitboard server.
+    println(f"k-0x0");
+}
 
 
 // TODO: Simple higher order function which takes a lambda to run stuff

@@ -1,26 +1,23 @@
 use dep::std::println;
 
-use crate::types::{Bitboard, BitboardIndex};
+use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
-// use crate::move::all_knight_moves as knight_moves;
-use crate::move::{knight_moves};
+use crate::move::{Move, knight_moves};
 
+// TODO: Rename `Board` to `Game` or something.
 
-global REQUIRED_BITBOARDS: Field = 8;
-
-
-// 6x2 bitboard board storage, this is a poor man's enum to access said boards.
-// XXX: No unit structs or enums in Noir yet.
-mod BitboardType {
-    global WHITE: Field = 0;
-    global BLACK: Field = 1;
-    global PAWN: Field = 2;
-    global KNIGHT: Field = 3;
-    global BISHOP: Field = 4;
-    global ROOK: Field = 5;
-    global QUEEN: Field = 6;
-    global KING: Field = 7;
-}
+// // 6x2 bitboard board storage, this is a poor man's enum to access said boards.
+// // XXX: No unit structs or enums in Noir yet.
+// mod BitboardType {
+//     global WHITE: Field = 0;
+//     global BLACK: Field = 1;
+//     global PAWN: Field = 2;
+//     global KNIGHT: Field = 3;
+//     global BISHOP: Field = 4;
+//     global ROOK: Field = 5;
+//     global QUEEN: Field = 6;
+//     global KING: Field = 7;
+// }
 
 
 fn assert_piece(p: Field) -> u3 {
@@ -28,8 +25,8 @@ fn assert_piece(p: Field) -> u3 {
 
     assert(
         (p == p_cast as Field)
-            & (BitboardType::PAWN as u3 <= p_cast)
-            & (p_cast <= BitboardType::KING as u3),
+            & (BitboardOf::PAWN as u3 <= p_cast)
+            & (p_cast <= BitboardOf::KING as u3),
         "Given piece is NOT a pawn, knight, bishop, rook, queen, or king."
     );
 
@@ -55,6 +52,7 @@ fn is_bit_set(occupancy: Bitboard, idx: Bitboard) -> bool {
     ((occupancy >> idx) & 1) as bool
 }
 
+
 struct Board {
     // Square positions accessed in LERLEF order.
     bbs: [Bitboard; REQUIRED_BITBOARDS],
@@ -65,8 +63,51 @@ struct Board {
     fullmove: Field
 }
 
+global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
+  0xffff,
+  0xffff000000000000,
+  0x4200000000000042,
+  0x2400000000000024,
+  0x8100000000000081,
+  0x0800000000000008,
+  0x1000000000000010,
+  0x00ff00000000ff00
+];
+
+
+// TODO: What happens when a function is called with invalid input in a compiled circuit? So far I know that:
+//   (1) Currently when used within Noir (i.e. as an API)
+//       there is no type validation (GH #3227).
+//   (2) If used as circuit input via Prover.toml the type
+//       is validated and range-checked (unlike #3227).
+//   (3) Now what about a scenario similar to (2) but via
+//       bb.js? If I provide a >64-bit value will it error
+//       as in (2) or must I still do manual checks?
+// XXX: For now, assume that (3) functions like (2).
+
 
 impl Board {
+    pub fn validate(self) {
+        // TODO: In future this validates state commitment also?
+        // TODO: Validate that masks match up. ACTUALLY we can verify the proof from the previous turn since we will hardcode the starting bitboard everything stems from (so long as our hardcoded bb is valid ;) )
+
+        // TODO: Could accept any bbs input if first turn and generate a new `Game` struct with correct starting bb, investigate later.
+        // First player-turn of the game.
+        if ((self.fullmove == 1) & (self.army == Player::WHITE)) {
+            // self.halfmove = 10;
+            // // Check starting board is valid.
+            // for i in 0 .. REQUIRED_BITBOARDS {
+            //     assert(
+            //         self.bbs[i] == STARTING_BITBOARDS[i],
+            //         "Board pieces are "
+            //     );
+            // }
+            
+            println("first turn of game");
+        }
+        println("board validate called");
+    }
+
     // TODO: This is probably wasteful but until #3227 is fixed the public input
     //       `from_serial` needs to do the assertions and we don't want to
     //       loop the bbs twice.
@@ -88,40 +129,116 @@ impl Board {
     //     }
     // }
     
-    pub fn from_serial(
-        bbs: [Field; REQUIRED_BITBOARDS],
-        // __turn: Field,
-        turn: Field,
-        // __castle_rights: Field,
-        castle_rights: u4,
-        // __en_passant: Field,
-        en_passant: BitboardIndex,
-        halfmove: Field,
-        fullmove: Field
-    ) -> Self {
-        // Cannot cast arrays as a whole, must do so per array element in a for
-        //   loop as casting in map is also not viable.
-        let mut __bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
+    // XXX: This isn't actually needed? When providing input to the circuit actual range checking is done this is only required (until #3227 is fixed?) for API usage?
+    // pub fn from_serial(
+    //     bbs: [Field; REQUIRED_BITBOARDS],
+    //     // __turn: Field,
+    //     turn: Field,
+    //     // __castle_rights: Field,
+    //     castle_rights: u4,
+    //     // __en_passant: Field,
+    //     en_passant: BitboardIndex,
+    //     halfmove: Field,
+    //     fullmove: Field
+    // ) -> Self {
+    //     // Cannot cast arrays as a whole, must do so per array element in a for
+    //     //   loop as casting in map is also not viable.
+    //     let mut __bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
 
+    //     for i in 0 .. REQUIRED_BITBOARDS {
+    //         let bb64 = assert_u64(bbs[i]);
+    //         __bbs[i] = bb64;
+    //     }
+
+    //     // TODO: Assert valid bitboard state.
+
+    //     Self {
+    //         bbs: __bbs,
+    //         // turn: __turn as u1,
+    //         army: assert_u1(turn),
+    //         // castle_rights: __castle_rights as u4,
+    //         castle_rights: castle_rights,
+    //         // en_passant: __en_passant as Bitboard,
+    //         en_passant: en_passant,
+    //         halfmove: halfmove,
+    //         fullmove: fullmove
+    //     }
+    // }
+
+
+
+
+
+    pub fn apply(self, move: Move) -> Board {
+        let army = self.army;
+        let from_idx = move.from as Bitboard;
+        let to_idx = move.to as Bitboard;
+        let piece = move.piece + 2;
+
+        assert(
+            is_bit_set(
+               self.bbs[army] & self.bbs[piece],
+               from_idx
+            ),
+           "Given army does NOT have a piece at expected LERLEF index."
+        );
+
+        let from_bb = 0 as Bitboard | 1 << from_idx;
+        let moves = knight_moves(from_bb, self.bbs[army]);
+
+        assert(
+            is_bit_set(moves, to_idx),
+            "Given move is INVALID; either improper move pattern or square is already occupied by a piece in the same team."
+        );
+
+        let to_bb = 0 as Bitboard | 1 << to_idx;
+
+        let update_piece_mask = from_bb ^ to_bb;
+        let update_piece_bb = self.bbs[piece] ^ update_piece_mask;
+        let update_army_bb = self.bbs[army] ^ update_piece_mask;
+
+        // This causes a panic.
+        // The application panicked (crashed).
+        // Message:  internal error: entered unreachable code: Cannot flatten a dynamic array
+        // Location: compiler/noirc_evaluator/src/ssa/acir_gen/acir_ir/acir_variable.rs:845
+            // let mut bbs = self.bbs;
+
+            // bbs[piece] ^= update_piece_mask;
+            // bbs[army] ^= update_piece_mask;
+        // End panic.
+
+        // let mut new_bbs = self.bbs;
+        // new_bbs[piece] ^= update_piece_mask;
+        // new_bbs[army] ^= update_piece_mask;
+
+        // Workaround for the panic.
+        let mut new_bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
         for i in 0 .. REQUIRED_BITBOARDS {
-            let bb64 = assert_u64(bbs[i]);
-            __bbs[i] = bb64;
+            if ((i as u3 == piece) | (i as u3 == army as u3)) {
+                new_bbs[i] = self.bbs[i] ^ update_piece_mask;
+            } else {
+                new_bbs[i] = self.bbs[i];
+            }
         }
 
-        // TODO: Assert valid bitboard state.
+        let mut new_board = Board {
+            bbs: new_bbs,
+            army: !army,
+            castle_rights: self.castle_rights,
+            en_passant: self.en_passant,
+            halfmove: self.halfmove,
+            fullmove: self.fullmove
+        };
 
-        Self {
-            bbs: __bbs,
-            // turn: __turn as u1,
-            army: assert_u1(turn),
-            // castle_rights: __castle_rights as u4,
-            castle_rights: castle_rights,
-            // en_passant: __en_passant as Bitboard,
-            en_passant: en_passant,
-            halfmove: halfmove,
-            fullmove: fullmove
-        }
+        new_board
     }
+
+
+
+
+
+
+    
 
     // Validates input move data _structure_ and then tries to apply the move to
     //   the current gamestate which may fail if the move is illegal.

@@ -1,6 +1,54 @@
-// 64 bits used for the 64 squares in a chess board. Strictly
-//   speaking this is a _bitFIELD_ but _bitBOARD_ better
-//   describes how we use the bitfield and is the nomenclature
-//   in Chess software.
 type Bitboard = u64;
 type BitboardIndex = u6; // 6-bits required to index 64-bit bitboard.
+
+global REQUIRED_BITBOARDS: Field = 8;
+
+// 6x2 bitboard board storage.
+
+// XXX: No unit structs or enums in Noir yet. Here and elsewhere this is a poor
+//   man's enum.
+mod BitboardOf {
+    // XXX: MUST appear in same order as mod Player.
+    global WHITE: u3 = 0;
+    global BLACK: u3 = 1;
+    // XXX: MUST appear in same order as mod Piece.
+    global KNIGHT: u3 = 2;
+    global BISHOP: u3 = 3;
+    global ROOK: u3 = 4;
+    global QUEEN: u3 = 5;
+    global KING: u3 = 6;
+    global PAWN: u3 = 7;
+}
+
+mod Player {
+    global WHITE: u1 = 0;
+    global BLACK: u1 = 1;
+}
+
+// XXX: Laid out this way (pawn last with king) as when promoting a pawn you
+//   cannot promote to another pawn or a king leaving 4 possible pieces which
+//   can be described with 2-bits and those selfsame pieces are in that range.
+mod Piece {
+    global KNIGHT: u3 = 0;
+    global BISHOP: u3 = 1;
+    global ROOK: u3 = 2;
+    global QUEEN: u3 = 3;
+    global KING: u3 = 4;
+    global PAWN: u3 = 5;
+}
+
+// mod BitboardType {
+//     global WHITE: Field = 0;
+//     global BLACK: Field = 1;
+//     global PAWN: Field = 2;
+//     global KNIGHT: Field = 3;
+//     global BISHOP: Field = 4;
+//     global ROOK: Field = 5;
+//     global QUEEN: Field = 6;
+//     global KING: Field = 7;
+// }
+
+// TODO: When traits are no longer experimental have `validate` done that way.
+// trait Validateable {
+//     fn validate(slf: Self);
+// }
