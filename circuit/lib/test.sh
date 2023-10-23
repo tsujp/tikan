@@ -68,6 +68,14 @@ declare -Ar _test=(
 )
 
 
+declare -ar convs=(
+  '_unsigned'
+  '_char'
+  '_bitfield'
+  '_test'
+)
+
+
 declare -gi contiguous_passes=0
 annotate_tests ()
 {
@@ -94,35 +102,45 @@ annotate_tests ()
 }
 
 
-write_bitfield_data ()
-{
-  # TODO: Relative to the current _script_ location.
-  mkdir -p test_data
-  printf '%s\n' "$1" >> "test_data/${datetime}.data"
-}
+# write_gamestate_data ()
+# {
+#   # TODO: Relative to the current _script_ location.
+#   # printf '>>%s :: %d\n<<' "$1" "$2"
+#   curl -X POST -F "${2}=${1}" http://localhost:3069/data
+#   # mkdir -p test_data
+#   # printf '%s\n' "$1" >> "test_data/${datetime}.data"
+# }
 
 
+declare -a gamestate_data=()
 bitfield_frontend_debug ()
 {
   # Shellcheck intentionally does not consider indirect references as used.
   # shellcheck disable=SC2034
   declare -n conv="$1"
 
-  # printf 'received: >%s< >%s<\n' "$conv" "$2"
+  printf 'hi %s\n' "$conv"
 
-  # Start of a new line of conversions.
+  # Start of a new line of conversions (i.e. "if a new line...")
   if (( $2 == 1 )); then
-    unset test_tag
-    declare test_tag="${conv#0x}"
-    # printf '\n' >> "$test_{datetime}.data"# Blank line delimits each board in our simple format.
-    # printf '%s\n' "$test_tag"
-    write_bitfield_data
-    write_bitfield_data "$test_tag"
-    # printf '%s\n' "$test_tag"
-    # printf -v foo_bar '{"%s": [{\n' "$test_tag"
+    # printf 'send it off: >%s<\n' "${gamestate_data[@]@K}" # Kinda cool but satanic.
+
+    if [[ "${#gamestate_data[@]}" -gt 1 ]]; then
+      # unset gamestate_data[-1]
+      str_tag="${gamestate_data[0]}"
+      # str_data_spaced="${gamestate_data[@]}"
+      str_data_spaced="${gamestate_data[@]:1}"
+      # printf '>%s<\n' "$str_data_spaced"
+      curl -X POST \
+        -F "run_id=${datetime}" \
+        -F "tag=${str_tag}" \
+        -F "bbs=${str_data_spaced}" \
+        'http://localhost:3069/data'
+    fi
+    gamestate_data=()
+    gamestate_data+=("$conv")
   else
-    write_bitfield_data "$conv"
-    # printf '%s\n' "$conv"
+    gamestate_data+=("$conv")
   fi
  
   # Effectively swallows input by unsetting it (the referenced variable).
@@ -130,12 +148,6 @@ bitfield_frontend_debug ()
 }
 
 
-declare -ar convs=(
-  '_unsigned'
-  '_char'
-  '_bitfield'
-  '_test'
-)
 
 
 # Mapfile callback function is eval'd (I believe) so it's context is the same
