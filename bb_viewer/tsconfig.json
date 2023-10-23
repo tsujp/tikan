@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "isolatedModules": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "target": "ESNext",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "noImplicitAny": true,
+    "plugins": [],
+    "lib": [
+      "ESNext",
+      "webworker",
+    ],
+    "types": [
+      "bun-types"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**"
+  ]
+}
+
+
+

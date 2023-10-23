@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<script type='text/javascript' src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+		<script type='text/javascript' src="https://unpkg.com/hyperscript.org@0.9.12/dist/eventsource.js"></script>
+		<meta charset="utf-8" />
+		<title>BB Viewer</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			http-equiv="cache-control"
+			content="no-cache, must-revalidate, post-check=0, pre-check=0"
+		/>
+		<meta http-equiv="cache-control" content="max-age=0" />
+		<meta http-equiv="expires" content="0" />
+		<meta http-equiv="pragma" content="no-cache" />
+	</head>
+	<body style="padding: 20px; font-family: sans-serif">
+		<style>
+		#bitboards {
+			font-family: monospace, monospace;
+		}
+
+		#bitboards > .run:first-child {
+			background: rgba(255, 0, 0, 0.15);
+		}
+
+		.run {
+			padding: 5px;
+			width: fit-content;
+		}
+
+		.run > .game:not(:last-child) {
+			margin-bottom: 5px;
+		}
+
+		.game {
+			display: grid;
+  		grid-template-columns: 25px 1fr;
+		  width: min-content;
+			background: #F5F5F5;
+			padding: 5px;
+		}
+
+		.tag {
+			writing-mode: sideways-lr;
+			text-align: end;
+			margin-left: 2px;
+			padding-top: 30px;
+		}
+
+		.data {
+			display: grid;
+  		grid-template-columns: repeat(8, 1fr);
+		}
+
+
+		.board {
+			display: flex;
+		  flex-direction: column;
+		  align-items: center;
+			padding: 0px 7px;
+		}
+
+		.board:first-child {
+			padding-left: 0px;
+		}
+
+		.board:right-child {
+			padding-right: 0px;
+		}
+
+		.board:nth-child(2n) {
+			background: white;
+		}
+
+		.title {
+			margin-top: 5px;
+			margin-bottom: 5px;
+		}
+
+		.title > span:first-child {
+			margin-right: 10px;
+		}
+
+		.bits {
+			padding: 3px;
+			display: grid;
+			width: fit-content;
+			grid-template-columns: repeat(8, 1fr);
+			grid-template-rows: repeat(8, 1fr);
+			grip-gap: 1px;
+			direction: rtl;
+		}
+
+		.bit {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 4px 5px 2px 5px;
+			outline: 1px solid #AAA;
+			position: relative;
+			z-index: 1;
+			background: white;
+		}
+
+		.bit > div:not(:first-child) {
+			color: #666;
+			font-size: 0.8em;
+		}
+
+		.one {
+			background: #DBDBDB;
+		}
+		</style>
+
+		<h2 style='margin-top: 0px;'>Bitboards</h1>
+		<div id='bitboards'></div>
+
+		<div class='runz' run-id='bingbong'></div>
+		<div class='run' run-id='nope'></div>
+		
+		<script type='text/hyperscript'>	
+			def newBbTable(payload)
+				set local BITBOARDS to [ 'White', 'Black', 'Knight', 'Bishop', 'Rook', 'Queen', 'King', 'Pawn' ]
+
+				set rid to 'r_' + payload.run_id
+
+				set run to <div.run[run-id=${rid}] />
+
+				if no run
+					make a <div.run /> called run
+					set run's @run-id to rid
+				end
+
+				// beep! run
+
+				// make a <div.game /> then set game to it
+				make a <div.game /> called game then put it at the end of run
+				make a <div.data /> then set data to it then put it at the end of game
+				make a <div.tag /> then put payload.tag into it's textContent then put it at the start of game
+
+				for bbHex in payload.bbs index i
+					make a <div.board /> then set board to it
+					make a <div.bits /> then set table to it
+					set bits to BigInt(bbHex).toString(2).padStart(64, '0')
+					// beep! bits
+
+					make a <p.title /> then set title to it
+					make a <span /> then put i into it's textContent then put it at the start of title
+					make a <span /> then put BITBOARDS[i] into it's textContent then put it at the end of title
+					put title at the start of board
+
+
+					for bit in bits index j
+						make a <div.bit /> then set cell to it
+						if bit == 1
+							add .one to cell
+						end
+						make a <div /> then put bit into it's textContent then put it at the end of cell
+						make a <div /> then put (63 - j) into it's textContent then put it at the end of cell
+						put cell at the end of table
+					end
+
+					put table at the end of board
+					put board at the end of data
+				end
+				
+				// return game
+				return run
+			end
+		</script>
+
+
+		<script type='text/hyperscript'>
+			eventsource gamestateDump from 'http://localhost:3069/sse'
+				on message as json
+					log it
+					-- New data placed at the top.
+					get the newBbTable(it) then put it at the start of #bitboards
+				end
+			end
+		</script>
+
+		<button _="
+			on click
+				call gimme_that_data()
+				get the newBbTable(it) then put it at the start of #bitboards
+			end
+		">Example BB</button>
+		
+		<script type='text/hyperscript'>		
+			js
+			// This can access our stub data, for hyperscript it would be out of scope.
+			function gimme_that_data() {
+				console.log(stub_data)
+				return stub_data
+			}
+			end
+		</script>
+
+		<script type='text/javascript'>
+			// Stub data for testing table creation.
+			const stub_data = {
+				run_id: '1698054163',
+				tag: '0xcafeff',
+				bbs: [
+			   '0x20ffbf',
+			   '0xffff000000200040',
+			   '0x4200000000200002',
+			   '0x2400000000200064',
+			   '0x81000000002000c1',
+			   '0x0800000000200048',
+			   '0x1000000000200050',
+			   '0xff00000020ff40',
+				]
+			}
+		</script>
+
+	</body>
+</html>
+
