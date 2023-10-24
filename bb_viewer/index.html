@@ -42,9 +42,8 @@
 		}
 
 		.tag {
-			writing-mode: sideways-lr;
-			text-align: end;
-			margin-left: 2px;
+			writing-mode: vertical-lr;
+  		text-orientation: upright;
 			padding-top: 30px;
 		}
 
@@ -57,7 +56,6 @@
 		.board {
 			display: flex;
 		  flex-direction: column;
-		  align-items: center;
 			padding: 0px 7px;
 		}
 
@@ -79,37 +77,79 @@
 		}
 
 		.title > span:first-child {
+			color: #AAA;
 			margin-right: 10px;
 		}
 
 		.bits {
-			padding: 3px;
+			padding: 1px;
 			display: grid;
 			width: fit-content;
 			grid-template-columns: repeat(8, 1fr);
 			grid-template-rows: repeat(8, 1fr);
-			grip-gap: 1px;
+			outline: 2px solid #DDD;
+			grid-gap: 1px;
 			direction: rtl;
 		}
 
 		.bit {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			padding: 4px 5px 2px 5px;
-			outline: 1px solid #AAA;
+			display: grid;
+			grid-template-areas:
+				"value index"
+				"value square";
+			padding: 1px 2px 1px 1px;
+			outline: 1px solid #DDD;
 			position: relative;
 			z-index: 1;
 			background: white;
+			direction: ltr;
 		}
 
-		.bit > div:not(:first-child) {
-			color: #666;
-			font-size: 0.8em;
+		.bit:hover {
+			z-index: 2;
+			outline: 1px solid red;
 		}
 
-		.one {
+		.bit:hover > .index,
+		.bit:hover > .square {
+			color: #000;
+		}
+
+		.set {
 			background: #DBDBDB;
+		}
+
+		.bit:not(.set) > .value {
+			color: #DDD;
+		}
+
+		.bit > div:not(.value) {
+			color: #777;
+			font-size: 0.5em;
+			font-weight: 600;
+		}
+
+		/* Satanic line-height CSS hacks to get dense display, do it properly later TODO */
+		.value {
+			grid-area: value;
+			place-self: center end;
+			line-height: 10px;
+			color: #222;
+		}
+
+		.index {
+			grid-area: index;
+			line-height: 8px;
+		}
+
+		.square {
+			grid-area: square;
+			line-height: 7px;
+		}
+
+		.hex {
+			font-size: 0.7rem;
+			margin: 5px 0px;
 		}
 		</style>
 
@@ -141,9 +181,12 @@
 
 				for bbHex in payload.bbs index i
 					make a <div.board /> then set board to it
+
 					make a <div.bits /> then set table to it
 					set bits to BigInt(bbHex).toString(2).padStart(64, '0')
 					// beep! bits
+
+					make a <p.hex /> called hex then put bbHex into it's textContent
 
 					make a <p.title /> then set title to it
 					make a <span /> then put i into it's textContent then put it at the start of title
@@ -152,16 +195,24 @@
 
 
 					for bit in bits index j
+						// set sqr to `${String.fromCharCode(104 - (j mod 8))}${8 - (j mod 8)}`
+						set sqr to `${String.fromCharCode(104 - (j mod 8))}${j}`
+						beep! sqr
+
 						make a <div.bit /> then set cell to it
+
 						if bit == 1
-							add .one to cell
+							add .set to cell
 						end
-						make a <div /> then put bit into it's textContent then put it at the end of cell
-						make a <div /> then put (63 - j) into it's textContent then put it at the end of cell
+
+						make a <div.value /> then put bit into it's textContent then put it at the end of cell
+						make a <div.index /> then put 63 - j into it's textContent then put it at the end of cell
+						make a <div.square /> then put sqr into it's textContent then put it at the end of cell
 						put cell at the end of table
 					end
 
 					put table at the end of board
+					put hex at the end of board
 					put board at the end of data
 				end
 				
