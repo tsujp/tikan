@@ -257,7 +257,8 @@ format_line ()
 #   the processing we're doing takes at least some time and will mess up the
 #   output order without this.
 printf 'RUN_ID: %s\n' "$datetime"
-nargo test --workspace --show-output 2>&1 |
+# nargo test --workspace --show-output 2>&1 |
+nargo test --show-output "$@" 2>&1 |
   while IFS= read -r ln; do
     format_line
   done
