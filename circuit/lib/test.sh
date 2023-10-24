@@ -119,15 +119,13 @@ bitfield_frontend_debug ()
   # shellcheck disable=SC2034
   declare -n conv="$1"
 
-  printf 'hi %s\n' "$conv"
-
   # Start of a new line of conversions (i.e. "if a new line...")
   if (( $2 == 1 )); then
     # printf 'send it off: >%s<\n' "${gamestate_data[@]@K}" # Kinda cool but satanic.
 
     if [[ "${#gamestate_data[@]}" -gt 1 ]]; then
       # unset gamestate_data[-1]
-      str_tag="${gamestate_data[0]}"
+      str_tag="${gamestate_data[0]:2}"
       # str_data_spaced="${gamestate_data[@]}"
       str_data_spaced="${gamestate_data[@]:1}"
       # printf '>%s<\n' "$str_data_spaced"
