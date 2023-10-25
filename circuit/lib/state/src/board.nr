@@ -2,7 +2,7 @@ use dep::std::println;
 
 use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
-use crate::move::{Move, knight_moves, pawn_moves};
+use crate::move::{Move, knight_moves};
 
 // TODO: Rename `Board` to `Game` or something.
 
@@ -238,13 +238,17 @@ impl Board {
         }
         // End ugly workaround.
 
+
+        // `fullmove` is incremented after black's turn.
+        let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
+
         let mut new_board = Board {
             bbs: new_bbs,
             army: !army,
             castle_rights: self.castle_rights,
             en_passant: en_passant,
             halfmove: self.halfmove,
-            fullmove: self.fullmove
+            fullmove: fullmove
         };
 
         new_board
