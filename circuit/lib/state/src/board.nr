@@ -1,5 +1,7 @@
 use dep::std::println;
 
+use dep::std::collections::vec::Vec;
+
 use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
 use crate::move::{Move, knight_moves};
@@ -74,7 +76,116 @@ global A_FILE: u64 = 0x0101010101010101;
 global NOT_A_FILE: u64 = 0xfefefefefefefefe;
 global NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
+
+// TODO: Put these elsewhere.
+fn ms1b(b: Bitboard) -> Bitboard {
+    // if (b == 0) {
+    //     0
+    // } else {
+        let mut idx = b;
+        idx |= idx >> 32;
+        idx |= idx >> 16;
+        idx |= idx >>  8;
+        idx |= idx >>  4;
+        idx |= idx >>  2;
+        idx |= idx >>  1;
+
+        (idx >> 1) + 1
+    // }
+}
+
+
+// Least significant 1-bit is intersection of non-empty bitboard with it's two's
+//   complement.
+fn ls1b(b: Bitboard) -> Bitboard {
+    b & -b
+}
+
+
+fn east_ray(about_idx: Bitboard) -> Bitboard {
+    2 * ((1 << (about_idx | 7)) - (1 << about_idx))
+}
+
+fn west_ray(about_idx: Bitboard) -> Bitboard {
+    (1 << about_idx) - (1 << (about_idx & 56))
+}
+
+
 impl Board {
+    fn orthogonal_moves(self, from_idx: Bitboard) -> (Bitboard, Bitboard) {
+        let from_bb = 1 as Bitboard << from_idx;
+
+        let rank_mask = (0xff as Bitboard) << (from_idx & 56);
+        let file_mask = A_FILE * (1 << (from_idx & 7));
+
+        let rank_occ = self.bbs[!self.army] & rank_mask;
+
+        //
+        // RANK MOVES.
+        // Ray masks EXCLUDE `from_bb`.
+        let e_ray = east_ray(from_idx);
+        let w_ray = west_ray(from_idx);
+
+        // West/East moves including closest captureable enemy piece, if any.
+        let east_possible = (rank_occ ^ (rank_occ - (2 * from_bb))) & rank_mask;
+        let west_possible = w_ray ^ (ms1b(w_ray & self.bbs[!self.army]) - 1) & rank_mask;
+
+        // Mask from end of rank up to (INCLUDING) square of closest friendly
+        //   piece east of current position.
+        let east_friendly_mask = !(ls1b(e_ray & self.bbs[self.army]) - 1) & rank_mask;
+
+        // Mask from rank start up to (EXCLUDING) square of closest friendly
+        //   piece west of current position.
+        let west_friendly_mask = (ms1b(w_ray & self.bbs[self.army]) - 1) & rank_mask;
+
+        // Final west/east moveset is the relative complement of the possible
+        //   moves and the closest friendly piece mask.
+        let east_moves = east_possible & !east_friendly_mask;
+        let west_moves = west_possible & !west_friendly_mask;
+
+        let rank_moves = west_moves | east_moves;
+        // END RANK MOVES.
+        //
+
+        //
+        // FILE MOVES.
+        // Ray masks EXCLUDE `from_bb`.
+        let n_ray = from_bb ^ -from_bb & file_mask;
+        let s_ray = from_bb - 1 & file_mask;
+
+        // North/South moves including closest captureable enemy piece, if any.
+        let north_possible = ls1b(n_ray & self.bbs[!self.army]);
+        let south_possible = ms1b(s_ray & self.bbs[!self.army]);
+
+        // let north_friendly_mask = 0;
+        
+        let vertical_possible = north_possible ^ (north_possible - (2 * south_possible));
+            // & file_mask
+            // | south_possible;
+        // END FILE MOVES.
+        //
+
+        // Working https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#Flip_about_the_Diagonal flip
+        let shifted_anti_diag = 0x02040810204081;
+        let col = file_mask & self.bbs[!self.army];
+        
+        let col_idx = (from_idx & 7);
+        let diff = 7 - col_idx;
+        let new_col = col << diff;
+
+        let garbage = shifted_anti_diag * new_col;
+        let good = garbage >> 56;
+
+
+        // Reverse a single 8-bit bitboard?
+
+        let reversed = (good * 0x0202020202 as Bitboard & 0x010884422010 as Bitboard) % 0x03ff;
+
+        (good, reversed)
+
+        // (rank_moves, file_moves)
+    }
+
     pub fn validate(self) {
         // TODO: In future this validates state commitment also?
         // TODO: Validate that masks match up. ACTUALLY we can verify the proof from the previous turn since we will hardcode the starting bitboard everything stems from (so long as our hardcoded bb is valid ;) )
@@ -183,6 +294,144 @@ impl Board {
                 let ep_bb = (ep >> 8) << dir;
                 special_bb = ep_bb;
             }
+        } else if move.piece == Piece::ROOK {
+            let mut moves = 0;
+
+            // FILE STUFF
+            // let a64 = army as Bitboard;
+
+            // let file = A_FILE * (1 << (from_idx & 7));
+            // let forward_fill = ((from_bb * A_FILE) ^ (a64 * file) & !(from_bb)) ^ from_bb;
+
+            // let enemies_in_column = self.bbs[!army] & forward_fill;
+            // let enemy_pawn = enemies_in_column & -enemies_in_column;
+            
+            // let ra = enemy_pawn ^ (enemy_pawn - (2 * from_bb));
+            // let ra2 = ra & forward_fill;
+
+            // println(f"k-0xFF k-{from_bb} k-{moves} k-{forward_fill} k-{enemy_pawn} k-{ra} k-{ra2} k-0x00 k-0x00");
+            // println(f"k-0x0");
+            // END FILE STUFF
+
+
+
+            // MORE FILE STUFF USEABLE
+            let us = self.bbs[army];
+            let them = self.bbs[!army];
+
+
+            // let a64 = army as Bitboard;
+            // let not_a64 = (!army) as Bitboard;
+
+            // let file = A_FILE * (1 << (from_idx & 7));
+            // let forward_fill = ((from_bb * A_FILE) ^ (a64 * file) & !(from_bb)) ^ from_bb;
+            // let asdf2 = ((from_bb * A_FILE) ^ (not_a64 * file) & !(from_bb)) ^ from_bb;
+
+            // // Set all 1s above s1b (s1b = "solo-1-bit", only bit set in board)
+            // let ff2 = from_bb ^ -from_bb;
+
+            // // Union that with file mask for current file to get north-fill
+            // let nf2 = ff2 & file;
+
+            // let below_s1b = !from_bb & (from_bb - 1);
+            // let sf2 = below_s1b & file;
+
+            // let enemies_in_column = self.bbs[!army] & forward_fill;
+            // let enemy_pawn = enemies_in_column & -enemies_in_column;
+            
+            // let ra = enemy_pawn ^ (enemy_pawn - (2 * from_bb));
+            // let ra2 = ra & forward_fill;
+
+            // // TODO: nicer way to do this?
+            // let occ_below_piece = sf2 & self.bbs[!army];
+            // let mut x = occ_below_piece;
+            // x |= x >> 32;
+            // x |= x >> 16;
+            // x |= x >>  8;
+            // x |= x >>  4;
+            // x |= x >>  2;
+            // x |= x >>  1;
+            // // let mut msb = (x >> 1) + 1;
+            // let mut msb = (x >> 1) + 1;
+
+            
+            // let ra4 = enemy_pawn ^ (enemy_pawn - (2 * msb));
+            // let ra5 = ra4 & forward_fill;
+            // END MORE FILE STUFF USEABLE
+
+
+            
+            // RANK MOVE
+            // let r1 = (0xff as Bitboard) << (from_idx & 56);
+            // let r1 = (0xff as Bitboard) << from_bb;
+            // let r1 = 1 << (from_idx & 56);
+            // let one = 1 as Bitboard;
+            // let r1 = 2*( (one << (from_idx|7)) - (one << from_idx) ); // East ray.
+            // let r1 = (one << from_idx) - (one << (from_idx&56)); // West ray.
+            // let r1 = (one << (from_idx&56)); // West ray.
+
+
+            // let ls1b = one << (from_idx | 7);
+            // let _f = 2 as Bitboard;
+            // let ls1b = one << (_f | 7);
+            // let ls1b = (_f | 7);
+
+            // let last_square_in_row = (_f | 7);
+
+            // let ls1b = last_square_in_row 
+            // let ls1b = (one << last_square_in_row) - (one << _f);
+            // let ls1b = 2 * ((one << last_square_in_row) - (one << _f));
+
+            // // rank mask
+            // let rank_mask = (0xff as Bitboard) << (from_idx & 56);
+            // let rank_occ = self.bbs[!army] & rank_mask;
+
+            // let below = from_bb - 1 & rank_mask;
+            // let above = below ^ rank_mask ^ from_bb;
+            // let above_occ = above & self.bbs[!army];
+
+            // let east_blocker = above_occ & -above_occ;
+
+            // let mut x = self.bbs[!army] & below;
+            // x |= x >> 32;
+            // x |= x >> 16;
+            // x |= x >>  8;
+            // x |= x >>  4;
+            // x |= x >>  2;
+            // x |= x >>  1;
+            // // let mut msb = (x >> 1) + 1;
+            // let mut west_blocker = (x >> 1) + 1;
+
+            // // let ls1b = 
+            
+
+            // // let moves = east_blocker - west_blocker;
+            // // let moves = west_blocker ^ (west_blocker - (2 * east_blocker));
+            // let moves = (((east_blocker ^ (east_blocker - (2 * west_blocker))) & rank_mask) | west_blocker) ^ from_bb;
+            // END RANK MOVE
+
+
+
+
+            // File
+            
+            // Rank
+            let (rank_moves, file_moves) = self.orthogonal_moves(from_idx);
+
+            let moves = rank_moves | file_moves;
+            
+            // println(f"k-0xFF k-{us} k-{them} k-{from_bb} k-{to_bb} k-{all_bits_below_occ} k-{ra2} k-{nf2} k-{sf2}");
+            // println(f"k-0xFF k-{them} k-{forward_fill} k-{ra} k-{occ_below_piece} k-{msb} k-{ra4} k-{ra5} k-0x00");
+            // println(f"k-0xFF k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00");
+            // println(f"k-0xFF k-{us} k-{them} k-{moves} k-{rank_occ} k-{west_blocker} k-{east_blocker} k-{below} k-{above}");
+            println(f"k-0xFF k-{us} k-{them} k-{moves} k-{rank_moves} k-{file_moves} k-0x00 k-0x00 k-0x00");
+            println(f"k-0x0");
+            
+
+            // assert(
+            //     is_bit_set(moves, to_idx),
+            //     "ROOK move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+            // );
         } else {
             assert(false, "INVALID piece provided");
         };
