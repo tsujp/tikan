@@ -1,6 +1,10 @@
 import chalk from 'chalk'
+import { type CircuitDefinition } from '../types'
 
 const roseChar = '-'
+const successNoStdout = `${chalk.gray('<')}${chalk.green('success')}${
+   chalk.gray('>')
+}`
 
 class NonZeroReturnError extends Error {
    constructor (message: string, cause: string) {
@@ -42,7 +46,7 @@ function logItemError (item: string, str: string) {
    )
 }
 
-function logCommand (
+export function logCommand (
    cmdDef: Parameters<typeof Bun.spawnSync>,
    item: string,
    errMsg: string,
@@ -56,7 +60,8 @@ function logCommand (
             new TextDecoder().decode(stderr).trim(),
          )
       } else {
-         logItem(item, new TextDecoder().decode(stdout).trim())
+         const cmdStdout = new TextDecoder().decode(stdout).trim()
+         logItem(item, cmdStdout.length === 0 ? successNoStdout : cmdStdout)
       }
    } catch (e: unknown) {
       // XXX: TypeScript has cursed exception type-narrowing in switch-case even
@@ -81,13 +86,17 @@ function logCommand (
 // Block while printing chosen Nargo information; this is extremely important
 //   being that Nargo comprises the system under test and having to guess
 //   what version (e.g. multiple installs) is being used sucks, so print it.
-export function checkTestEnvironment (wd: string) {
-   console.log(chalk.yellow(padCentre('Check test environment', roseChar)))
+export function checkTestEnvironment (wd: string, circuits: CircuitDefinition) {
+   console.log(
+      chalk.yellow(padCentre('Check test environment & build circuits', roseChar)),
+   )
 
    logItem('cwd', wd)
 
+   // ------------------------------ Actual checks like command availability.
+
    // This executes immediately and fills prechecks with true/false values.
-   const prechecks = [
+   const envChecks = [
       logCommand(
          [['command', '-v', 'nargo'], { cwd: wd }],
          'nargo executable',
@@ -100,13 +109,43 @@ export function checkTestEnvironment (wd: string) {
       ),
    ]
 
-   const precheckSuccess = prechecks.every((res) => res === true)
+   const envSuccess = envChecks.every((res) => res === true)
+
+   if (envSuccess === false) {
+      console.log(chalk.red('ENVIRONMENT CHECKS FAILED!'))
+   }
+
+   // ------------------------------ Compile circuits.
+
+   // TODO XXX
+   // For now we rebuild every time tests are run because `bun test` cannot
+   //   receive cli arguments? augment `runner.ts` to workaround this.
+   // Spoke to Jared on Bun's Discord and he confirmed `bun test` does not pass
+   //   arguments to test scripts but they may implement `--` to then allow
+   //   this. If I have time, and this isn't implemented by then, have a crack
+   //   at a PR for this.
+
+   const buildStub = ['nargo', 'compile', '--include-keys']
+
+   const circuitSuccess = Object.entries(circuits).every(([name, details]) => {
+      // Build circuit.
+      const build = logCommand(
+         [buildStub, { cwd: details.path }],
+         `circuit compile '${name}'`,
+         `COULD NOT COMPILE circuit '${name}' at ${details.path}`,
+      )
+      // Check we know path to compiled circuit (arguably pedantic since we
+      //   import it later but fine for now; also slow).
+      const artifact = logCommand(
+         [['test', '-f', details.circuit], { cwd: wd }],
+         `circuit artifacts for '${details.path}'`,
+         `circuit ARTIFACTS MISSING expected at '${details.circuit}'`,
+      )
+
+      return (build && artifact) === true
+   })
 
    console.log(chalk.yellow(roseChar.repeat(80)))
 
-   if (precheckSuccess === false) {
-      console.log(chalk.red('PRE-CHECKS FAILED!'))
-   }
-
-   return precheckSuccess
+   return envSuccess && circuitSuccess
 }
