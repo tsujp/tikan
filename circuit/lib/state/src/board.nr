@@ -110,9 +110,35 @@ fn west_ray(about_idx: Bitboard) -> Bitboard {
     (1 << about_idx) - (1 << (about_idx & 56))
 }
 
+fn reverse_u8(b: u8) -> u8 {
+    (((b as Bitboard) * 0x0202020202 as Bitboard & 0x010884422010 as Bitboard) % 0x03ff) as u8
+}
+
 
 impl Board {
-    fn orthogonal_moves(self, from_idx: Bitboard) -> (Bitboard, Bitboard) {
+    // Returns an array of struct members as Fields, for use in hashing
+    //   functions (e.g. Pedersen).
+    fn decompose(self) -> [Field; 13] {
+        [
+            self.bbs[0] as Field,
+            self.bbs[1] as Field,
+            self.bbs[2] as Field,
+            self.bbs[3] as Field,
+            self.bbs[4] as Field,
+            self.bbs[5] as Field,
+            self.bbs[6] as Field,
+            self.bbs[7] as Field,
+            self.army as Field,
+            self.castle_rights as Field,
+            self.en_passant as Field,
+            self.halfmove,
+            self.fullmove
+        ]
+    }
+
+    // fn orthogonal_moves(self, from_idx: Bitboard) -> (Bitboard, Bitboard) {
+    fn orthogonal_moves(self, from_idx2: BitboardIndex) -> (Bitboard, Bitboard) {
+        let from_idx = from_idx2 as Bitboard;
         let from_bb = 1 as Bitboard << from_idx;
 
         let rank_mask = (0xff as Bitboard) << (from_idx & 56);
