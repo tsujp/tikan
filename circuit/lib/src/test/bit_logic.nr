@@ -32,8 +32,8 @@ fn test_anti_diagonal_masks <T, N>(mask_defs: [[Field; 2]; N]) {
         assert(expected == result);
 
         // DBG: Uncomment 2 lines, view in bb_viewer.
-        println(f"k-0xFF k-{about_idx} k-{result}");
-        println(f"k-0x0");
+        // println(f"k-0xFF k-{about_idx} k-{result}");
+        // println(f"k-0x0");
     }
 }
 

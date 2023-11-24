@@ -7,7 +7,7 @@ fn main(
     board: Board,
     move: Move,
     move_salt: Field
-) -> pub Field {    
+) -> pub Field {
     let board_hash = pedersen_commitment(board.decompose()).x;
     let move_hash = pedersen_commitment(move.decompose()).x;
 
@@ -19,16 +19,14 @@ fn main(
 #[test]
 fn example_move_commitment() {
     let w1 = Board {
-        bbs: [
-            0x080000f7ff,
+        bbs: [0x080000f7ff,
             0xffef001000000000,
             0x4200000000000042,
             0x2400000000000024,
             0x8100000000000081,
             0x0800000000000008,
             0x1000000000000010,
-            0xef00180000f700
-        ],
+            0xef00180000f700],
         army: 0,
         castle_rights: 15,
         en_passant: 44, // e6
@@ -37,12 +35,7 @@ fn example_move_commitment() {
     };
 
     // From white performs en passant capture ep1 w1
-    let move = Move {
-        piece: Piece::PAWN,
-        from: 35,
-        to: 44,
-        promotion_piece: 0
-    };
+    let move = Move { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
 
     let move_salt = 1337;
 
