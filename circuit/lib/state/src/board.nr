@@ -1,10 +1,12 @@
-use dep::std::println;
+use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 
 use dep::std::collections::vec::Vec;
 
 use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
 use crate::move::{Move, knight_moves};
+
+use dep::util::bit_logic as bl;
 
 // TODO: Rename `Board` to `Game` or something.
 
@@ -29,10 +31,6 @@ global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
   0x00ff00000000ff00
 ];
 
-// global WHITE_PAWN_RANK: Bitboard = 0xFF00;
-// global BLACK_PAWN_RANK: Bitboard = 0xFF000000000000;
-
-
 fn assert_piece(p: Field) -> u3 {
     let p_cast: u3 = p as u3;
 
@@ -46,23 +44,8 @@ fn assert_piece(p: Field) -> u3 {
     p_cast
 }
 
-
-// Checks that given occupancy has a bit of value 1 (set) at given LERLEF
-//   index. Occupancy is a bitboard mask.
-fn is_bit_set(occupancy: Bitboard, idx: Bitboard) -> bool {
-    ((occupancy >> idx) & 1) as bool
-}
-
-
-// TODO: What happens when a function is called with invalid input in a compiled circuit? So far I know that:
-//   (1) Currently when used within Noir (i.e. as an API)
-//       there is no type validation (GH #3227).
-//   (2) If used as circuit input via Prover.toml the type
-//       is validated and range-checked (unlike #3227).
-//   (3) Now what about a scenario similar to (2) but via
-//       bb.js? If I provide a >64-bit value will it error
-//       as in (2) or must I still do manual checks?
-// XXX: For now, assume that (3) functions like (2).
+// See https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#Flip_about_the_Diagonal
+global SHIFTED_ANTI_DIAGONAL: u64 = 0x02040810204081;
 
 global PAWN_START_RANKS: [Bitboard; 2] = [
     0xFF00,
@@ -76,42 +59,153 @@ global A_FILE: u64 = 0x0101010101010101;
 global NOT_A_FILE: u64 = 0xfefefefefefefefe;
 global NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
+// // Same as NOT_8_RANK & NOT_H_FILE;
+// global FILL_A1_G7_MASK: u64 = 0x7f7f7f7f7f7f7f;
 
-// TODO: Put these elsewhere.
-fn ms1b(b: Bitboard) -> Bitboard {
-    // if (b == 0) {
-    //     0
-    // } else {
-        let mut idx = b;
-        idx |= idx >> 32;
-        idx |= idx >> 16;
-        idx |= idx >>  8;
-        idx |= idx >>  4;
-        idx |= idx >>  2;
-        idx |= idx >>  1;
+// // Same as NOT_1_RANK & NOT_A_FILE;
+// global FILL_B2_H8_MASK: u64 = 0xfefefefefefefe00;
 
-        (idx >> 1) + 1
-    // }
+
+// Returns arguments for `valid_orthogonal_move` for the given file.
+// To get a file as a rank the board must be rotated 90 degrees clockwise.
+fn file_as_rank (
+    from_idx6: u6,
+    to_idx6: u6,
+    file_idx3: u3,
+    us: Bitboard,
+    them: Bitboard
+) -> (u6, u64, u64, u64, u64) {
+    let file_mask64 = A_FILE * (1 << file_idx3 as u64);
+    let file_shift64 = 7 - file_idx3;
+    
+    // Multiplying the H file by the shifted anti-diagonal bitboard moves the
+    //   H-file bits (in the same order in terms of bitwise significance) to
+    //   the 8th rank (north-edge of the board).
+    // Shifting the 8th rank 56 places to the right moves it to the 1st rank.
+    let us_bb8 = wrapping_mul(
+        SHIFTED_ANTI_DIAGONAL,
+        // only our pieces    // shift to H file
+        (file_mask64 & us) << (file_shift64 as u64)
+    ) >> 56;
+
+    let them_bb8 = wrapping_mul(
+        SHIFTED_ANTI_DIAGONAL,
+        (file_mask64 & them) << (file_shift64 as u64)
+    ) >> 56;
+
+    let from_idx3 = bl::rank_idx_6_3(from_idx6) as u6;
+    let from_bb = 1 << (from_idx3 as u64);
+    let to_bb = 1 << (bl::rank_idx_6_3(to_idx6) as u64);
+
+    (from_idx3, from_bb, to_bb, us_bb8, them_bb8)
 }
 
 
-// Least significant 1-bit is intersection of non-empty bitboard with it's two's
-//   complement.
-fn ls1b(b: Bitboard) -> Bitboard {
-    b & -b
-}
+// Computing valid moves involves constructing two sets of masks for each
+//   direction: negative (west) and positive (east).
+//
+// - The first mask is called "blockers" and masks from the location of the
+//     closest friendly piece (if any) to the edge of the board in that direc-
+//     tion. Since we cannot capture friendly pieces this masks squares we
+//     cannot travel to (ignoring enemy piece positions).
+// - The second mask is called "extent" and masks inclusively from the location
+//     of the closest enemy piece (if any) to the edge of the board in that
+//     direction.
+//
+// The union of "blockers" and "extent" now masks invalid square destinations
+//   while allowing us to capture un-blocked (by our friendlies) enemy pieces
+//   should any be present. To form the final valid move mask the relative
+//   complement of the rank mask (without the from-piece's position set) is
+//   taken.
+fn valid_orthogonal_move (
+    from_idx6: BitboardIndex,
+    from_bb: Bitboard,
+    to_bb: Bitboard,
+    us: Bitboard,
+    them: Bitboard
+) -> bool {
+    // STEP 1.
+    //   1) Get index of square marking the start of the current rank so we can
+    //        shift that rank down to the 1st (8-bits only) (and optionally back
+    //        once done).
+    //   2) Get mask of current rank so we can get occupancy masks.
+    //   3) Get occupancy masks and shift to the first rank.
+    //   4) Shift move from/to single occupancy masks to first rank.
 
+    let rank_shift64 = bl::rank_start_idx_6(from_idx6) as u64; // 1.1
+    let rank_mask64 = bl::rank_mask_6_64(from_idx6); // 1.2
 
-fn east_ray(about_idx: Bitboard) -> Bitboard {
-    2 * ((1 << (about_idx | 7)) - (1 << about_idx))
-}
+    let us_bb8 = ((rank_mask64 & us) >> rank_shift64) as u8; // 1.3
+    let them_bb8 = ((rank_mask64 & them) >> rank_shift64) as u8; // 1.3
 
-fn west_ray(about_idx: Bitboard) -> Bitboard {
-    (1 << about_idx) - (1 << (about_idx & 56))
-}
+    let from_bb8 = (from_bb >> rank_shift64) as u8; // 1.4
+    let to_bb8 = (to_bb >> rank_shift64) as u8; // 1.4
 
-fn reverse_u8(b: u8) -> u8 {
-    (((b as Bitboard) * 0x0202020202 as Bitboard & 0x010884422010 as Bitboard) % 0x03ff) as u8
+    //
+    // STEP 2.
+    //   -- We have occupancy masks for friendly (us) and enemy (them) pieces
+    //        as well as single occupancy masks of our moves starting square and
+    //        ending square; all are in 8-bit values; i.e. a single rank.
+    //
+    //   1) Get index of from position (single set bit) as integer.
+    //   2) Get west (negative) and east (positive) masks from (1) exclusive of
+    //        that location; also called west/east rays.
+    //   3) Get location of closest blocking piece (friendly only) and enemy
+    //        piece in rays. These are single occupancy bitboards and in most
+    //        cases if no such piece is found the bitboard is empty (i.e. 0)
+    //        EXCEPT for the east extent which will default to the 7th bit
+    //        being set (value 128) to allow correct mask computation.
+
+    let from_idx3 = bl::file_idx_6_3(from_idx6); // 2.1
+
+    let west_ray = bl::west_ray_3_8(from_idx3); // 2.2
+    let east_ray = bl::east_ray_3_8(from_idx3); // 2.2
+
+    // This is where "blockers" and "extent" comes into play.
+    let west_b_bb8 = bl::ms1b_8(west_ray & us_bb8); // 2.3
+    let west_e_bb8 = bl::ms1b_8(west_ray & them_bb8); // 2.3
+    let east_b_bb8 = bl::ls1b_8(east_ray & us_bb8); // 2.3
+    let east_e_bb8 = bl::ls1b_8((east_ray & them_bb8) | 128); // 2.3
+
+    //    
+    // STEP 3.
+    //   -- With crucial masks set-up (ray masks) and our closest blockers in
+    //        both rays known (if any) as well as the extent we can move to
+    //        (ignoring those blockers) in both rays known (if any) we can now
+    //        compute the final set of moves.
+    //
+    //   1) Mask ray from closest blocker in that range to the rays board edge
+    //        INCLUDING THE LOCATION OF THE BLOCKER (if any). Said mask now
+    //        represents squares we cannot ever move to as we're blocked by
+    //        a friendly; if no friendlies block these masks are empty (i.e. 0).
+    //   2) Mask ray from closest extent in that range to the rays board edge
+    //        EXCLUDING THE LOCATION OF THE EXTENT PIECE (if any). Said mask now
+    //        represents squares "behind" an enemy piece (if any); so if there
+    //        are no blockers we could move up to and including the square of
+    //        the enemy piece (to capture) but not _beyond_ (behind) it. If
+    //        there are no enemy pieces the masks are empty (i.e. 0).
+    //   3) Valid moves are the relative complement of the ray; and that ray's
+    //        blocker and extent masks. i.e. for west: "squares in the west ray
+    //        mask which are not in either the west blocker or extent masks".
+
+    let west_block = bl::west_ray_3_8(bl::ms1b_idx_8_3(west_b_bb8)) | west_b_bb8; // 3.1
+    let east_block = !wrapping_sub(east_b_bb8, 1); // 3.1
+    
+    let west_extent = bl::west_ray_3_8(bl::ms1b_idx_8_3(west_e_bb8)); // 3.2
+    let east_extent = bl::east_ray_3_8(bl::ms1b_idx_8_3(east_e_bb8)); // 3.2
+
+    let valid_west = west_ray & !(west_block | west_extent); // 3.3
+    let valid_east = east_ray & !(east_block | east_extent); // 3.3
+
+    let valid_moves = valid_west | valid_east;
+
+    // println(f"k-0xFF k-{us} k-{them} k-{west_ray} k-{east_ray} k-{valid_west} k-{valid_east} k-{valid_moves} k-0x00");
+    // println(f"k-0x0");
+
+    // println(valid_moves);
+    // println(to_bb8);
+
+    (valid_moves & to_bb8) > 0
 }
 
 
@@ -136,104 +230,6 @@ impl Board {
         ]
     }
 
-    // fn orthogonal_moves(self, from_idx: Bitboard) -> (Bitboard, Bitboard) {
-    fn orthogonal_moves(self, from_idx2: BitboardIndex) -> (Bitboard, Bitboard) {
-        let from_idx = from_idx2 as Bitboard;
-        let from_bb = 1 as Bitboard << from_idx;
-
-        let rank_mask = (0xff as Bitboard) << (from_idx & 56);
-        let file_mask = A_FILE * (1 << (from_idx & 7));
-
-        let rank_occ = self.bbs[!self.army] & rank_mask;
-
-        //
-        // RANK MOVES.
-        // Ray masks EXCLUDE `from_bb`.
-        let e_ray = east_ray(from_idx);
-        let w_ray = west_ray(from_idx);
-
-        // West/East moves including closest captureable enemy piece, if any.
-        let east_possible = (rank_occ ^ (rank_occ - (2 * from_bb))) & rank_mask;
-        let west_possible = w_ray ^ (ms1b(w_ray & self.bbs[!self.army]) - 1) & rank_mask;
-
-        // Mask from end of rank up to (INCLUDING) square of closest friendly
-        //   piece east of current position.
-        let east_friendly_mask = !(ls1b(e_ray & self.bbs[self.army]) - 1) & rank_mask;
-
-        // Mask from rank start up to (EXCLUDING) square of closest friendly
-        //   piece west of current position.
-        let west_friendly_mask = (ms1b(w_ray & self.bbs[self.army]) - 1) & rank_mask;
-
-        // Final west/east moveset is the relative complement of the possible
-        //   moves and the closest friendly piece mask.
-        let east_moves = east_possible & !east_friendly_mask;
-        let west_moves = west_possible & !west_friendly_mask;
-
-        let rank_moves = west_moves | east_moves;
-        // END RANK MOVES.
-        //
-
-        //
-        // FILE MOVES.
-        // Ray masks EXCLUDE `from_bb`.
-        let n_ray = from_bb ^ -from_bb & file_mask;
-        let s_ray = from_bb - 1 & file_mask;
-
-        // North/South moves including closest captureable enemy piece, if any.
-        let north_possible = ls1b(n_ray & self.bbs[!self.army]);
-        let south_possible = ms1b(s_ray & self.bbs[!self.army]);
-
-        // let north_friendly_mask = 0;
-        
-        let vertical_possible = north_possible ^ (north_possible - (2 * south_possible));
-            // & file_mask
-            // | south_possible;
-        // END FILE MOVES.
-        //
-
-        // Working https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#Flip_about_the_Diagonal flip
-        let shifted_anti_diag = 0x02040810204081;
-        let col = file_mask & self.bbs[!self.army];
-        
-        let col_idx = (from_idx & 7);
-        let diff = 7 - col_idx;
-        let new_col = col << diff;
-
-        let garbage = shifted_anti_diag * new_col;
-        let good = garbage >> 56;
-
-
-        // Reverse a single 8-bit bitboard?
-
-        let reversed = (good * 0x0202020202 as Bitboard & 0x010884422010 as Bitboard) % 0x03ff;
-
-        (good, reversed)
-
-        // (rank_moves, file_moves)
-    }
-
-    pub fn validate(self) {
-        // TODO: In future this validates state commitment also?
-        // TODO: Validate that masks match up. ACTUALLY we can verify the proof from the previous turn since we will hardcode the starting bitboard everything stems from (so long as our hardcoded bb is valid ;) )
-
-        // TODO: Could accept any bbs input if first turn and generate a new `Game` struct with correct starting bb, investigate later.
-        // First player-turn of the game.
-        if ((self.fullmove == 1) & (self.army == Player::WHITE)) {
-            // self.halfmove = 10;
-            // // Check starting board is valid.
-            // for i in 0 .. REQUIRED_BITBOARDS {
-            //     assert(
-            //         self.bbs[i] == STARTING_BITBOARDS[i],
-            //         "Board pieces are "
-            //     );
-            // }
-            
-            println("first turn of game");
-        }
-        println("board validate called");
-    }
-
-
     pub fn apply(self, move: Move) -> Board {
         let army = self.army;
         let from_idx = move.from as Bitboard;
@@ -243,7 +239,7 @@ impl Board {
         let mut en_passant: BitboardIndex = 0;
 
         assert(
-            is_bit_set(
+            bl::is_bit_set(
                self.bbs[army] & self.bbs[piece],
                from_idx
             ),
@@ -255,17 +251,28 @@ impl Board {
 
         let mut special_bb = 0 as Bitboard;
 
+        // Generally need.
+        let file_idx3 = bl::file_idx_6_3(move.from);
+        // let file_mask64 = A_FILE * (1 << file_idx3);
+
+
         // TODO: Could probably make these accessed by keys to remove if-else
         //       chain, or at least order based on piece move frequencies but
         //       PREMATURE OPTIMISATION so do it later.
+        // ----------------------------------------------
+        // ----------------------------------------------
         if move.piece == Piece::KNIGHT {
             let moves = knight_moves(from_bb, self.bbs[army]);
 
             assert(
-                is_bit_set(moves, to_idx),
+                bl::is_bit_set(moves, to_idx),
                 "KNIGHT move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
             );
+        // ----------------------------------------------
+        // ----------------------------------------------
         } else if move.piece == Piece::PAWN {
+            // TODO: Pawn promotion.
+            
             // println(f"PAWN: [start mask] {from_bb} [idx] {from_idx}");
             
             // Universal shift offset (only applies when black moves).
@@ -309,7 +316,7 @@ impl Board {
             // println(f"k-0x0");
             
             assert(
-                is_bit_set(moves, to_idx),
+                bl::is_bit_set(moves, to_idx),
                 "PAWN move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
             );
 
@@ -320,157 +327,179 @@ impl Board {
                 let ep_bb = (ep >> 8) << dir;
                 special_bb = ep_bb;
             }
+        // ----------------------------------------------
+        // ----------------------------------------------
         } else if move.piece == Piece::ROOK {
-            let mut moves = 0;
+            // XXX [1] HERE AND ELSEWHERE...
+            //   Due to limitations with `assert` error messages (only literals)
+            //     and for test discrimination over how a move is being interpreted
+            //     we pre-rotate the board before validating an orthogonal move.
+            //     When assert supports template strings this can go inside the
+            //     `valid_orthogonal_move` function itself.
 
-            // FILE STUFF
-            // let a64 = army as Bitboard;
+            // Is this a horizontal or vertical move?
+            if (file_idx3 == bl::file_idx_6_3(move.to)) {
+                // Vertical, need to rotate board and indices before calling.
 
-            // let file = A_FILE * (1 << (from_idx & 7));
-            // let forward_fill = ((from_bb * A_FILE) ^ (a64 * file) & !(from_bb)) ^ from_bb;
+                // TODO: Could likely higher-order function this (later optimisations).
+                let ftr_data = file_as_rank(
+                    move.from,
+                    move.to,
+                    file_idx3,
+                    self.bbs[army],
+                    self.bbs[!army]
+                );
 
-            // let enemies_in_column = self.bbs[!army] & forward_fill;
-            // let enemy_pawn = enemies_in_column & -enemies_in_column;
+                let is_valid = valid_orthogonal_move(
+                    ftr_data.0,
+                    ftr_data.1,
+                    ftr_data.2,
+                    ftr_data.3,
+                    ftr_data.4
+                );
+
+                assert(
+                    is_valid,
+                    // ... and this XXX [1] `vertical`
+                    "ROOK move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            } else {
+                // Horizontal, no rotation required.
+                let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+
+                assert(
+                    is_valid,
+                    // So we can do this XXX [1] `horizontal`
+                    "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            }
+        // ----------------------------------------------
+        // ----------------------------------------------
+        } else if move.piece == Piece::BISHOP {
+            // TODO
+
+            let rank_idx = bl::rank_idx_6_3(move.from);
             
-            // let ra = enemy_pawn ^ (enemy_pawn - (2 * from_bb));
-            // let ra2 = ra & forward_fill;
-
-            // println(f"k-0xFF k-{from_bb} k-{moves} k-{forward_fill} k-{enemy_pawn} k-{ra} k-{ra2} k-0x00 k-0x00");
-            // println(f"k-0x0");
-            // END FILE STUFF
-
-
-
-            // MORE FILE STUFF USEABLE
             let us = self.bbs[army];
-            let them = self.bbs[!army];
+            let sq = move.from as u64;          
 
+            // Loops are unrolled anyway.
+            // let mut _p_d: u64 = 0;
+            // for i in 1 .. 8 {
+            //     _p_d += ((from_bb as u127 << (9 * i)) as u64);
+            // }
 
-            // let a64 = army as Bitboard;
-            // let not_a64 = (!army) as Bitboard;
+            // Loops are unrolled anyway.
+            // let mut _n_d: u64 = 0;
+            // for i in 1 .. 8 {
+            //     _n_d += ((from_bb as u127 >> (9 * i)) as u64);
+            // }
 
-            // let file = A_FILE * (1 << (from_idx & 7));
-            // let forward_fill = ((from_bb * A_FILE) ^ (a64 * file) & !(from_bb)) ^ from_bb;
-            // let asdf2 = ((from_bb * A_FILE) ^ (not_a64 * file) & !(from_bb)) ^ from_bb;
+            // TODO: Positive anti-diagonal and negative anti-diagonal.
 
-            // // Set all 1s above s1b (s1b = "solo-1-bit", only bit set in board)
-            // let ff2 = from_bb ^ -from_bb;
+            // Dtaxi = |r2 - r1| + |f2 - f1|
 
-            // // Union that with file mask for current file to get north-fill
-            // let nf2 = ff2 & file;
+            let n1: u64 = 20;
+            let n2: u64 = 11; // expect absolute difference of 5
 
-            // let below_s1b = !from_bb & (from_bb - 1);
-            // let sf2 = below_s1b & file;
+            // let mut blah = wrapping_sub(n1, n2);
+            // let mut blah = bl::abs_diff(wrapping_sub(n1, n2));
 
-            // let enemies_in_column = self.bbs[!army] & forward_fill;
-            // let enemy_pawn = enemies_in_column & -enemies_in_column;
+           // int file1, file2, rank1, rank2;
+           // int rankDistance, fileDistance;
+           // file1 = sq1  & 7;
+           // file2 = sq2  & 7;
+           // rank1 = sq1 >> 3;
+           // rank2 = sq2 >> 3;
+           // rankDistance = abs (rank2 - rank1);
+           // fileDistance = abs (file2 - file1);
+           // return rankDistance + fileDistance;
+
+            let f1 = move.from & 7;
+            let f2 = move.to & 7;
+            let r1 = move.from >> 3;
+            let r2 = move.to >> 3;
+
+            let rd = bl::abs_diff(wrapping_sub(r2, r1));
+            let fd = bl::abs_diff(wrapping_sub(f2, f1));
+            let blah = rd + fd;
+
+  
             
-            // let ra = enemy_pawn ^ (enemy_pawn - (2 * from_bb));
-            // let ra2 = ra & forward_fill;
+            // int s = a >> 31; // cdq, signed shift, -1 if negative, else 0
+            //    a ^= s;  // ones' complement if negative
+            //    a -= s;  // plus one if negative -> two's complement if negative
 
-            // // TODO: nicer way to do this?
-            // let occ_below_piece = sf2 & self.bbs[!army];
-            // let mut x = occ_below_piece;
-            // x |= x >> 32;
-            // x |= x >> 16;
-            // x |= x >>  8;
-            // x |= x >>  4;
-            // x |= x >>  2;
-            // x |= x >>  1;
-            // // let mut msb = (x >> 1) + 1;
-            // let mut msb = (x >> 1) + 1;
-
-            
-            // let ra4 = enemy_pawn ^ (enemy_pawn - (2 * msb));
-            // let ra5 = ra4 & forward_fill;
-            // END MORE FILE STUFF USEABLE
-
-
-            
-            // RANK MOVE
-            // let r1 = (0xff as Bitboard) << (from_idx & 56);
-            // let r1 = (0xff as Bitboard) << from_bb;
-            // let r1 = 1 << (from_idx & 56);
-            // let one = 1 as Bitboard;
-            // let r1 = 2*( (one << (from_idx|7)) - (one << from_idx) ); // East ray.
-            // let r1 = (one << from_idx) - (one << (from_idx&56)); // West ray.
-            // let r1 = (one << (from_idx&56)); // West ray.
-
-
-            // let ls1b = one << (from_idx | 7);
-            // let _f = 2 as Bitboard;
-            // let ls1b = one << (_f | 7);
-            // let ls1b = (_f | 7);
-
-            // let last_square_in_row = (_f | 7);
-
-            // let ls1b = last_square_in_row 
-            // let ls1b = (one << last_square_in_row) - (one << _f);
-            // let ls1b = 2 * ((one << last_square_in_row) - (one << _f));
-
-            // // rank mask
-            // let rank_mask = (0xff as Bitboard) << (from_idx & 56);
-            // let rank_occ = self.bbs[!army] & rank_mask;
-
-            // let below = from_bb - 1 & rank_mask;
-            // let above = below ^ rank_mask ^ from_bb;
-            // let above_occ = above & self.bbs[!army];
-
-            // let east_blocker = above_occ & -above_occ;
-
-            // let mut x = self.bbs[!army] & below;
-            // x |= x >> 32;
-            // x |= x >> 16;
-            // x |= x >>  8;
-            // x |= x >>  4;
-            // x |= x >>  2;
-            // x |= x >>  1;
-            // // let mut msb = (x >> 1) + 1;
-            // let mut west_blocker = (x >> 1) + 1;
-
-            // // let ls1b = 
-            
-
-            // // let moves = east_blocker - west_blocker;
-            // // let moves = west_blocker ^ (west_blocker - (2 * east_blocker));
-            // let moves = (((east_blocker ^ (east_blocker - (2 * west_blocker))) & rank_mask) | west_blocker) ^ from_bb;
-            // END RANK MOVE
-
-
-
-
-            // File
-            
-            // Rank
-            let (rank_moves, file_moves) = self.orthogonal_moves(from_idx);
-
-            let moves = rank_moves | file_moves;
-            
-            // println(f"k-0xFF k-{us} k-{them} k-{from_bb} k-{to_bb} k-{all_bits_below_occ} k-{ra2} k-{nf2} k-{sf2}");
-            // println(f"k-0xFF k-{them} k-{forward_fill} k-{ra} k-{occ_below_piece} k-{msb} k-{ra4} k-{ra5} k-0x00");
-            // println(f"k-0xFF k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00 k-0x00");
-            // println(f"k-0xFF k-{us} k-{them} k-{moves} k-{rank_occ} k-{west_blocker} k-{east_blocker} k-{below} k-{above}");
-            println(f"k-0xFF k-{us} k-{them} k-{moves} k-{rank_moves} k-{file_moves} k-0x00 k-0x00 k-0x00");
+            println(f"k-0xFF k-{us} k-{from_bb} k-{to_bb} k-0x00 k-0x00 k-0x00 k-{blah} k-0x00");
             println(f"k-0x0");
-            
 
-            // assert(
-            //     is_bit_set(moves, to_idx),
-            //     "ROOK move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
-            // );
+           //  b |= b >> 32;
+           // b |= b >> 16;
+           // b |= b >>  8;
+           // let wat = b & 0xFF;
+
+           //  b |= b >>  4;
+           // b |= b >>  2;
+           // b |= b >>  1;
+           // b &= 0x0101010101010101 as u64;
+           // b |= b >>  7;
+           // b |= b >> 14;
+           // b |= b >> 28;
+           // let wat = b & 0xFF;
+
+
+           //  let mut b = self.bbs[army];
+
+           // let aFile   = 0x0101010101010101 as u64;
+           // let antiDia = 0x0102040810204080 as u64;
+
+           // b |= b >> 4;   // No masking needed
+           // b |= b >> 2;   //    "         "
+           // b |= b >> 1;   //    "         "
+           // let wat = wrapping_mul((b & aFile), antiDia) >> 56;
+
+            // println(f"k-0xFF k-{us} k-{from_bb} k-{diag} k-0x00 k-0x00 k-0x00 k-0x00 k-0x00");
+            // println(f"k-0x0");
+            
+        // ----------------------------------------------
+        // ----------------------------------------------
+        } else if move.piece == Piece::QUEEN {
+            // TODO: Diagonal movement from bishop also.
+
+            // Is this a horizontal or vertical move?
+            if (file_idx3 == bl::file_idx_6_3(move.to)) {
+                let ftr_data = file_as_rank(move.from, move.to, file_idx3, self.bbs[army], self.bbs[!army]);
+
+                let is_valid = valid_orthogonal_move(ftr_data.0, ftr_data.1, ftr_data.2, ftr_data.3, ftr_data.4);
+
+                assert(
+                    is_valid,
+                    // ... and this XXX [1] `vertical`
+                    "QUEEN move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            } else {
+                // Horizontal, no rotation required.
+                let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+
+                assert(
+                    is_valid,
+                    // So we can do this XXX [1] `horizontal`
+                    "QUEEN move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            }
+        // ----------------------------------------------
+        // ----------------------------------------------
+        } else if move.piece == Piece::KING {
+            // TODO
+            // TODO: Can do the same for queen but have a mask such that only
+            //       the squares immediately around the king are valid too.
+        // ----------------------------------------------
+        // ----------------------------------------------
         } else {
             assert(false, "INVALID piece provided");
         };
         
-        // let moves = knight_moves(from_bb, self.bbs[army]);
-
-        // println(f"moves: {moves}");
-
-        // assert(
-        //     is_bit_set(moves, to_idx),
-        //     "Given move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
-        // );
-
+        // TODO: Need anything specific for quiet moves anymore?
         // Specifically for quiet moves, or if captures only the capturing army.
 
         // Good for quiet moves.
@@ -513,7 +542,6 @@ impl Board {
         }
         // End ugly workaround.
 
-
         // `fullmove` is incremented after black's turn.
         let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
 
@@ -529,12 +557,6 @@ impl Board {
         new_board
     }
 
-
-
-
-
-
-    
 
     // Validates input move data _structure_ and then tries to apply the move to
     //   the current gamestate which may fail if the move is illegal.
@@ -569,7 +591,7 @@ impl Board {
         //       that bitboards match for given pieces so we can simply check
         //       the index in the bitboard now.
         assert(
-            is_bit_set(
+            bl::is_bit_set(
                self.bbs[army] & self.bbs[piece],
                from_idx
             ),
@@ -585,7 +607,7 @@ impl Board {
 
         // If `moves` has a 1 set at `to_idx` the requested move is valid.
         assert(
-            is_bit_set(moves, to_idx),
+            bl::is_bit_set(moves, to_idx),
             "Given move is INVALID; either improper move pattern or square is already occupied by a piece in the same team."
         );
 
@@ -626,3 +648,4 @@ impl Board {
         new_board
     }
 }
+
