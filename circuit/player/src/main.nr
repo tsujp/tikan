@@ -15,7 +15,7 @@ fn main(
     move: Move,
     move_salt: pub Field,
     move_commitment: pub Field
-) -> pub [Field; 13] {
+) -> pub Board {
     // `Board` has assertions that check a `Move` is valid against the current
     //   gamestate (which `Board` represents); so this will fail if invalid.
     let new_board = board.apply(move);
@@ -32,7 +32,7 @@ fn main(
     //   move made against that state.
     assert(computed_commitment == move_commitment);
 
-    new_board.decompose()
+    new_board
 }
 
 #[test]
