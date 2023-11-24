@@ -1,23 +1,30 @@
 {
-  "name": "foo",
-  "version": "1.0.0",
-  "description": "bar",
+  "name": "circuit_tests",
+  "version": "0.1.0",
+  "description": "Test harness for Tikan circuits.",
+  "author": "tsujp <jc+git [at] wz [dot] ht>",
+  "license": "BSD-3-Clause",
   "type": "module",
+  "circuits": {
+    "player": "./player",
+    "state_commitment": "./pedersen"
+  },
   "scripts": {
-    "dev": "bun test --watch"
+    "dev": "bun --watch compile && bun test:watch",
+    "compile": "bun run build.ts",
+    "test": "bun test --timeout 60000 foo.test.ts",
+    "test:watch": "bun test --watch --timeout 60000 foo.test.ts",
+    "test22": "bun --watch ./test/utility/runner.ts --compile"
   },
   "dependencies": {
-    "@noir-lang/backend_barretenberg": "0.17.0-7de37c6.nightly",
-    "@noir-lang/noir_js": "0.17.0-7de37c6.nightly",
+    "@aztec/bb.js": "^0.12.0",
+    "@noir-lang/backend_barretenberg": "file:///./backend_fixed",
+    "@noir-lang/noir_js": "0.19.3",
     "chalk": "^5.3.0",
     "ethers": "^5.7.2",
     "fflate": "^0.8.0"
   },
   "devDependencies": {
-    "@types/node": "^18.15.5",
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.1.6"
+    "tikan_workspace": "workspace:*"
   }
 }

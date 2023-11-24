@@ -7,13 +7,17 @@ const wd = process.cwd()
 // * * * * * * * * * * * * *
 
 const precheck_proc = Bun.spawn(['bun', 'test'], {
-   cwd: wd,
-   stderr: 'inherit',
-   stdout: 'inherit',
+    cwd: wd,
+    stderr: 'inherit',
+    stdout: 'inherit',
 })
 
 const precheck_success = await precheck_proc.exited.then((code) => code)
 console.log('exit code!', precheck_success)
+
+// ------ build
+
+console.log('adsadsaads', Bun.argv)
 
 // * * * * * * * * * * * * * * * * * * * * * * * TEST SUITE EXECUTION
 // * * * * * * * * * * * * *

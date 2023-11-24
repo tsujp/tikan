@@ -1,8 +1,7 @@
 {
-  "name": "tikan",
-  "version": "0.1.0",
-  "description": "Zero-knowledge fog of war chess.",
+  "name": "tikan_project",
   "private": true,
+  "version": "0.1.0",
   "author": "tsujp <jc+git [at] wz [dot] ht>",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -13,6 +12,8 @@
   "scripts": {
     "bb:term": "bun run --cwd util/bb_term do",
     "bb:web": "bun run --cwd util/bb_web do",
+    "test": "bun run --cwd circuit test22",
+    "test:watch": "bun run --cwd circuit test:watch",
     "fmt": "dprint fmt"
   },
   "repository": {

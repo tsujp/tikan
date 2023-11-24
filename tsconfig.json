@@ -16,7 +16,6 @@
     "downlevelIteration": true,
     "noImplicitAny": true,
     "plugins": [],
-    "plugins": [],
     "lib": [
       "ESNext"
     ],

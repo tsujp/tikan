@@ -16,7 +16,8 @@ ensure you're using **exactly** the version numbers of Noir as specified in the
 relevant files otherwise your build may not work.
 
 ```
-Noir 0.19.0
+Noir 0.19.3 (4e3a5a9)
+acvm-backend-barretenberg 0.15.1
 ```
 
 
