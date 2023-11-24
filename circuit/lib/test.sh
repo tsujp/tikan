@@ -129,7 +129,7 @@ bitfield_frontend_debug ()
       # str_data_spaced="${gamestate_data[@]}"
       str_data_spaced="${gamestate_data[@]:1}"
       # printf '>%s<\n' "$str_data_spaced"
-      curl -X POST \
+      curl -s -X POST \
         -F "run_id=${datetime}" \
         -F "tag=${str_tag}" \
         -F "bbs=${str_data_spaced}" \
