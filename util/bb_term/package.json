@@ -10,7 +10,7 @@
     "do:watch": "bun --watch index.ts"
   },
   "devDependencies": {
-    "tikan_workspace": "workspace:*"
+    "dev": "workspace:*"
   },
   "keywords": []
 }

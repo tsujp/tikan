@@ -18,13 +18,12 @@
   },
   "dependencies": {
     "@aztec/bb.js": "^0.12.0",
-    "@noir-lang/backend_barretenberg": "file:///./backend_fixed",
     "@noir-lang/noir_js": "0.19.3",
     "chalk": "^5.3.0",
     "ethers": "^5.7.2",
     "fflate": "^0.8.0"
   },
   "devDependencies": {
-    "tikan_workspace": "workspace:*"
+    "dev": "workspace:*"
   }
 }

@@ -1,15 +1,12 @@
 {
-  "name": "tikan_workspace",
+  "name": "dev",
   "version": "0.1.0",
   "description": "Workspace package others can depend on to unify versions",
   "author": "tsujp <jc+git [at] wz [dot] ht>",
   "license": "BSD-3-Clause",
-  "type": "module",
   "devDependencies": {
     "@types/node": "^18.15.5",
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
+    "bun-types": "latest",
     "typescript": "^5.1.6"
   }
 }

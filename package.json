@@ -1,13 +1,13 @@
 {
-  "name": "tikan_project",
+  "name": "@tikan/project",
   "private": true,
   "version": "0.1.0",
   "author": "tsujp <jc+git [at] wz [dot] ht>",
   "license": "BSD-3-Clause",
   "type": "module",
   "workspaces": [
-    "util/bb_web",
-    "util/bb_term"
+    "./util/*",
+    "./circuit"
   ],
   "scripts": {
     "bb:term": "bun run --cwd util/bb_term do",
