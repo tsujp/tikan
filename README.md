@@ -31,6 +31,11 @@ Noir 0.19.0
 
 - [] Svelte or SolidJS interface with circuit using `noir-js`.
 
+## Tooling / Utility
+
+- [] For common dependencies like Typescript some kind of workspace management with Bun instead of manually keeping the various `package.json`s in-sync.
+- [] Where appropriate a workspace-based `tsconfig.json` for the various ones in sub-projects.
+
 ## Other Relevant
 
 - [] For some reason Helix likes to make it REALLY hard to clean up whitespace in files and has likes to litter them maximally. Annoying stuff, the entire codebase could do with a good auto-formatting later on.

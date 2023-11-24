@@ -1,10 +1,11 @@
 {
-  "name": "foo",
+  "name": "tikan_bb_web_util",
   "version": "1.0.0",
-  "description": "bar",
+  "description": "Web-based bitboard viewer for Tikan state.",
   "type": "module",
   "scripts": {
-    "dev": "bun test --watch"
+    "do": "bun index.ts",
+    "do:watch": "bun --watch index.ts"
   },
   "dependencies": {
   },
