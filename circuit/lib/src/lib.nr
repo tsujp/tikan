@@ -4,6 +4,7 @@ use dep::state::board::Board;
 use dep::state::move::Move;
 use dep::state::types::Piece;
 
+mod test;
 
 // TODO: File a bug report attributes cannot have a full-stop in them. If you
 //       put a full-stop at the end of that string it breaks everything. Same
@@ -23,7 +24,7 @@ fn test_pawn_pushes_wrong_team() {
             0x00ff00000000ff00  // Pawns
         ],
         army: 1,               // Current army's turn (Board::Piece enum index)
-        castle_rights: 0x1111, // Bitmask castle rights K Q k q, 1 = yes, 0 = no
+        castle_rights: 15, // Bitmask castle rights K Q k q, 1 = yes, 0 = no
         en_passant: 0,         // En-passant target square index (LERLEF 6-bits)
         halfmove: 0,           // Halfmove count
         fullmove: 1            // Fullmove count
@@ -83,7 +84,7 @@ fn test_pawn_pushes_illegal() {
             0x00ff00000000ff00  // Pawns
         ],
         army: 0,               // Current army's turn (Board::Piece enum index)
-        castle_rights: 0x1111, // Bitmask castle rights K Q k q, 1 = yes, 0 = no
+        castle_rights: 15, // Bitmask castle rights K Q k q, 1 = yes, 0 = no
         en_passant: 0,         // En-passant target square index (LERLEF 6-bits)
         halfmove: 0,           // Halfmove count
         fullmove: 1            // Fullmove count
@@ -122,7 +123,7 @@ fn test_pawn_pushes_illegal() {
     //         0xf700080800f700
     //     ],
     //     army: 0,
-    //     castle_rights: 0x1111,
+    //     castle_rights: 15,
     //     en_passant: 0,
     //     halfmove: 0,
     //     fullmove: 1
@@ -155,7 +156,7 @@ fn test_pawn_pushes_blocked() {
             0xf700080800f700
         ],
         army: 0,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 0,
         halfmove: 0,
         fullmove: 1
@@ -184,7 +185,7 @@ fn test_pawn_pushes_blocked() {
             0xf700080800f700
         ],
         army: 1,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 0,
         halfmove: 0,
         fullmove: 1
@@ -213,7 +214,7 @@ fn test_pawn_pushes_blocked() {
             0xff204000009f00
         ],
         army: 1,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 0,
         halfmove: 0,
         fullmove: 1
@@ -265,7 +266,7 @@ fn test_en_passant_captures() {
             0xef00180000f700
         ],
         army: 0,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 44, // e6
         halfmove: 0,
         fullmove: 1
@@ -307,7 +308,7 @@ fn test_en_passant_captures() {
             0xbf00006000df00
         ],
         army: 1,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 21, // f3
         halfmove: 0,
         fullmove: 1
@@ -355,7 +356,7 @@ fn test_pawn_pushes() {
             0x00ff00000000ff00
         ],
         army: 0,
-        castle_rights: 0x1111,
+        castle_rights: 15,
         en_passant: 0,
         halfmove: 0,
         fullmove: 1
