@@ -1,5 +1,3 @@
-// TODO: This needs a workspace `package.json` and `tsconfig.json`.
-
 // Helper so I can declare a BigInt using underscores as seperators for easier
 //   visual grepping.
 function Big (bi: string) {

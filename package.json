@@ -1,0 +1,21 @@
+{
+  "name": "tikan",
+  "version": "0.1.0",
+  "description": "Zero-knowledge fog of war chess.",
+  "private": true,
+  "author": "tsujp <jc+git [at] wz [dot] ht>",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "workspaces": [
+    "util/bb_web",
+    "util/bb_term"
+  ],
+  "scripts": {
+    "bb:term": "bun run --cwd util/bb_term do",
+    "bb:web": "bun run --cwd util/bb_web do"
+  },
+  "repository": {
+    "type": "git"
+  },
+  "keywords": []
+}

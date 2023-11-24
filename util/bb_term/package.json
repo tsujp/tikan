@@ -1,7 +1,7 @@
 {
-  "name": "bb_web",
+  "name": "bb_term",
   "version": "1.0.0",
-  "description": "Web-based viewer for Tikan bitboard states.",
+  "description": "Terminal-based viewer for Tikan bitboard states.",
   "author": "tsujp <jc+git [at] wz [dot] ht>",
   "license": "BSD-3-Clause",
   "type": "module",
