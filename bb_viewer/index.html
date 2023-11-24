@@ -84,12 +84,14 @@
 		.bits {
 			padding: 1px;
 			display: grid;
-			width: fit-content;
+			aspect-ratio: 1;
 			grid-template-columns: repeat(8, 1fr);
 			grid-template-rows: repeat(8, 1fr);
 			outline: 2px solid #DDD;
 			grid-gap: 1px;
 			direction: rtl;
+			font-size: 1.2em;
+			line-height: 1.2em;
 		}
 
 		.bit {
@@ -101,12 +103,26 @@
 			outline: 1px solid #DDD;
 			position: relative;
 			z-index: 1;
-			background: white;
 			direction: ltr;
+
+			/* White square background */
+	    background: white;
 		}
 
+		.bit:nth-child(16n + 1),
+	  .bit:nth-child(16n + 3),
+	  .bit:nth-child(16n + 5),
+	  .bit:nth-child(16n + 7),
+	  .bit:nth-child(16n + 10),
+	  .bit:nth-child(16n + 12),
+	  .bit:nth-child(16n + 14),
+	  .bit:nth-child(16n + 16) {
+			/* Black square background */
+			background: #EEE;
+	  }
+
 		.bit:hover {
-			z-index: 2;
+			z-index: 3;
 			outline: 1px solid red;
 		}
 
@@ -116,7 +132,8 @@
 		}
 
 		.set {
-			background: #DBDBDB;
+			z-index: 2;
+			outline: 1px solid black;
 		}
 
 		.bit:not(.set) > .value {
@@ -126,30 +143,46 @@
 		.bit > div:not(.value) {
 			color: #777;
 			font-size: 0.5em;
+			line-height: 0.95em;
+			font-weight: 600;
+		}
+
+		.bit:hover::after {
+			display: block;
+			pointer-events: none;
+			z-index: 5;
+			position: absolute;
+			bottom: 100%;
+			left: 100%;
+			content: attr(square-index) '\a' attr(square);
+			font-size: 18px;
+			background: #F9EAEA;
+			padding: 5px;
+			border: 1px solid red;
 			font-weight: 600;
 		}
 
 		/* Satanic line-height CSS hacks to get dense display, do it properly later TODO */
 		.value {
 			grid-area: value;
-			place-self: center end;
-			line-height: 10px;
+			place-self: center;
+			padding-top: 1px;
 			color: #222;
 		}
 
 		.index {
 			grid-area: index;
-			line-height: 8px;
+			place-self: end;
 		}
 
 		.square {
 			grid-area: square;
-			line-height: 7px;
+			place-self: start;
 		}
 
 		.hex {
-			font-size: 0.7rem;
-			margin: 5px 0px;
+			font-size: 0.75rem;
+			margin: 6px 0px;
 		}
 		</style>
 
@@ -195,9 +228,9 @@
 
 
 					for bit in bits index j
-						// set sqr to `${String.fromCharCode(104 - (j mod 8))}${8 - (j mod 8)}`
-						set sqr to `${String.fromCharCode(104 - (j mod 8))}${j}`
-						beep! sqr
+						set lerlef to 63 - j
+						set sqr to `${String.fromCharCode(104 - (j mod 8))}${Math.floor(lerlef / 8) + 1}`
+						// beep! sqr
 
 						make a <div.bit /> then set cell to it
 
@@ -205,8 +238,11 @@
 							add .set to cell
 						end
 
+						set cell's @square-index to lerlef
+						set cell's @square to sqr
+
 						make a <div.value /> then put bit into it's textContent then put it at the end of cell
-						make a <div.index /> then put 63 - j into it's textContent then put it at the end of cell
+						make a <div.index /> then put lerlef into it's textContent then put it at the end of cell
 						make a <div.square /> then put sqr into it's textContent then put it at the end of cell
 						put cell at the end of table
 					end
@@ -216,7 +252,6 @@
 					put board at the end of data
 				end
 				
-				// return game
 				return run
 			end
 		</script>
@@ -243,7 +278,7 @@
 			js
 			// This can access our stub data, for hyperscript it would be out of scope.
 			function gimme_that_data() {
-				console.log(stub_data)
+				// console.log(stub_data)
 				return stub_data
 			}
 			end
@@ -255,14 +290,14 @@
 				run_id: '1698054163',
 				tag: '0xcafeff',
 				bbs: [
-			   '0x20ffbf',
-			   '0xffff000000200040',
-			   '0x4200000000200002',
-			   '0x2400000000200064',
-			   '0x81000000002000c1',
-			   '0x0800000000200048',
-			   '0x1000000000200050',
-			   '0xff00000020ff40',
+	        '0xffff',             // White board
+	        '0xffff000000000000', // Black board
+	        '0x4200000000000042', // Knights
+	        '0x2400000000000024', // Bishops
+	        '0x8100000000000081', // Rooks
+	        '0x0800000000000008', // Queens
+	        '0x1000000000000010', // Kings
+	        '0x00ff00000000ff00'  // Pawns
 				]
 			}
 		</script>
