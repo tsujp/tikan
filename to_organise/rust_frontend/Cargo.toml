@@ -7,14 +7,14 @@ authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"
 edition = "2021"
 rust-version = "1.71.0"
 
-readme = "README.md"
 license = "BSD-3-Clause"
 license-file = "LICENCE"
+readme = "README.md"
 
-description = "Chess and Fog of War Chess implemented in Aztec's ZK language: Noir."
-repository = "https://github.com/tsujp/tikan"
-homepage = "TODO"
 documentation = "TODO"
+homepage = "TODO"
+repository = "https://github.com/tsujp/tikan"
+description = "Chess and Fog of War Chess implemented in Aztec's ZK language: Noir."
 
 # Describe package: max 5, anything.
 keywords = ["chess", "zero-knowledge", "noir-lang", "wasm", "game"]
@@ -50,9 +50,9 @@ default = ["console_error_panic_hook"]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 console_log = "1.0.0"
 crossbeam-channel = "0.5.8"
-rand = "0.8.5"
 # coin_flip = { path = "coin_flip" }
 log = "0.4.19"
+rand = "0.8.5"
 # wasm-bindgen = "0.2.87"
 wasm_thread = "0.2.0"
 
@@ -66,7 +66,7 @@ features = [
   "bevy_asset",
   "bevy_winit",
   "webgl2",
-  "default_font" # TODO: Remove later, replacing with custom?
+  "default_font", # TODO: Remove later, replacing with custom?
 ]
 
 # Enable a small amount of optimisation in debug mode.

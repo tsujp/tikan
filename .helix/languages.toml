@@ -1,6 +1,6 @@
 [[language]]
 name = "javascript"
-indent = { tab-width = 3, unit = "   " }
+indent = { tab-width = 4, unit = "    " }
 formatter = { command = 'dprint', args = ["fmt", "--stdin", "js"] }
 auto-format = true
 
@@ -10,18 +10,18 @@ formatter = { command = 'dprint', args = ["fmt", "--stdin", "md"] }
 
 [[language]]
 name = "typescript"
-indent = { tab-width = 3, unit = "   " }
+indent = { tab-width = 4, unit = "    " }
 formatter = { command = 'dprint', args = ["fmt", "--stdin", "ts"] }
 auto-format = true
 
 [[language]]
 name = "jsx"
-indent = { tab-width = 3, unit = "   " }
+indent = { tab-width = 4, unit = "    " }
 formatter = { command = 'dprint', args = ["fmt", "--stdin", "jsx"] }
 auto-format = true
 
 [[language]]
 name = "tsx"
-indent = { tab-width = 3, unit = "   " }
+indent = { tab-width = 4, unit = "    " }
 formatter = { command = 'dprint', args = ["fmt", "--stdin", "tsx"] }
 auto-format = true
