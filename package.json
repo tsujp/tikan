@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "bb:term": "bun run --cwd util/bb_term do",
-    "bb:web": "bun run --cwd util/bb_web do"
+    "bb:web": "bun run --cwd util/bb_web do",
+    "fmt": "dprint fmt"
   },
   "repository": {
     "type": "git"

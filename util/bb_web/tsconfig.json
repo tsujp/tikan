@@ -3,8 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "lib": [
-       "ESNext",
-      "webworker" 
+      "ESNext",
+      "webworker"
     ],
     "types": [
       "bun-types"
