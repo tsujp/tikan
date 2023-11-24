@@ -2,3 +2,9 @@ node_modules/
 
 frontend_js/
 svelte_demo/
+
+# Noir compiled circuit output directory.
+target/
+
+# Noir common reference string (default) directory.
+crs/
