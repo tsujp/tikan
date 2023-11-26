@@ -1,6 +1,5 @@
-use dep::std::{wrapping_add, wrapping_mul};
 use dep::std::println;
-
+use dep::std::{wrapping_add, wrapping_mul};
 
 // Equiv. NOT_8_RANK & NOT_H_FILE; positive diagonal pre-shift masking.
 global FILL_A1_G7_MASK: u64 = 0x7f7f7f7f7f7f7f;
@@ -70,20 +69,21 @@ pub fn east_ray_3_8(input_idx: u3) -> u8 {
     (128 as u8 - (1 as u8 << input_idx as u8)) * 2
 }
 
+// XXX: Compiler does not like this here.
 // global DEBRUIJN_POS: [Field, 32] = [
-//   0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 
+//   0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
 //   31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
 // ];
 
-
 // DeBruijn log2 (MS1B as index).
 pub fn ms1b_idx_8_3(b: u8) -> u3 {
+    // TODO
     // XXX: This is the version for 32-bits and under, fine for us. Have a crack
     //      at brute-forcing a dense magic lookup table (like this) but for
     //      8-bits for fun later on.
     let DEBRUIJN_POS: [u6; 32] = [
-      0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 
-      31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+        0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+        31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
     ];
 
     // Magic.
@@ -99,14 +99,27 @@ pub fn reverse_8(b: u8) -> u8 {
     (((b as u64) * 0x0202020202 as u64 & 0x010884422010 as u64) % 0x03ff) as u8
 }
 
-// Given a LERLEF index return rank index (0 - 7).
+// XXX: I believe these are flattened when compiled so it's not actually
+//      "calling" another function at runtime.
+
+// Helper to prevent `as u3` spam.
 pub fn rank_idx_6_3(square_idx: u6) -> u3 {
-    (square_idx >> 3) as u3 // Floor divides by 8.
+    rank_idx_6_6(square_idx) as u3
+}
+
+// Helper to prevent `as u3` spam.
+pub fn file_idx_6_3(square_idx: u6) -> u3 {
+    file_idx_6_6(square_idx) as u3
+}
+
+// Given a LERLEF index return rank index (0 - 7).
+pub fn rank_idx_6_6(square_idx: u6) -> u6 {
+    square_idx >> 3 // Floor divides by 8.
 }
 
 // Given LERLEF index return file index (0 - 7)
-pub fn file_idx_6_3(square_idx: u6) -> u3 {
-    (square_idx & 7) as u3 // Modulo 8.
+pub fn file_idx_6_6(square_idx: u6) -> u6 {
+    square_idx & 7 // Modulo 8.
 }
 
 // Return LERLEF index marking start of rank for the given LERLEF index.
@@ -125,43 +138,20 @@ pub fn rank_mask_6_64(square_idx: u6) -> u64 {
     (0xFF as u64) << (rank_start_idx_6(square_idx) as u64)
 }
 
-// int s = a >> 31; // cdq, signed shift, -1 if negative, else 0
-//    a ^= s;  // ones' complement if negative
-//    a -= s;  // plus one if negative -> two's complement if negative
-pub fn abs_diff(a: u6) -> u32 {
-    let mut y = a as u32;
-    let s = y >> 31;
-    y ^= s;
-    y -= s;
+// pub fn abs(a: u6) -> u32 {
+//     let mut y = a as u32;
+//     let s = y >> 31;
+//     y ^= s;
+//     y -= s;
 
-    y
-}
+//     y
+// }
 
 // Given single occupancy bitboard mask return mask of diagonals about
 //   that mask.
 // NB: A diagonal is strictly oriented from south-west to north-east.
 //       i.e. `/`
-pub fn diagonal_mask_64 (about_occ: u64) -> u64 {
-    // Cast up so it's not possible to "overflow" with bitshift operations.
-    let from_bb127 = about_occ as u127;
-
-    // Loops are unrolled by the compiler anyway.
-
-    // Positive diagonal mask (1).
-    // let mut _p_d: u64 = 0;
-    // for i in 1 .. 8 {
-    //     _p_d += ((from_bb127 << (9 * i)) as u64);
-    // }
-
-    
-    // Negative diagonal mask (2).
-    // let mut _n_d: u64 = 0;
-    // for i in 1 .. 8 {
-    //     _n_d += ((from_bb127 >> (9 * i)) as u64);
-    // }
-
-    // _p_d + _n_d
-
+pub fn diagonal_mask_64(about_occ: u64) -> u64 {
     // (1) Unrolled positive diagonal fill mask.
     let _p_d_1 = (about_occ & FILL_A1_G7_MASK) << 9;
     let _p_d_2 = (_p_d_1 & FILL_A1_G7_MASK) << 9;
@@ -189,10 +179,7 @@ pub fn diagonal_mask_64 (about_occ: u64) -> u64 {
 //   that mask.
 // NB: An anti-diagonal is strictly oriented from south-east to north-west.
 //       i.e. `\`
-pub fn anti_diagonal_mask_64 (about_occ: u64) -> u64 {
-    // Cast up so it's not possible to "overflow" with bitshift operations.
-    let from_bb127 = about_occ as u127;
-
+pub fn anti_diagonal_mask_64(about_occ: u64) -> u64 {
     // (1) Unrolled positive anti-diagonal fill mask.
     let _p_d_1 = (about_occ & FILL_H1_B7_MASK) << 7;
     let _p_d_2 = (_p_d_1 & FILL_H1_B7_MASK) << 7;
@@ -214,4 +201,47 @@ pub fn anti_diagonal_mask_64 (about_occ: u64) -> u64 {
     let _n_d = _n_d_1 + _n_d_2 + _n_d_3 + _n_d_4 + _n_d_5 + _n_d_6 + _n_d_7;
 
     _p_d + _n_d
+}
+
+// Given a bitboard with squares of interest on a diagonal masked, return a
+//   u8 such that each masked square (set bit) is moved vertically to the
+//   first rank.
+// NB: This is effectively a 45-degree rotation about a single chosen diagonal
+//     where the results are always on the first rank with the same file index
+//     as-in the original diagonal.
+pub fn collapse_diagonal_to_rank_64_8(diag_occ: u64) -> u8 {
+    let mut c = diag_occ;
+
+    c |= c >> 32;
+    c |= c >> 16;
+    c |= c >> 8;
+
+    (c & 0xFF) as u8
+}
+
+// TODO: Move the `is file or rank` move logic currently in rook here.
+
+// NB: For `on_same_XX` functions we don't want the callsite to have to order
+//     the indices and said indicies won't always be given largest first if for
+//     instance the move is "up" (positive direction) a diagonal, so the
+//     implementations ought to work for both scenarios.
+
+// Given two square indices return true if those indices are on the same diagonal.
+pub fn on_same_diagonal(a_idx: u6, b_idx: u6) -> bool {
+    if (a_idx > b_idx) {
+        (a_idx - b_idx) % 9 == 0
+    } else {
+        (b_idx - a_idx) % 9 == 0
+    }
+}
+
+// Given two square indices return true if those indices are on the same anti-diagonal.
+pub fn on_same_anti_diagonal(a_idx: u6, b_idx: u6) -> bool {
+    let a_rank = rank_idx_6_6(a_idx);
+    let b_rank = rank_idx_6_6(b_idx);
+
+    let a_file = file_idx_6_6(a_idx);
+    let b_file = file_idx_6_6(b_idx);
+
+    (a_rank + a_file) == (b_rank + b_file)
 }
