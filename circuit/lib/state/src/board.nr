@@ -2,7 +2,7 @@ use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 
 use dep::std::collections::vec::Vec;
 
-use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece};
+use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
 use crate::move::{Move, knight_moves};
 
@@ -31,15 +31,56 @@ global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
   0x00ff00000000ff00
 ];
 
+// Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
+//   and then transforms the move into a rank-equivalent (for feeding into
+//   `valid_orthogonal_move`).
+fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) {
+    // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
+    let mut move_data: (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) = (7, (0, 0, 0, 0, 0));
+
+    if (bl::rank_idx_6_6(from_idx6) == bl::rank_idx_6_6(to_idx6)) {
+        // Horizontal move if the rank indices are the same.
+        move_data = (SlidingDirection::HORIZONTAL, (from_idx6, from_bb, to_bb, us, them));
+    } else if (bl::file_idx_6_6(from_idx6) == bl::file_idx_6_6(to_idx6)) {
+        // Vertical move if file indices are the same.
+        move_data = (SlidingDirection::VERTICAL, file_as_rank(from_idx6, to_idx6, bl::file_idx_6_3(to_idx6), us, them));
+    } else if (bl::on_same_diagonal(from_idx6, to_idx6)) {
+        let diag_mask = bl::diagonal_mask_64(from_bb);
+
+        let c_from_idx = bl::file_idx_6_6(from_idx6);
+
+        // `C`ollapsed, etc.
+        let c_from_bb = bl::collapse_diagonal_to_rank_64_8(from_bb) as u64;
+        let c_to_bb = bl::collapse_diagonal_to_rank_64_8(to_bb) as u64;
+        let c_us = bl::collapse_diagonal_to_rank_64_8(us & diag_mask) as u64;
+        let c_them = bl::collapse_diagonal_to_rank_64_8(them & diag_mask) as u64;
+
+        move_data = (SlidingDirection::DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
+    } else if (bl::on_same_anti_diagonal(from_idx6, to_idx6)) {
+        let diag_mask = bl::anti_diagonal_mask_64(from_bb);
+
+        // TODO: This is the same as above except the `diag_mask` is different, suck this out to it's own thing later.
+
+        let c_from_idx = bl::file_idx_6_6(from_idx6);
+
+        // `C`ollapsed, etc.
+        let c_from_bb = bl::collapse_diagonal_to_rank_64_8(from_bb) as u64;
+        let c_to_bb = bl::collapse_diagonal_to_rank_64_8(to_bb) as u64;
+        let c_us = bl::collapse_diagonal_to_rank_64_8(us & diag_mask) as u64;
+        let c_them = bl::collapse_diagonal_to_rank_64_8(them & diag_mask) as u64;
+
+        move_data = (SlidingDirection::ANTI_DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
+    } else {
+        assert(false, "Improper move pattern for given sliding piece");
+    }
+
+    move_data
+}
+
 fn assert_piece(p: Field) -> u3 {
     let p_cast: u3 = p as u3;
 
-    assert(
-        (p == p_cast as Field)
-            & (BitboardOf::PAWN as u3 <= p_cast)
-            & (p_cast <= BitboardOf::KING as u3),
-        "Given piece is NOT a pawn, knight, bishop, rook, queen, or king."
-    );
+    assert((p == p_cast as Field) & (BitboardOf::PAWN as u3 <= p_cast) & (p_cast <= BitboardOf::KING as u3), "Given piece is NOT a pawn, knight, bishop, rook, queen, or king.");
 
     p_cast
 }
@@ -59,25 +100,12 @@ global A_FILE: u64 = 0x0101010101010101;
 global NOT_A_FILE: u64 = 0xfefefefefefefefe;
 global NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
-// // Same as NOT_8_RANK & NOT_H_FILE;
-// global FILL_A1_G7_MASK: u64 = 0x7f7f7f7f7f7f7f;
-
-// // Same as NOT_1_RANK & NOT_A_FILE;
-// global FILL_B2_H8_MASK: u64 = 0xfefefefefefefe00;
-
-
 // Returns arguments for `valid_orthogonal_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
-fn file_as_rank (
-    from_idx6: u6,
-    to_idx6: u6,
-    file_idx3: u3,
-    us: Bitboard,
-    them: Bitboard
-) -> (u6, u64, u64, u64, u64) {
+fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: Bitboard) -> (u6, u64, u64, u64, u64) {
     let file_mask64 = A_FILE * (1 << file_idx3 as u64);
     let file_shift64 = 7 - file_idx3;
-    
+
     // Multiplying the H file by the shifted anti-diagonal bitboard moves the
     //   H-file bits (in the same order in terms of bitwise significance) to
     //   the 8th rank (north-edge of the board).
@@ -86,12 +114,14 @@ fn file_as_rank (
         SHIFTED_ANTI_DIAGONAL,
         // only our pieces    // shift to H file
         (file_mask64 & us) << (file_shift64 as u64)
-    ) >> 56;
+    )
+        >> 56;
 
     let them_bb8 = wrapping_mul(
         SHIFTED_ANTI_DIAGONAL,
         (file_mask64 & them) << (file_shift64 as u64)
-    ) >> 56;
+    )
+        >> 56;
 
     let from_idx3 = bl::rank_idx_6_3(from_idx6) as u6;
     let from_bb = 1 << (from_idx3 as u64);
@@ -99,7 +129,6 @@ fn file_as_rank (
 
     (from_idx3, from_bb, to_bb, us_bb8, them_bb8)
 }
-
 
 // Computing valid moves involves constructing two sets of masks for each
 //   direction: negative (west) and positive (east).
@@ -117,13 +146,7 @@ fn file_as_rank (
 //   should any be present. To form the final valid move mask the relative
 //   complement of the rank mask (without the from-piece's position set) is
 //   taken.
-fn valid_orthogonal_move (
-    from_idx6: BitboardIndex,
-    from_bb: Bitboard,
-    to_bb: Bitboard,
-    us: Bitboard,
-    them: Bitboard
-) -> bool {
+fn valid_orthogonal_move(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> bool {
     // STEP 1.
     //   1) Get index of square marking the start of the current rank so we can
     //        shift that rank down to the 1st (8-bits only) (and optionally back
@@ -132,6 +155,7 @@ fn valid_orthogonal_move (
     //   3) Get occupancy masks and shift to the first rank.
     //   4) Shift move from/to single occupancy masks to first rank.
 
+    // TODO: This can go into `get_masked_move_data` instead.
     let rank_shift64 = bl::rank_start_idx_6(from_idx6) as u64; // 1.1
     let rank_mask64 = bl::rank_mask_6_64(from_idx6); // 1.2
 
@@ -140,6 +164,7 @@ fn valid_orthogonal_move (
 
     let from_bb8 = (from_bb >> rank_shift64) as u8; // 1.4
     let to_bb8 = (to_bb >> rank_shift64) as u8; // 1.4
+    // ---/ end TODO.
 
     //
     // STEP 2.
@@ -167,7 +192,7 @@ fn valid_orthogonal_move (
     let east_b_bb8 = bl::ls1b_8(east_ray & us_bb8); // 2.3
     let east_e_bb8 = bl::ls1b_8((east_ray & them_bb8) | 128); // 2.3
 
-    //    
+    //
     // STEP 3.
     //   -- With crucial masks set-up (ray masks) and our closest blockers in
     //        both rays known (if any) as well as the extent we can move to
@@ -190,7 +215,7 @@ fn valid_orthogonal_move (
 
     let west_block = bl::west_ray_3_8(bl::ms1b_idx_8_3(west_b_bb8)) | west_b_bb8; // 3.1
     let east_block = !wrapping_sub(east_b_bb8, 1); // 3.1
-    
+
     let west_extent = bl::west_ray_3_8(bl::ms1b_idx_8_3(west_e_bb8)); // 3.2
     let east_extent = bl::east_ray_3_8(bl::ms1b_idx_8_3(east_e_bb8)); // 3.2
 
@@ -199,15 +224,12 @@ fn valid_orthogonal_move (
 
     let valid_moves = valid_west | valid_east;
 
+    // DBG: Uncomment 2 lines, view in bb_web.
     // println(f"k-0xFF k-{us} k-{them} k-{west_ray} k-{east_ray} k-{valid_west} k-{valid_east} k-{valid_moves} k-0x00");
     // println(f"k-0x0");
 
-    // println(valid_moves);
-    // println(to_bb8);
-
     (valid_moves & to_bb8) > 0
 }
-
 
 impl Board {
     // Returns an array of struct members as Fields, for use in hashing
@@ -246,6 +268,11 @@ impl Board {
            "Given army does NOT have a piece at expected LERLEF index"
         );
 
+        assert(
+            from_idx != to_idx,
+           "A piece cannot move onto it's own square"
+        );
+
         let from_bb = 0 as Bitboard | 1 << from_idx;
         let to_bb = 0 as Bitboard | 1 << to_idx;
 
@@ -272,9 +299,9 @@ impl Board {
         // ----------------------------------------------
         } else if move.piece == Piece::PAWN {
             // TODO: Pawn promotion.
-            
+
             // println(f"PAWN: [start mask] {from_bb} [idx] {from_idx}");
-            
+
             // Universal shift offset (only applies when black moves).
             let dir = (army as Bitboard) << 4;
 
@@ -311,10 +338,10 @@ impl Board {
 
             // let foo_bb = ep_bb;
             // to_bb = ep_bb;
-           
+
             // println(f"k-0xFF k-{from_bb} k-{moves} k-{same_file_blockers} k-{ep} k-{diags} k-{foo_bb} k-0x00 k-0x00");
             // println(f"k-0x0");
-            
+
             assert(
                 bl::is_bit_set(moves, to_idx),
                 "PAWN move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
@@ -333,134 +360,102 @@ impl Board {
             // XXX [1] HERE AND ELSEWHERE...
             //   Due to limitations with `assert` error messages (only literals)
             //     and for test discrimination over how a move is being interpreted
-            //     we pre-rotate the board before validating an orthogonal move.
-            //     When assert supports template strings this can go inside the
-            //     `valid_orthogonal_move` function itself.
+            //     a bunch of `if` statements are added purely to provide different
+            //     assert messages to check in tests (that a move is failing on
+            //     the correct path). When `assert` supports templated strings
+            //     all those `if` statements can be removed.
 
-            // Is this a horizontal or vertical move?
-            if (file_idx3 == bl::file_idx_6_3(move.to)) {
-                // Vertical, need to rotate board and indices before calling.
+            let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-                // TODO: Could likely higher-order function this (later optimisations).
-                let ftr_data = file_as_rank(
-                    move.from,
-                    move.to,
-                    file_idx3,
-                    self.bbs[army],
-                    self.bbs[!army]
-                );
+            let is_valid = valid_orthogonal_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-                let is_valid = valid_orthogonal_move(
-                    ftr_data.0,
-                    ftr_data.1,
-                    ftr_data.2,
-                    ftr_data.3,
-                    ftr_data.4
-                );
-
-                assert(
+            if direction == SlidingDirection::VERTICAL {
+            assert(
                     is_valid,
-                    // ... and this XXX [1] `vertical`
+                    // ... XXX [1] `vertical`
                     "ROOK move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
                 );
-            } else {
-                // Horizontal, no rotation required.
-                let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+            } else if direction == SlidingDirection::HORIZONTAL {
 
-                assert(
+            assert(
                     is_valid,
-                    // So we can do this XXX [1] `horizontal`
+                    // ... XXX [1] `horizontal`
                     "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
                 );
             }
+
+            // Is this a horizontal or vertical move?
+            // if (file_idx3 == bl::file_idx_6_3(move.to)) {
+            //     // Vertical, need to rotate board and indices before calling.
+
+            //     // TODO: Could likely higher-order function this (later optimisations).
+            //     let ftr_data = file_as_rank(
+            //         move.from,
+            //         move.to,
+            //         file_idx3,
+            //         self.bbs[army],
+            //         self.bbs[!army]
+            //     );
+
+            //     let is_valid = valid_orthogonal_move(
+            //         ftr_data.0,
+            //         ftr_data.1,
+            //         ftr_data.2,
+            //         ftr_data.3,
+            //         ftr_data.4
+            //     );
+
+            //     assert(
+            //         is_valid,
+            //         // ... and this XXX [1] `vertical`
+            //         "ROOK move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+            //     );
+            // } else {
+            //     // Horizontal, no rotation required.
+            //     let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+
+            //     assert(
+            //         is_valid,
+            //         // So we can do this XXX [1] `horizontal`
+            //         "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+            //     );
+            // }
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::BISHOP {
-            // TODO
+            let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            let rank_idx = bl::rank_idx_6_3(move.from);
-            
-            let us = self.bbs[army];
-            let sq = move.from as u64;          
+            // let md0 = move_data.0;
+            // let md1 = move_data.1;
+            // let md2 = move_data.2;
+            // let md3 = move_data.3;
+            // let md4 = move_data.4;
 
-            // Loops are unrolled anyway.
-            // let mut _p_d: u64 = 0;
-            // for i in 1 .. 8 {
-            //     _p_d += ((from_bb as u127 << (9 * i)) as u64);
-            // }
+            // let us = self.bbs[army];
+            // let them = self.bbs[!army];
 
-            // Loops are unrolled anyway.
-            // let mut _n_d: u64 = 0;
-            // for i in 1 .. 8 {
-            //     _n_d += ((from_bb as u127 >> (9 * i)) as u64);
-            // }
+            let is_valid = valid_orthogonal_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-            // TODO: Positive anti-diagonal and negative anti-diagonal.
+            // let blah = is_valid as u1;
 
-            // Dtaxi = |r2 - r1| + |f2 - f1|
+            // println(f"k-0xFF k-{us} k-{them} k-{from_bb} k-{to_bb} k-{md0}, k-{md1}, k-{md2}, k-{md3}, k-{md4} k-{blah}");
+            // println(f"k-0x00");
 
-            let n1: u64 = 20;
-            let n2: u64 = 11; // expect absolute difference of 5
+            if direction == SlidingDirection::DIAGONAL {
 
-            // let mut blah = wrapping_sub(n1, n2);
-            // let mut blah = bl::abs_diff(wrapping_sub(n1, n2));
+            assert(
+                    is_valid,
+                    // ... XXX [1] `diagonal`
+                    "BISHOP move DIAGONAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            } else if direction == SlidingDirection::ANTI_DIAGONAL {
 
-           // int file1, file2, rank1, rank2;
-           // int rankDistance, fileDistance;
-           // file1 = sq1  & 7;
-           // file2 = sq2  & 7;
-           // rank1 = sq1 >> 3;
-           // rank2 = sq2 >> 3;
-           // rankDistance = abs (rank2 - rank1);
-           // fileDistance = abs (file2 - file1);
-           // return rankDistance + fileDistance;
-
-            let f1 = move.from & 7;
-            let f2 = move.to & 7;
-            let r1 = move.from >> 3;
-            let r2 = move.to >> 3;
-
-            let rd = bl::abs_diff(wrapping_sub(r2, r1));
-            let fd = bl::abs_diff(wrapping_sub(f2, f1));
-            let blah = rd + fd;
-
-  
-            
-            // int s = a >> 31; // cdq, signed shift, -1 if negative, else 0
-            //    a ^= s;  // ones' complement if negative
-            //    a -= s;  // plus one if negative -> two's complement if negative
-
-            println(f"k-0xFF k-{us} k-{from_bb} k-{to_bb} k-0x00 k-0x00 k-0x00 k-{blah} k-0x00");
-            println(f"k-0x0");
-
-           //  b |= b >> 32;
-           // b |= b >> 16;
-           // b |= b >>  8;
-           // let wat = b & 0xFF;
-
-           //  b |= b >>  4;
-           // b |= b >>  2;
-           // b |= b >>  1;
-           // b &= 0x0101010101010101 as u64;
-           // b |= b >>  7;
-           // b |= b >> 14;
-           // b |= b >> 28;
-           // let wat = b & 0xFF;
-
-
-           //  let mut b = self.bbs[army];
-
-           // let aFile   = 0x0101010101010101 as u64;
-           // let antiDia = 0x0102040810204080 as u64;
-
-           // b |= b >> 4;   // No masking needed
-           // b |= b >> 2;   //    "         "
-           // b |= b >> 1;   //    "         "
-           // let wat = wrapping_mul((b & aFile), antiDia) >> 56;
-
-            // println(f"k-0xFF k-{us} k-{from_bb} k-{diag} k-0x00 k-0x00 k-0x00 k-0x00 k-0x00");
-            // println(f"k-0x0");
-            
+            assert(
+                    is_valid,
+                    // ... XXX [1] `anti-diagonal`
+                    "BISHOP move ANTI DIAGONAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                );
+            }
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::QUEEN {
@@ -498,7 +493,7 @@ impl Board {
         } else {
             assert(false, "INVALID piece provided");
         };
-        
+
         // TODO: Need anything specific for quiet moves anymore?
         // Specifically for quiet moves, or if captures only the capturing army.
 
@@ -648,4 +643,3 @@ impl Board {
         new_board
     }
 }
-

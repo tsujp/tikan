@@ -20,12 +20,10 @@ mod BitboardOf {
     global PAWN: u3 = 7;
 }
 
-
 mod Player {
     global WHITE: u1 = 0;
     global BLACK: u1 = 1;
 }
-
 
 // XXX: Laid out this way (pawn last with king) as when promoting a pawn you
 //   cannot promote to another pawn or a king leaving 4 possible pieces which
@@ -39,6 +37,12 @@ mod Piece {
     global PAWN: u3 = 5;
 }
 
+mod SlidingDirection {
+    global HORIZONTAL: u3 = 0;
+    global VERTICAL: u3 = 1;
+    global DIAGONAL: u3 = 2;
+    global ANTI_DIAGONAL: u3 = 3;
+}
 
 // TODO: When traits are no longer experimental have `validate` done that way.
 // trait Validateable {
