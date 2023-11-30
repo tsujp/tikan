@@ -1,7 +1,9 @@
 [package]
 name = 'tikan_lib_state'
-authors = ["Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>"]
-compiler_version = '0.19.0'
+authors = [
+  "Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
+]
+compiler_version = '0.19.3+4e3a5a980b6739e9804e34d96f48d6bbcb31757f'
 type = 'lib'
 
 [dependencies]
