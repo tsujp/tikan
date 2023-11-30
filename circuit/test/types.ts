@@ -50,21 +50,21 @@ type HexDigit =
 //      See: https://github.com/dprint/dprint-plugin-typescript/issues/432
 // dprint-ignore
 type OnlyHexDigits<Str, Acc extends string = ''> =
-   Str extends `${infer D extends HexDigit}${infer Rest}`
-      ? OnlyHexDigits<Rest, `${Acc}${D}`>
-      : Acc
+    Str extends `${infer D extends HexDigit}${infer Rest}`
+    ? OnlyHexDigits<Rest, `${Acc}${D}`>
+    : Acc
 
 export type HexInt = { __tag: 'HexInt'; value: string }
 
 // dprint-ignore
 export type HexIntLiteral<
-   Hex,
-   // OriginalHex = Hex,
-   FilteredHex = OnlyHexDigits<Hex>
+    Hex,
+    // OriginalHex = Hex,
+    FilteredHex = OnlyHexDigits<Hex>
 > =
-   Hex extends FilteredHex
-      ? Hex
-      : never
+    Hex extends FilteredHex
+    ? Hex
+    : never
 
 // export function hexInt<Hex extends string> (n: Hex & HexIntLiteral<Hex>) {
 // export function hexInt<Hex extends string> (n: HexIntLiteral<Hex>): HexInt {
@@ -75,7 +75,7 @@ export type HexIntLiteral<
 //    }
 // }
 
-export function hexUint64 (n: bigint): HexInt {
+export function hexUint64(n: bigint): HexInt {
     return {
         __tag: 'HexInt',
         value: `0x${n.toString(16)}`,
@@ -94,8 +94,8 @@ export const Piece = {
 
 // TODO: Circuilt build step parses output json ABI and puts the type here (optimisation), for now manually doing this is more than fine.
 
-// Tikan library board.nr struct.
-export type Board = {
+// Tikan library game.nr struct.
+export type Game = {
     bbs: [HexInt, 8]
     army: boolean
     castle_rights: number
@@ -104,8 +104,8 @@ export type Board = {
     fullmove: number
 }
 
-// Tikan library move.nr struct.
-export type Move = {
+// Tikan library turn.nr struct.
+export type Turn = {
     piece: typeof Piece
     from: number
     to: number

@@ -1,11 +1,11 @@
 // Helper so I can declare a BigInt using underscores as seperators for easier
 //   visual grepping.
-function Big (bi: string) {
+function Big(bi: string) {
     // TODO: Check valid hex with underscores?
     return BigInt(bi.replace(/_/g, ''))
 }
 
-function board (bb: string | string[]) {
+function board(bb: string | string[]) {
     if (Array.isArray(bb)) {
         return bb.map((b) => Big(b))
     }
@@ -40,7 +40,7 @@ const f_from_rank = ' '.repeat(idnt_from_rank)
 const BOARD_SYMBOLS = ['w', 'b', 'N', 'B', 'R', 'Q', 'K', 'P']
 
 // Indices are printed in LERLEF ordering as per indexing in Tikan.
-function print_bb (
+function print_bb(
     bbs: bigint[],
     with_indices: boolean = false,
     empty_square_character: string = '0',
@@ -82,13 +82,13 @@ function print_bb (
         armies_bb.forEach((army_bb, ai) => {
             pieces_bb.forEach((piece_bb, pi) => {
                 piece_bb.forEach((_, sq_idx) => {
+                    // TODO: Bug with rendering the correct piece symbol.
                     if (army_bb[sq_idx] === '1' && piece_bb[sq_idx] === '1') {
                         // console.log('army', ai, 'has piece at', sq_idx)
                         pop_arr[sq_idx] = `${BOARD_SYMBOLS[ai]}${BOARD_SYMBOLS[pi + 2]}`
                     } else {
                         // Only set empty square character if the square hasn't been processed yet.
-                        pop_arr[sq_idx] == null &&
-                            (pop_arr[sq_idx] = empty_square_character)
+                        if (pop_arr[sq_idx] == null) (pop_arr[sq_idx] = empty_square_character)
                     }
                 })
             })
@@ -100,8 +100,8 @@ function print_bb (
         idnt_tab + Math
             .floor(
                 (7 *
-                        ((cell_width - 1) + idnt_gap +
-                            (with_indices === true ? idnt_idx : 0)) + 8) / 2,
+                    ((cell_width - 1) + idnt_gap +
+                        (with_indices === true ? idnt_idx : 0)) + 8) / 2,
             ) - Math.floor(title_indices.length / 2),
     )
 
@@ -174,3 +174,6 @@ const ROOK__SCENARIO_3 = board([
 ])
 print_bb(ROOK__SCENARIO_3, true, '.')
 //
+// const SLIDER_DIAG__01 = board(['0x27004400009630', '0x9050c232d3f20005', '0', '0', '0',
+// '0x27004400009630', '0', '0x9077c276d3f29635'])
+// print_bb(SLIDER_DIAG__01, true, '.')
