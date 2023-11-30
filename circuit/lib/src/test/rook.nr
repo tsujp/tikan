@@ -1,7 +1,7 @@
 use dep::std::println;
 
-use dep::state::board::Board;
-use dep::state::move::Move;
+use dep::state::game::Game;
+use dep::state::turn::Turn;
 use dep::state::types::{Piece, Bitboard, BitboardIndex};
 
 use crate::test::util::dump_gamestate;
@@ -23,7 +23,7 @@ use crate::test::util::dump_gamestate;
 //    1      .  0   .  1   .  2   .  3   .  4   .  5   .  6   .  7
 //
 //           a      b      c      d      e      f      g      h      [FILE]
-global R_S_03: Board = Board {
+global R_S_03: Game = Game {
     bbs: [ 0x100030000000, 0x1010000025001000, 0x100020000000, 0, 0x10000000, 0, 0, 0x1010000025001000 ],
     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1,
 };
@@ -43,7 +43,7 @@ global R_S_03: Board = Board {
 //    1      .  0   .  1   .  2   .  3  wN  4   .  5   .  6   .  7
 //
 //           a      b      c      d      e      f      g      h      [FILE]
-global R_S_04: Board = Board {
+global R_S_04: Game = Game {
     bbs: [ 0x100058000010, 0x1010000020001000, 0x100048000010, 0, 0x10000000, 0, 0, 0x1010000020001000 ],
     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1,
 };
@@ -62,7 +62,7 @@ global R_S_04: Board = Board {
 
 // Test helper only.
 fn _rom(rook_bb: Bitboard, from: BitboardIndex, to: BitboardIndex, check_bb: Bitboard) {
-    let board = Board {
+    let board = Game {
         bbs: [rook_bb, 0, 0, 0, rook_bb, 0, 0, 0],
         army: 0,
         castle_rights: 0x0000,
@@ -71,7 +71,7 @@ fn _rom(rook_bb: Bitboard, from: BitboardIndex, to: BitboardIndex, check_bb: Bit
         fullmove: 1
     };
 
-    let new_board = board.apply(Move { piece: Piece::ROOK, from, to, promotion_piece: 0 });
+    let new_board = board.apply(Turn { piece: Piece::ROOK, from, to, promotion_piece: 0 });
 
     let expected_bbs = [check_bb, 0, 0, 0, check_bb, 0, 0, 0];
 
@@ -178,8 +178,8 @@ fn empty_board__vertical__east_edge__north() {
 //     _rom(0x0800000000, 35, 39, 0x8000000000); // h5
 
 //     // TODO: Unobstructed movement.
-//     // TODO: Move north-south.
-//     // TODO: Move east-west.
+//     // TODO: Turn north-south.
+//     // TODO: Turn east-west.
 //     // TODO: Castling.
 // }
 
@@ -187,7 +187,7 @@ fn empty_board__vertical__east_edge__north() {
 //      (expected) failure subsequent logic does not execute.
 #[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_1() {
-    let block_1 = Board {
+    let block_1 = Game {
         bbs: [
             0x20000021000000,
             0x200020000a002020,
@@ -206,7 +206,7 @@ fn test_rook_blocked_1() {
     };
     // Rook tries to move west through enemy piece (some gap between them) v1.
     let _ = block_1.apply(
-        Move {
+        Turn {
             piece: Piece::ROOK,
             from: 29, // f4
             to: 24, // a4
@@ -217,7 +217,7 @@ fn test_rook_blocked_1() {
 
 #[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_2() {
-    let block_2 = Board {
+    let block_2 = Game {
         bbs: [
             0x25000000,
             0x2000200082002020,
@@ -236,7 +236,7 @@ fn test_rook_blocked_2() {
     };
     // Rook tries to move west through friendly piece (some gap between them) v1.
     let _ = block_2.apply(
-        Move {
+        Turn {
             piece: Piece::ROOK,
             from: 29, // f4
             to: 24, // a4
@@ -249,7 +249,7 @@ fn test_rook_blocked_2() {
 fn test_rook_blocked_3() {
     // ROOK_BL_03
     let _ = R_S_03.apply(
-        Move {
+        Turn {
             piece: Piece::ROOK,
             from: 28, // e4
             to: 24, // a4
@@ -262,7 +262,7 @@ fn test_rook_blocked_3() {
 fn test_rook_blocked_4() {
     // ROOK_BL_04
     let _ = R_S_04.apply(
-        Move {
+        Turn {
             piece: Piece::ROOK,
             from: 28, // e4
             to: 24, // a4
@@ -274,7 +274,7 @@ fn test_rook_blocked_4() {
 // TODO: This currently passes when it should fail as vertical isnt done.
 // #[test(should_fail_with = "ROOK move is INVALID")]
 // fn test_rook_blocked_5() {
-//     let block_5 = Board {
+//     let block_5 = Game {
 //         bbs: [
 //             0x100000100000,
 //             0,
@@ -292,7 +292,7 @@ fn test_rook_blocked_4() {
 //         fullmove: 1,
 //     };
 //     // Rook tries to move vertically through friendly piece.
-//     let rb5 = block_5.apply(Move {
+//     let rb5 = block_5.apply(Turn {
 //         piece: Piece::ROOK,
 //         from: 44,
 //         to: 20,
@@ -303,7 +303,7 @@ fn test_rook_blocked_4() {
 // TODO: Whatever this is
 // #[test(should_fail_with = "ROOK move is INVALID")]
 // fn test_rook_blocked_5() {
-// let w6 = Board {
+// let w6 = Game {
 //     bbs: [
 //         0x100000000000,
 //         0,
@@ -321,7 +321,7 @@ fn test_rook_blocked_4() {
 //     fullmove: 1,
 // };
 // Rook should be prevented from moving through enemy pieces.
-// let rb6 = w6.apply(Move {
+// let rb6 = w6.apply(Turn {
 //     piece: Piece::ROOK,
 //     // from: 28, // e4
 //     // to: 24,   // a4

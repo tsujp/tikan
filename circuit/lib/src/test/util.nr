@@ -1,7 +1,7 @@
 use dep::std::println;
 
-use dep::state::board::Board;
-use dep::state::move::Move;
+use dep::state::game::Game;
+use dep::state::turn::Turn;
 use dep::state::types::Piece;
 use dep::util::bit_logic::ls1b_8;
 
@@ -9,11 +9,11 @@ use dep::util::bit_logic::ls1b_8;
 //   serialised by a simple web frontend to visually show board state. This
 //   is being done instead of printing to stdout as with many tests such a
 //   long output will be tedious to explore.
-// This isn't on the Board struct since it's a _test_ helper not an
+// This isn't on the Game struct since it's a _test_ helper not an
 //   implementation detail.
-pub fn dump_gamestate(t: Field, b: Board) -> () {
+pub fn dump_gamestate(t: Field, b: Game) -> () {
     let tag = t;
-    
+
     let b0 = b.bbs[0];
     let b1 = b.bbs[1];
     let b2 = b.bbs[2];
@@ -30,14 +30,13 @@ pub fn dump_gamestate(t: Field, b: Board) -> () {
     println(f"k-0x0");
 }
 
-
 // TODO: Put these tests (bit_logic) in their own file.
 // TODO: Tests for ms1bu8 and is_bit_set
 
 // XXX: Ideally small tests next to the actual definition but Nargo won't execute
 //      them so whatever plop it here for now and investigate exactly why later.
 #[test]
-fn test_ls1bu8_happy () {
+fn test_ls1bu8_happy() {
     // 0xc0 & -0xc0 == 0x40
     assert(ls1b_8(0xc0) == 0x40);
 
@@ -57,8 +56,7 @@ fn test_ls1bu8_happy () {
     assert(ls1b_8(0xFF) == 0x01);
 }
 
-
 #[test(should_fail)]
-fn test_ls1bu8_sad () {
+fn test_ls1bu8_sad() {
     assert(ls1b_8(0x20) == 0x40);
 }

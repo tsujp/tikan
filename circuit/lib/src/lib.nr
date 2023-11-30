@@ -1,7 +1,7 @@
 use dep::std::println;
 
-use dep::state::board::Board;
-use dep::state::move::Move;
+use dep::state::game::Game;
+use dep::state::turn::Turn;
 use dep::state::types::Piece;
 
 mod test;
@@ -9,7 +9,7 @@ mod test;
 #[test(should_fail_with = "PAWN move is INVALID")]
 fn test_pawn_pushes_illegal() {
     // Normal starting board; white's turn.
-    let w1 = Board {
+    let w1 = Game {
         bbs: [
             0xffff,// White board
             0xffff000000000000,// Black board
@@ -20,7 +20,7 @@ fn test_pawn_pushes_illegal() {
             0x1000000000000010,// Kings
             0x00ff00000000ff00// Pawns
         ],
-        army: 0, // Current army's turn (Board::Piece enum index)
+        army: 0, // Current army's turn (Game::Piece enum index)
         castle_rights: 15, // Bitmask castle rights K Q k q, 1 = yes, 0 = no
         en_passant: 0, // En-passant target square index (LERLEF 6-bits)
         halfmove: 0, // Halfmove count
@@ -28,7 +28,7 @@ fn test_pawn_pushes_illegal() {
     };
     // White triple push.
     let _ = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 14, // g2
             to: 38, // g5
@@ -37,7 +37,7 @@ fn test_pawn_pushes_illegal() {
     );
     // Diagonal push when not capturing.
     let _ = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 14, // g2
             to: 21, // f3
@@ -46,7 +46,7 @@ fn test_pawn_pushes_illegal() {
     );
     // TODO: File a bug report, if a scenario fails with the expected assertion message but then another scenario fails with a different assertion message the #[test] still passes even though it should fail. Are #[test]s only meant to ever handle a single assert? So now need to use a different test function to avoid this.
     // TODO: Test scenario for occupied square blocking a pawn.
-    // let w2 = Board {
+    // let w2 = Game {
     //     bbs: [
     //         0x0800f7ff,
     //         0xfff7000800000000,
@@ -65,7 +65,7 @@ fn test_pawn_pushes_illegal() {
     // };
     // TODO: i.e. this silently "works" but it's actually failing with "Given army does NOT have a piece at expected LERLEF index"
     // let pp3 = w2.apply(
-    //     Move {
+    //     Turn {
     //       piece: Piece::PAWN,
     //       from: 28, // because white has no pawn at this index
     //       to: 35,
@@ -76,8 +76,8 @@ fn test_pawn_pushes_illegal() {
 
 #[test(should_fail_with = "PAWN move is INVALID")]
 fn test_pawn_pushes_blocked() {
-    // Board where white and black's d-file pawns are head-to-head.
-    let w1 = Board {
+    // Game where white and black's d-file pawns are head-to-head.
+    let w1 = Game {
         bbs: [
             0x0800f7ff,
             0xfff7000800000000,
@@ -96,7 +96,7 @@ fn test_pawn_pushes_blocked() {
     };
     // White attempts to push pawn forward 'into' black's pawn.
     let _ = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 27, // d4
             to: 35, // d5
@@ -104,8 +104,8 @@ fn test_pawn_pushes_blocked() {
         }
     );
 
-    // Board where white and black's d-file pawns are head-to-head.
-    let b1 = Board {
+    // Game where white and black's d-file pawns are head-to-head.
+    let b1 = Game {
         bbs: [
             0x0800f7ff,
             0xfff7000800000000,
@@ -124,7 +124,7 @@ fn test_pawn_pushes_blocked() {
     };
     // Black attempts to push pawn forward 'into' white's pawn.
     let _ = b1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 35, // d5
             to: 27, // d4
@@ -132,8 +132,8 @@ fn test_pawn_pushes_blocked() {
         }
     );
 
-    // Board where white has pawns that block some of black's double-pushing.
-    let b2 = Board {
+    // Game where white has pawns that block some of black's double-pushing.
+    let b2 = Game {
         bbs: [
             0x204000009fff,
             0xffff000000000000,
@@ -152,7 +152,7 @@ fn test_pawn_pushes_blocked() {
     };
     // Black attempts to double push and 'skip over' a white pawn.
     let _ = b2.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 53, // f7
             to: 37, // f5
@@ -161,7 +161,7 @@ fn test_pawn_pushes_blocked() {
     );
     // Black attempts to push pawn forward 'into' white's pawn.
     let _ = b2.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 53, // f7
             to: 45, // f6
@@ -170,7 +170,7 @@ fn test_pawn_pushes_blocked() {
     );
     // Black attempts to double push pawn forward 'into' white's pawn.
     let _ = b2.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 54, // g7
             to: 38, // g5
@@ -183,8 +183,8 @@ fn test_pawn_pushes_blocked() {
 
 #[test]
 fn test_en_passant_captures() {
-    // Board where white can perform en-passant.
-    let w1 = Board {
+    // Game where white can perform en-passant.
+    let w1 = Game {
         bbs: [
             0x080000f7ff,
             0xffef001000000000,
@@ -203,7 +203,7 @@ fn test_en_passant_captures() {
     };
     // White performs en passant capture.
     let ep1 = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 35, // d5
             to: 44, // e6
@@ -225,8 +225,8 @@ fn test_en_passant_captures() {
         ]
     );
 
-    // Board where black can perform en-passant.
-    let b1 = Board {
+    // Game where black can perform en-passant.
+    let b1 = Game {
         bbs: [
             0x2000dfff,
             0xffbf000040000000,
@@ -245,7 +245,7 @@ fn test_en_passant_captures() {
     };
     // Black performs en passant capture.
     let ep2 = b1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 30, // g4
             to: 21, // f3
@@ -272,7 +272,7 @@ fn test_en_passant_captures() {
 //
 #[test]
 fn test_pawn_pushes() {
-    let w1 = Board {
+    let w1 = Game {
         bbs: [
             0xffff,
             0xffff000000000000,
@@ -294,7 +294,7 @@ fn test_pawn_pushes() {
 
     // White double push.
     let pp1 = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 14, // g2
             to: 30, // g4
@@ -318,7 +318,7 @@ fn test_pawn_pushes() {
 
     // White single push.
     let pp2 = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 14, // g2
             to: 22, // g3
@@ -342,7 +342,7 @@ fn test_pawn_pushes() {
 
     // White single push.
     let pp3 = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 9, // b2
             to: 25, // b4
@@ -366,7 +366,7 @@ fn test_pawn_pushes() {
 
     // White single push.
     let pp4 = w1.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 9, // b2
             to: 17, // b3
@@ -403,7 +403,7 @@ fn test_valid_input_gamestate() {
 
     // Minimum valid starting board.
     //   * FEN: `4k3/pppppppp/8/8/8/8/PPPPPPPP/4K3 w - - 0 1`
-    // let b1 = Board::from_serial([
+    // let b1 = Game::from_serial([
     //     0xff10,
     //     0x10ff000000000000,
     //     0x00,
@@ -421,7 +421,7 @@ fn test_valid_input_gamestate() {
 
     // Proper starting board.
     //   * FEN: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`
-    let b = Board {
+    let b = Game {
         bbs: [
             0xffff,// White board
             0xffff000000000000,// Black board
@@ -432,7 +432,7 @@ fn test_valid_input_gamestate() {
             0x1000000000000010,// Kings
             0x00ff00000000ff00// Pawns
         ],
-        army: 0, // Current army's turn (Board::Piece enum index 0 = white, 1 = black)
+        army: 0, // Current army's turn (Game::Piece enum index 0 = white, 1 = black)
         castle_rights: 0x1111, // Bitmask castle rights K Q k q, 1 = can, 0 = cannot
         en_passant: 0, // En-passant target square index (LERLEF index, 6-bits),
         halfmove: 0, // Halfmove count
@@ -440,13 +440,13 @@ fn test_valid_input_gamestate() {
     };
 
     // TODO: Can board validation come from previous proof?
-    // TODO: Within `Board` is has validated that board state
+    // TODO: Within `Game` is has validated that board state
     //       is not illegal, now we can apply a maybe illegal
     //       move. If illegal then fail an assert.
 
     // Knight.
     let b_k1 = b.apply(
-        Move {
+        Turn {
             piece: Piece::KNIGHT,
             from: 6, // g1
             to: 21, // f3
@@ -458,7 +458,7 @@ fn test_valid_input_gamestate() {
 
     // Pawn double push from start allowed.
     let b_p2 = b.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 9, // b2
             to: 25, // b4
@@ -470,7 +470,7 @@ fn test_valid_input_gamestate() {
 
     // Pawn single push from start allowed.
     let b_p1 = b.apply(
-        Move {
+        Turn {
             piece: Piece::PAWN,
             from: 9, // b2
             to: 17, // b3
@@ -481,7 +481,7 @@ fn test_valid_input_gamestate() {
     dump_gamestate(0x03, b_p1);
     // tw(|| {
     //     let b_p1 = b.apply(
-    //         Move {
+    //         Turn {
     //             piece: Piece::PAWN,
     //             from: 9, // b2
     //             to: 17, // b3
@@ -495,12 +495,12 @@ fn test_valid_input_gamestate() {
     // Illegal move.
     // 0x800, // d2
     // A move encoded as array of 5 required fields:
-    // Piece ID: 3-bits,          (Board::Piece enum)
+    // Piece ID: 3-bits,          (Game::Piece enum)
     // From square: 64-bits,      (LERLEF)
     // To square: 64-bits,        (LERLEF)
     // Capture: 1-bit,            (0 false, 1 true)
-    // Promotion piece: 3-bits,   (Board::Piece enum)
-    // let xyz = Board::new();
+    // Promotion piece: 3-bits,   (Game::Piece enum)
+    // let xyz = Game::new();
     // println(f"t-0x69"); // Fix nargo missing newline and reset test scope.
     // Removing pawns should remove them as-by BERLEF indexing. So, here on the
     //   second rank first 3 pawns should be missing with the bitboard for
@@ -550,9 +550,9 @@ fn test_valid_input_gamestate() {
 //   serialised by a simple web frontend to visually show board state. This
 //   is being done instead of printing to stdout as with many tests such a
 //   long output will be tedious to explore.
-// This isn't on the Board struct since it's a _test_ helper not an
+// This isn't on the Game struct since it's a _test_ helper not an
 //   implementation detail.
-fn dump_gamestate(t: Field, b: Board) -> () {
+fn dump_gamestate(t: Field, b: Game) -> () {
     let tag = t;
 
     let b0 = b.bbs[0];
@@ -574,7 +574,7 @@ fn dump_gamestate(t: Field, b: Board) -> () {
 // Test helper. As there are no template assertion strings we
 //   manually assert each bitboard index so we can have a specific
 //   index in the assertion message which is used in testing.
-fn assert_bbs(real: Board, checks: [u64; 8]) {
+fn assert_bbs(real: Game, checks: [u64; 8]) {
     assert(real.bbs[0] == checks[0], "WHITE bitboards do not match");
 
     assert(real.bbs[1] == checks[1], "BLACK bitboards do not match");

@@ -1,88 +1,34 @@
-// Move generation from starting position.
-//
-// Check is not considered as it is not a part of Fog of War Chess and constitutes a huge
-//   amount of non-trivial effort for something which WILL be removed and .'. is
-//   the definition of wasted time and energy.
+// Move validation and output special bitboard state.
+
+// Validate a move as the big if statement stuff in `game.nr` (previously `board.nr`) does but do not return any bitboard masking stuff for special shit e.g. pawn en-passant captures. Instead return an Option poor mans enum which `game.nr` will if over to construct the special mask there. Seperation of concerns and all that.
 
 use dep::std::println;
 
-use crate::types::{Bitboard, BitboardIndex, BitboardOf, Piece};
+use crate::types::{Move, Game, Turn, Bitboard};
+use dep::util::bit_logic as bl;
 
-// Inner: promotion rank indices tuples (LERLEF).
-// Outer: index of army for whom their pawns promote at.
-global PROMOTION_RANKS = [
-    [56, 63],
-    [0, 7]
-];
-
-struct Move {
-    piece: u3,
-    from: BitboardIndex,
-    to: BitboardIndex,
-    promotion_piece: u2
-}
-
-
-fn assert_piece(p: u3) {
-    assert(
-        Piece::KNIGHT <= p & p <= Piece::PAWN,
-        "Piece is NOT a pawn, knight, bishop, rook, queen, or king."
-    );
-}
-
+// TODO: Continue `game.nr` refactoring. Want to get that big if-statement to
+// 1. if pawn
+// 2. else if knight
+// 3. compute sliding move mask (since all remaining pieces are sliders)
+// 4. if king restrict that mask to 1 taxicab distance about the king
 
 impl Move {
-    pub fn validate(self) {
-        println(self);
-        assert_piece(self.piece);
-        // NB: Don't need to do this anymore (depending on bb.js circuit input behaviour) as promotion piece is u2.
-        // Validate at least the _structure_ of a claimed promotion so that all
-        //   _structural_ validation is done in one place.
-        // if (
-        //     (self.piece == Piece::PAWN)
-        //         & (PROMOTION_RANKS[army][0] <= self.to)
-        //         & (self.to <= PROMOTION_RANKS[army][1])
-        // ) {
-        //     println("claimed promotion move");
-        //     assert(
-        //       "Promotion piece is NOT a knight, bishop, rook, or queen."  
-        //     );
-        // }
+    pub fn check_legal(board: Game, turn: Turn) -> bool {
+        assert(
+            // See `XXX [420]` for magic number 2.
+            bl::is_bit_set(
+                board.bbs[board.army] & board.bbs[turn.piece + 2],
+                turn.from as Bitboard
+            ),
+           "Piece in army does NOT EXIST at given index"
+        );
+
+        assert(
+            turn.from != turn.to,
+           "Cannot move onto your own square in the same turn"
+        );
+
+        true
     }
-
-    // Returns an array of struct members as Fields, for use in hashing
-    //   functions (e.g. Pedersen).
-    // pub fn decompose(self, move_salt: Field) -> [Field; 5] {
-    pub fn decompose(self) -> [Field; 4] {
-        // [self.piece as Field, self.from as Field, self.to as Field, self.promotion_piece as Field, move_salt]
-        [self.piece as Field, self.from as Field, self.to as Field, self.promotion_piece as Field]
-    }
-}
-
-
-// Compute bitmask of valid knight moves from given bitboard position. The
-//   relative complement of all _possible_ knight moves against pieces in the
-//   same army is taken to eliminate moves where the knight lands on a square
-//   that same army controls.
-//
-// Absolute difference is not used as there are no negative numbers in Noir and
-//   while if-else spahgetti-ing is an option we need the bitboard to update
-//   the gamestate anyway.
-pub fn knight_moves(from_bb: Bitboard, comp: Bitboard) -> Bitboard {
-    let l1 = (from_bb >> 1) & (0x7f7f7f7f7f7f7f7f as Bitboard);
-    let l2 = (from_bb >> 2) & (0x3f3f3f3f3f3f3f3f as Bitboard);
-    let r1 = (from_bb << 1) & (0xfefefefefefefefe as Bitboard);
-    let r2 = (from_bb << 2) & (0xfcfcfcfcfcfcfcfc as Bitboard);
-    let h1 = l1 | r1;
-    let h2 = l2 | r2;
-
-    // All valid moves (on an empty board).
-    let all_moves = (h1 << 16) | (h1 >> 16) | (h2 << 8) | (h2 >> 8);
-
-    // println(f"(empty board) all valid moves: {all_moves}");
-
-    // res_mask
-
-    // Relative complement.
-    all_moves & !comp
 }

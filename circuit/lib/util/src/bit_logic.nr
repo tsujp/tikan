@@ -34,6 +34,9 @@ pub fn ls1b_8(b: u8) -> u8 {
 pub fn is_bit_set(occupancy: u64, idx: u64) -> bool {
     ((occupancy >> idx) & 1) as bool
 }
+// pub fn is_bit_set<T>(occupancy: T, idx: T): T where Field -> bool {
+//     ((occupancy >> idx) & 1) as bool
+// }
 
 // Return single occupancy mask marking position of most significant 1-bt in
 //   the given 8-bit input, or 0 if the input has no bits set.
@@ -219,7 +222,7 @@ pub fn collapse_diagonal_to_rank_64_8(diag_occ: u64) -> u8 {
     (c & 0xFF) as u8
 }
 
-// TODO: Move the `is file or rank` move logic currently in rook here.
+// TODO: Turn the `is file or rank` move logic currently in rook here.
 
 // NB: For `on_same_XX` functions we don't want the callsite to have to order
 //     the indices and said indicies won't always be given largest first if for

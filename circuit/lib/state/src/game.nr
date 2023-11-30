@@ -2,23 +2,21 @@ use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 
 use dep::std::collections::vec::Vec;
 
-use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection};
+use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection, Game, Turn, Move};
 use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
-use crate::move::{Move, knight_moves};
+use crate::turn::{knight_moves};
 
 use dep::util::bit_logic as bl;
 
-// TODO: Rename `Board` to `Game` or something.
-
-struct Board {
-    // Square positions accessed in LERLEF order.
-    bbs: [Bitboard; REQUIRED_BITBOARDS],
-    army: u1,
-    castle_rights: u4,
-    en_passant: BitboardIndex,
-    halfmove: Field,
-    fullmove: Field
-}
+// struct Game {
+//     // Square positions accessed in LERLEF order.
+//     bbs: [Bitboard; REQUIRED_BITBOARDS],
+//     army: u1,
+//     castle_rights: u4,
+//     en_passant: BitboardIndex,
+//     halfmove: Field,
+//     fullmove: Field
+// }
 
 global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
   0xffff,
@@ -231,7 +229,7 @@ fn valid_rank_move(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard,
     (valid_moves & to_bb8) > 0
 }
 
-impl Board {
+impl Game {
     // Returns an array of struct members as Fields, for use in hashing
     //   functions (e.g. Pedersen).
     fn decompose(self) -> [Field; 13] {
@@ -252,13 +250,15 @@ impl Board {
         ]
     }
 
-    pub fn apply(self, move: Move) -> Board {
+    pub fn apply(self, move: Turn) -> Game {
         let army = self.army;
         let from_idx = move.from as Bitboard;
         let to_idx = move.to as Bitboard;
         let piece = move.piece + 2;
 
         let mut en_passant: BitboardIndex = 0;
+
+        // let move_data = Move::check_legal(self, move);
 
         assert(
             bl::is_bit_set(
@@ -270,13 +270,15 @@ impl Board {
 
         assert(
             from_idx != to_idx,
-           "Piece cannot move onto its own square in the same turn"
+           "Cannot move onto your own square in the same turn"
         );
 
         let from_bb = 0 as Bitboard | 1 << from_idx;
         let to_bb = 0 as Bitboard | 1 << to_idx;
 
         let mut special_bb = 0 as Bitboard;
+
+        // let move_data = Move::check_legal(self, move);
 
         // TODO: Could probably make these accessed by keys to remove if-else
         //       chain, or at least order based on piece move frequencies but
@@ -434,10 +436,41 @@ impl Board {
         } else if move.piece == Piece::KING {
             let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
-            // TODO
-            // TODO: Can do the same for queen but have a mask such that only
-            //       the squares immediately around the king are valid too.
+            // TODO: In future if all ranks are pre-shifted to u8 could check indices are within 1 (numerically) either side to restrict king to single square instead.
+
+            // 0xfe = not a1 in first-rank ; 0x7f = not h1 in first-rank.
+            let not_h_file = 0x7f7f7f7f7f7f7f7f as Bitboard;
+            let not_a_file = 0xfefefefefefefefe as Bitboard;
+
+            // Pretend everything outside the 1-taxicab range a king can move is all our pieces
+            //   thereby restricting king movement.
+            let king_mask = !(((not_a_file & move_data.1) >> 1) + ((not_h_file & move_data.1) << 1) + move_data.1);
+
+            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, king_mask | move_data.3, move_data.4);
+
+            if direction == SlidingDirection::VERTICAL {
+            assert(is_valid,"KING move VERTICAL is INVALID"); // XXX [1] `vertical`
+            } else if direction == SlidingDirection::HORIZONTAL {
+            assert(
+                    is_valid,
+                    // ... XXX [1] `horizontal`
+                    "KING move HORIZONTAL is INVALID"
+                );
+            } else if direction == SlidingDirection::DIAGONAL {
+
+            assert(
+                    is_valid,
+                    // ... XXX [1] `diagonal`
+                    "KING move DIAGONAL is INVALID"
+                );
+            } else if direction == SlidingDirection::ANTI_DIAGONAL {
+
+            assert(
+                    is_valid,
+                    // ... XXX [1] `anti-diagonal`
+                    "KING move ANTI DIAGONAL is INVALID"
+                );
+            }
         // ----------------------------------------------
         // ----------------------------------------------
         } else {
@@ -493,7 +526,7 @@ impl Board {
 
         // TODO: Update castle rights.
 
-        let mut new_board = Board {
+        let mut new_board = Game {
             bbs: new_bbs,
             army: !army,
             castle_rights: self.castle_rights,

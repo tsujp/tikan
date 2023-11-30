@@ -25,9 +25,11 @@ mod Player {
     global BLACK: u1 = 1;
 }
 
-// XXX: Laid out this way (pawn last with king) as when promoting a pawn you
-//   cannot promote to another pawn or a king leaving 4 possible pieces which
-//   can be described with 2-bits and those selfsame pieces are in that range.
+// XXX [420]
+//   Laid out this way (pawn last with king) as when promoting a pawn you cannot
+//   promote to another pawn or a king leaving 4 possible pieces which can be
+//   described with 2-bits and those selfsame pieces are in that range when
+//   pawns and kings are enumerated last.
 mod Piece {
     global KNIGHT: u3 = 0;
     global BISHOP: u3 = 1;
@@ -42,6 +44,25 @@ mod SlidingDirection {
     global VERTICAL: u3 = 1;
     global DIAGONAL: u3 = 2;
     global ANTI_DIAGONAL: u3 = 3;
+}
+
+struct Move {}
+
+struct Turn {
+    piece: u3,
+    from: BitboardIndex,
+    to: BitboardIndex,
+    promotion_piece: u2
+}
+
+struct Game {
+    // Square positions accessed in LERLEF order.
+    bbs: [Bitboard; REQUIRED_BITBOARDS],
+    army: u1,
+    castle_rights: u4,
+    en_passant: BitboardIndex,
+    halfmove: Field,
+    fullmove: Field
 }
 
 // TODO: When traits are no longer experimental have `validate` done that way.
