@@ -6,7 +6,21 @@ Noir.
 
 # Project structure
 
-TODO
+Major components are the JavaScript workspace for developer utilities and the test harness as well as the circuits themselves.
+
+```text
+.
+├── circuit/         # Noir FoW Chess implementation.
+├── frontend/        # FoW Chess web frontend (TODO).
+├── util/            # Dev utilities.
+│   ├── bb_term/         # View bitboards in a terminal.
+│   ├── bb_web/          # View bitboards in a web browser.
+│   └── dev/             # JS workspace package for shared dependencies.
+```
+
+## Circuits
+
+TODO: Circuit folder structure etc. Any simple sequence diagrams of how the main circuit logic is structured?
 
 
 # Dependencies
@@ -15,6 +29,8 @@ Noir is under active development if you want to build this project yourself plea
 ensure you're using **exactly** the version numbers of Noir as specified in the
 relevant files otherwise your build may not work.
 
+Currently (and as a goal) the entire project uses the same version of Noir for all circuits involved.
+
 ```
 Noir 0.19.3 (4e3a5a9)
 acvm-backend-barretenberg 0.15.1
@@ -22,6 +38,13 @@ acvm-backend-barretenberg 0.15.1
 
 
 # TODOs
+
+## Documentation
+
+- [] Repo structure.
+- [] test.sh script.
+- [] Javascript test harness.
+- [] Project structure (bitboards etc).
 
 ## Circuits
 

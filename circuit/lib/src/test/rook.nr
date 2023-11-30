@@ -23,7 +23,7 @@ use crate::test::util::dump_gamestate;
 //    1      .  0   .  1   .  2   .  3   .  4   .  5   .  6   .  7
 //
 //           a      b      c      d      e      f      g      h      [FILE]
-global R_S_03: Board = Board {    
+global R_S_03: Board = Board {
     bbs: [ 0x100030000000, 0x1010000025001000, 0x100020000000, 0, 0x10000000, 0, 0, 0x1010000025001000 ],
     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1,
 };
@@ -43,13 +43,12 @@ global R_S_03: Board = Board {
 //    1      .  0   .  1   .  2   .  3  wN  4   .  5   .  6   .  7
 //
 //           a      b      c      d      e      f      g      h      [FILE]
-global R_S_04: Board = Board {    
+global R_S_04: Board = Board {
     bbs: [ 0x100058000010, 0x1010000020001000, 0x100048000010, 0, 0x10000000, 0, 0, 0x1010000020001000 ],
     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1,
 };
 
 // GLOSSARY: Rook tests.
-
 
 // ROOK_BL_03: Rook at e4 (28) tries to move west through enemy piece (not directly
 //             next to it).
@@ -62,14 +61,9 @@ global R_S_04: Board = Board {
 // ROOK_BL_
 
 // Test helper only.
-fn _rom(
-    rook_bb: Bitboard,
-    from: BitboardIndex,
-    to: BitboardIndex,
-    check_bb: Bitboard
-) {
+fn _rom(rook_bb: Bitboard, from: BitboardIndex, to: BitboardIndex, check_bb: Bitboard) {
     let board = Board {
-        bbs: [ rook_bb, 0, 0, 0, rook_bb, 0, 0, 0 ],
+        bbs: [rook_bb, 0, 0, 0, rook_bb, 0, 0, 0],
         army: 0,
         castle_rights: 0x0000,
         en_passant: 0,
@@ -77,27 +71,21 @@ fn _rom(
         fullmove: 1
     };
 
-    let new_board = board.apply(Move {
-        piece: Piece::ROOK,
-        from: from,
-        to: to,
-        promotion_piece: 0
-    });
+    let new_board = board.apply(Move { piece: Piece::ROOK, from, to, promotion_piece: 0 });
 
-    let expected_bbs = [ check_bb, 0, 0, 0, check_bb, 0, 0, 0 ];
+    let expected_bbs = [check_bb, 0, 0, 0, check_bb, 0, 0, 0];
 
     let mut does_match = true;
 
-    for bb in 0 .. expected_bbs.len() {
+    for bb in 0..expected_bbs.len() {
         does_match &= (expected_bbs[bb] == new_board.bbs[bb]);
     }
 
     assert(does_match, "Invalid ROOK movement on empty board");
 }
 
-
 #[test(should_fail)]
-fn rook__empty_board__illegal () {
+fn rook__empty_board__illegal() {
     // Rook on a8 should not be able to "move" onto it's own square.
     _rom(0x0100000000000000, 56, 56, 0x0100000000000000); // a8
 
@@ -108,10 +96,9 @@ fn rook__empty_board__illegal () {
     _rom(0x01, 0, 0, 0x01); // a1
 }
 
-
 // Rook on a8 can move VERTICALLY SOUTH on file (a7 - a1) at WEST-EDGE of board.
 #[test]
-fn empty_board__vertical__west_edge__south () {
+fn empty_board__vertical__west_edge__south() {
     _rom(0x0100000000000000, 56, 48, 0x01000000000000); // a7
     _rom(0x0100000000000000, 56, 40, 0x010000000000); // a6
     _rom(0x0100000000000000, 56, 32, 0x0100000000); // a5
@@ -121,9 +108,8 @@ fn empty_board__vertical__west_edge__south () {
     _rom(0x0100000000000000, 56, 0, 0x01); // a1
 }
 
-
 #[test]
-fn empty_board__vertical__west_edge__north () {
+fn empty_board__vertical__west_edge__north() {
     // Rook on a1 can move VERTICALLY NORTH on file (a2 - a8) at WEST-EDGE of board.
     _rom(0x01, 0, 8, 0x0100); // a2
     _rom(0x01, 0, 16, 0x010000); // a3
@@ -134,9 +120,8 @@ fn empty_board__vertical__west_edge__north () {
     _rom(0x01, 0, 56, 0x0100000000000000); // a8
 }
 
-
 #[test]
-fn empty_board__vertical__east_edge__south () {
+fn empty_board__vertical__east_edge__south() {
     // Rook on h8 can move VERTICALLY SOUTH on file (h7 - h1) at EAST-EDGE of board.
     _rom(0x8000000000000000, 63, 55, 0x80000000000000); // h7
     _rom(0x8000000000000000, 63, 47, 0x800000000000); // h6
@@ -147,9 +132,8 @@ fn empty_board__vertical__east_edge__south () {
     _rom(0x8000000000000000, 63, 7, 0x80); // h1
 }
 
-
 #[test]
-fn empty_board__vertical__east_edge__north () {
+fn empty_board__vertical__east_edge__north() {
     // Rook on h1 can move VERTICALLY NORTH on file (h2 - h8) at EAST-EDGE of board.
     _rom(0x80, 7, 15, 0x8000); // h2
     _rom(0x80, 7, 23, 0x800000); // h3
@@ -158,12 +142,10 @@ fn empty_board__vertical__east_edge__north () {
     _rom(0x80, 7, 47, 0x800000000000); // h6
     _rom(0x80, 7, 55, 0x80000000000000); // h7
     _rom(0x80, 7, 63, 0x8000000000000000); // h8
-
     // Rook on XX can move VERTICALLY NORTH AND SOUTH on file (xx - xx) in the MIDDLE
     //   of the board.
     // TODO
 }
-
 
 // #[test]
 // fn empty_board__horizontal__north_edge__east () {
@@ -201,10 +183,9 @@ fn empty_board__vertical__east_edge__north () {
 //     // TODO: Castling.
 // }
 
-
 // XXX: Expected failure tests must be in individual functions, after the first
 //      (expected) failure subsequent logic does not execute.
-#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
+#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_1() {
     let block_1 = Board {
         bbs: [
@@ -221,19 +202,20 @@ fn test_rook_blocked_1() {
         castle_rights: 0x0000,
         en_passant: 0,
         halfmove: 0,
-        fullmove: 1,
+        fullmove: 1
     };
     // Rook tries to move west through enemy piece (some gap between them) v1.
-    let rb1 = block_1.apply(Move {
-        piece: Piece::ROOK,
-        from: 29, // f4
-        to: 24,   // a4
-        promotion_piece: 0,
-    });
+    let _ = block_1.apply(
+        Move {
+            piece: Piece::ROOK,
+            from: 29, // f4
+            to: 24, // a4
+            promotion_piece: 0
+        }
+    );
 }
 
-
-#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
+#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_2() {
     let block_2 = Board {
         bbs: [
@@ -250,45 +232,48 @@ fn test_rook_blocked_2() {
         castle_rights: 0x0000,
         en_passant: 0,
         halfmove: 0,
-        fullmove: 1,
+        fullmove: 1
     };
     // Rook tries to move west through friendly piece (some gap between them) v1.
-    let rb2 = block_2.apply(Move {
-        piece: Piece::ROOK,
-        from: 29, // f4
-        to: 24,   // a4
-        promotion_piece: 0,
-    });
+    let _ = block_2.apply(
+        Move {
+            piece: Piece::ROOK,
+            from: 29, // f4
+            to: 24, // a4
+            promotion_piece: 0
+        }
+    );
 }
 
-
-#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
+#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_3() {
     // ROOK_BL_03
-    let rb3 = R_S_03.apply(Move {
-        piece: Piece::ROOK,
-        from: 28, // e4
-        to: 24,   // a4
-        promotion_piece: 0,
-    });
+    let _ = R_S_03.apply(
+        Move {
+            piece: Piece::ROOK,
+            from: 28, // e4
+            to: 24, // a4
+            promotion_piece: 0
+        }
+    );
 }
 
-
-#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
+#[test(should_fail_with = "ROOK move HORIZONTAL is INVALID")]
 fn test_rook_blocked_4() {
     // ROOK_BL_04
-    let rb4 = R_S_04.apply(Move {
-        piece: Piece::ROOK,
-        from: 28, // e4
-        to: 24,   // a4
-        promotion_piece: 0,
-    });
+    let _ = R_S_04.apply(
+        Move {
+            piece: Piece::ROOK,
+            from: 28, // e4
+            to: 24, // a4
+            promotion_piece: 0
+        }
+    );
 }
 
-
 // TODO: This currently passes when it should fail as vertical isnt done.
-// #[test(should_fail_with = "ROOK move is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
-// fn test_rook_blocked_5() {    
+// #[test(should_fail_with = "ROOK move is INVALID")]
+// fn test_rook_blocked_5() {
 //     let block_5 = Board {
 //         bbs: [
 //             0x100000100000,
@@ -315,34 +300,33 @@ fn test_rook_blocked_4() {
 //     });
 // }
 
-
 // TODO: Whatever this is
-// #[test(should_fail_with = "ROOK move is INVALID either improper move pattern or square is already occupied by a piece on the same team")]
-// fn test_rook_blocked_5() {    
-    // let w6 = Board {
-    //     bbs: [
-    //         0x100000000000,
-    //         0,
-    //         0,
-    //         0,
-    //         0x100000000000,
-    //         0,
-    //         0,
-    //         0
-    //     ],
-    //     army: 0,
-    //     castle_rights: 0x0000,
-    //     en_passant: 0,
-    //     halfmove: 0,
-    //     fullmove: 1,
-    // };
-    // Rook should be prevented from moving through enemy pieces.
-    // let rb6 = w6.apply(Move {
-    //     piece: Piece::ROOK,
-    //     // from: 28, // e4
-    //     // to: 24,   // a4
-    //     from: 44,
-    //     to: 40,
-    //     promotion_piece: 0,
-    // });
+// #[test(should_fail_with = "ROOK move is INVALID")]
+// fn test_rook_blocked_5() {
+// let w6 = Board {
+//     bbs: [
+//         0x100000000000,
+//         0,
+//         0,
+//         0,
+//         0x100000000000,
+//         0,
+//         0,
+//         0
+//     ],
+//     army: 0,
+//     castle_rights: 0x0000,
+//     en_passant: 0,
+//     halfmove: 0,
+//     fullmove: 1,
+// };
+// Rook should be prevented from moving through enemy pieces.
+// let rb6 = w6.apply(Move {
+//     piece: Piece::ROOK,
+//     // from: 28, // e4
+//     // to: 24,   // a4
+//     from: 44,
+//     to: 40,
+//     promotion_piece: 0,
+// });
 // }

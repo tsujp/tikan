@@ -33,7 +33,7 @@ global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
 
 // Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
 //   and then transforms the move into a rank-equivalent (for feeding into
-//   `valid_orthogonal_move`).
+//   `valid_rank_move`).
 fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) {
     // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
     let mut move_data: (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) = (7, (0, 0, 0, 0, 0));
@@ -100,7 +100,7 @@ global A_FILE: u64 = 0x0101010101010101;
 global NOT_A_FILE: u64 = 0xfefefefefefefefe;
 global NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
 
-// Returns arguments for `valid_orthogonal_move` for the given file.
+// Returns arguments for `valid_rank_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
 fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: Bitboard) -> (u6, u64, u64, u64, u64) {
     let file_mask64 = A_FILE * (1 << file_idx3 as u64);
@@ -146,7 +146,7 @@ fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: B
 //   should any be present. To form the final valid move mask the relative
 //   complement of the rank mask (without the from-piece's position set) is
 //   taken.
-fn valid_orthogonal_move(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> bool {
+fn valid_rank_move(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> bool {
     // STEP 1.
     //   1) Get index of square marking the start of the current rank so we can
     //        shift that rank down to the 1st (8-bits only) (and optionally back
@@ -265,23 +265,18 @@ impl Board {
                self.bbs[army] & self.bbs[piece],
                from_idx
             ),
-           "Given army does NOT have a piece at expected LERLEF index"
+           "Piece in army does NOT EXIST at given index"
         );
 
         assert(
             from_idx != to_idx,
-           "A piece cannot move onto it's own square"
+           "Piece cannot move onto its own square in the same turn"
         );
 
         let from_bb = 0 as Bitboard | 1 << from_idx;
         let to_bb = 0 as Bitboard | 1 << to_idx;
 
         let mut special_bb = 0 as Bitboard;
-
-        // Generally need.
-        let file_idx3 = bl::file_idx_6_3(move.from);
-        // let file_mask64 = A_FILE * (1 << file_idx3);
-
 
         // TODO: Could probably make these accessed by keys to remove if-else
         //       chain, or at least order based on piece move frequencies but
@@ -293,7 +288,7 @@ impl Board {
 
             assert(
                 bl::is_bit_set(moves, to_idx),
-                "KNIGHT move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                "KNIGHT move is INVALID"
             );
         // ----------------------------------------------
         // ----------------------------------------------
@@ -344,7 +339,7 @@ impl Board {
 
             assert(
                 bl::is_bit_set(moves, to_idx),
-                "PAWN move is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                "PAWN move is INVALID"
             );
 
             // The (at this point) valid move was an en passant capture, need
@@ -367,124 +362,79 @@ impl Board {
 
             let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            let is_valid = valid_orthogonal_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
+            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
             if direction == SlidingDirection::VERTICAL {
             assert(
                     is_valid,
                     // ... XXX [1] `vertical`
-                    "ROOK move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    "ROOK move VERTICAL is INVALID"
                 );
             } else if direction == SlidingDirection::HORIZONTAL {
-
             assert(
                     is_valid,
                     // ... XXX [1] `horizontal`
-                    "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    "ROOK move HORIZONTAL is INVALID"
                 );
             }
-
-            // Is this a horizontal or vertical move?
-            // if (file_idx3 == bl::file_idx_6_3(move.to)) {
-            //     // Vertical, need to rotate board and indices before calling.
-
-            //     // TODO: Could likely higher-order function this (later optimisations).
-            //     let ftr_data = file_as_rank(
-            //         move.from,
-            //         move.to,
-            //         file_idx3,
-            //         self.bbs[army],
-            //         self.bbs[!army]
-            //     );
-
-            //     let is_valid = valid_orthogonal_move(
-            //         ftr_data.0,
-            //         ftr_data.1,
-            //         ftr_data.2,
-            //         ftr_data.3,
-            //         ftr_data.4
-            //     );
-
-            //     assert(
-            //         is_valid,
-            //         // ... and this XXX [1] `vertical`
-            //         "ROOK move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
-            //     );
-            // } else {
-            //     // Horizontal, no rotation required.
-            //     let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
-
-            //     assert(
-            //         is_valid,
-            //         // So we can do this XXX [1] `horizontal`
-            //         "ROOK move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
-            //     );
-            // }
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::BISHOP {
             let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            // let md0 = move_data.0;
-            // let md1 = move_data.1;
-            // let md2 = move_data.2;
-            // let md3 = move_data.3;
-            // let md4 = move_data.4;
-
-            // let us = self.bbs[army];
-            // let them = self.bbs[!army];
-
-            let is_valid = valid_orthogonal_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
-
-            // let blah = is_valid as u1;
-
-            // println(f"k-0xFF k-{us} k-{them} k-{from_bb} k-{to_bb} k-{md0}, k-{md1}, k-{md2}, k-{md3}, k-{md4} k-{blah}");
-            // println(f"k-0x00");
+            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
             if direction == SlidingDirection::DIAGONAL {
 
             assert(
                     is_valid,
                     // ... XXX [1] `diagonal`
-                    "BISHOP move DIAGONAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    "BISHOP move DIAGONAL is INVALID"
                 );
             } else if direction == SlidingDirection::ANTI_DIAGONAL {
 
             assert(
                     is_valid,
                     // ... XXX [1] `anti-diagonal`
-                    "BISHOP move ANTI DIAGONAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    "BISHOP move ANTI DIAGONAL is INVALID"
                 );
             }
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::QUEEN {
-            // TODO: Diagonal movement from bishop also.
+            let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            // Is this a horizontal or vertical move?
-            if (file_idx3 == bl::file_idx_6_3(move.to)) {
-                let ftr_data = file_as_rank(move.from, move.to, file_idx3, self.bbs[army], self.bbs[!army]);
+            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-                let is_valid = valid_orthogonal_move(ftr_data.0, ftr_data.1, ftr_data.2, ftr_data.3, ftr_data.4);
-
-                assert(
+            if direction == SlidingDirection::VERTICAL {
+            assert(is_valid,"QUEEN move VERTICAL is INVALID"); // XXX [1] `vertical`
+            } else if direction == SlidingDirection::HORIZONTAL {
+            assert(
                     is_valid,
-                    // ... and this XXX [1] `vertical`
-                    "QUEEN move VERTICAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    // ... XXX [1] `horizontal`
+                    "QUEEN move HORIZONTAL is INVALID"
                 );
-            } else {
-                // Horizontal, no rotation required.
-                let is_valid = valid_orthogonal_move(move.from, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+            } else if direction == SlidingDirection::DIAGONAL {
 
-                assert(
+            assert(
                     is_valid,
-                    // So we can do this XXX [1] `horizontal`
-                    "QUEEN move HORIZONTAL is INVALID either improper move pattern or square is already occupied by a piece on the same team"
+                    // ... XXX [1] `diagonal`
+                    "QUEEN move DIAGONAL is INVALID"
+                );
+            } else if direction == SlidingDirection::ANTI_DIAGONAL {
+
+            assert(
+                    is_valid,
+                    // ... XXX [1] `anti-diagonal`
+                    "QUEEN move ANTI DIAGONAL is INVALID"
                 );
             }
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::KING {
+            let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+
+            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
             // TODO
             // TODO: Can do the same for queen but have a mask such that only
             //       the squares immediately around the king are valid too.
@@ -540,6 +490,9 @@ impl Board {
         // `fullmove` is incremented after black's turn.
         let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
 
+
+        // TODO: Update castle rights.
+
         let mut new_board = Board {
             bbs: new_bbs,
             army: !army,
@@ -547,97 +500,6 @@ impl Board {
             en_passant: en_passant,
             halfmove: self.halfmove,
             fullmove: fullmove
-        };
-
-        new_board
-    }
-
-
-    // Validates input move data _structure_ and then tries to apply the move to
-    //   the current gamestate which may fail if the move is illegal.
-    // From and to are taken as indices to save us doing bitscans or 2's
-    //   complement tricks. We can simply validate its a value within closed
-    //   range 0 - 63 and produce a bitboard mask ourselves.
-    //
-    // 'Structure' meaning, for example, that the `soldier` parameter is
-    //     expected to be in closed range 2 - 7. A 3-bit unsigned integer can
-    //     itself represent closed range 0 - 8; so this must be validated.
-    pub fn apply_move(
-        self,
-        soldier: Field, // WAT1
-        from_index: Field, // WAT1
-        to_index: Field, // WAT1
-        capture: Field, // TODO: Do we really need to set this vs infer it?
-        promotion_soldier: Field // WAT1
-    ) -> Self {
-        let army = self.army;
-        println(f"apply_move(): army u-{army} moves piece u-{soldier} from u-{from_index} to u-{to_index}  /  capture? u-{capture}");
-
-        // Validate input (things from users are scary).
-        let piece = assert_piece(soldier);
-        let from_idx = assert_u6(from_index) as Bitboard;
-        let to_idx = assert_u6(to_index) as Bitboard;
-
-        // TODO: Do we NEED the capture bit set or can it be inferred?
-        assert_u1(capture);
-
-        // Validate piece to move is in-fact at starting position claimed.
-        // TODO: Board instantiation `from_serial` would have already validated
-        //       that bitboards match for given pieces so we can simply check
-        //       the index in the bitboard now.
-        assert(
-            bl::is_bit_set(
-               self.bbs[army] & self.bbs[piece],
-               from_idx
-            ),
-           "Given army does NOT have a piece at expected LERLEF index."
-        );
-
-        // Piece at location valid; create bitboard with LERLEF-index bit set.
-        let from_bb = 0 as Bitboard | 1 << from_idx;
-        println(f"from_bb: {from_bb}");
-
-        let moves = knight_moves(from_bb, self.bbs[army]);
-        println(f"(current board) all valid moves: {moves}");
-
-        // If `moves` has a 1 set at `to_idx` the requested move is valid.
-        assert(
-            bl::is_bit_set(moves, to_idx),
-            "Given move is INVALID; either improper move pattern or square is already occupied by a piece in the same team."
-        );
-
-        // Move is now fully validated and we can update the gamestate bitboard
-        //   for the current army and piece.
-        let to_bb = 0 as Bitboard | 1 << to_idx;
-        println(f"to_bb: {to_bb}");
-
-        // A bitboard with the from and to positions both set to 1.
-        let update_piece_mask = from_bb ^ to_bb;
-        println(f"post-move update mask: {update_piece_mask}");
-
-        // Since the positions in the (currently) unchanged piece bb will have
-        //   only a single bit intersection (the from_bb) XORing the update
-        //   mask with the original locations creates a bb with pieces in
-        //   their correct locations post-move.
-        let update_piece_bb = self.bbs[piece] ^ update_piece_mask;
-        println(f"update_piece_bb: {update_piece_bb}");
-
-        // Finally the army union bb must be updated.
-        let update_army_bb = self.bbs[army] ^ update_piece_mask;
-        println(f"update_army_bb: {update_army_bb}");
-
-        let mut bbs = self.bbs;
-
-        bbs[piece] ^= update_piece_mask;
-        bbs[army] ^= update_piece_mask;
-
-        let new_board = Board {
-            bbs: bbs,
-            army: !army,
-            castle_rights: self.castle_rights,
-            en_passant: self.en_passant,
-            halfmove: self.halfmove,
-            fullmove: self.fullmove
         };
 
         new_board
