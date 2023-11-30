@@ -32,7 +32,7 @@ fn main(
 
 #[test]
 fn valid_turn_advances_game() {
-    println(f"");
+    // println(f"");
 
     // Precomputed commitment for these values:
     // 0x069efdc4c6fb2aa94f6febdf5e8839df2ec8834270792c150698bc039fa50899

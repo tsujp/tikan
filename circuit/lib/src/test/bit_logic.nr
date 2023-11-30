@@ -4,6 +4,9 @@ use dep::util::bit_logic as bl;
 
 global TWO: Field = 2;
 
+// TODO: Put these tests (bit_logic) in their own file.
+// TODO: Tests for ms1bu8 and is_bit_set
+
 // XXX: Test helper only.
 fn test_diagonal_masks<T, N>(mask_defs: [[Field; 2]; N]) {
     for i in 0..mask_defs.len() {
@@ -38,7 +41,7 @@ fn test_anti_diagonal_masks<T, N>(mask_defs: [[Field; 2]; N]) {
 
 // Test diagonals which are 8 squares long (main diagonal).
 #[test]
-fn diagonal_mask__main_8() {
+fn mask__diagonal_8() {
     // Diagonal from a1 to h8 (1, 9, 18, 27, 36, 45, 54, 63).
     let indices_a1_h8 = [
         [1, 0x8040201008040200],
@@ -56,7 +59,7 @@ fn diagonal_mask__main_8() {
 
 // Test diagonals which are 7 squares long.
 #[test]
-fn diagonal_mask__main_7() {
+fn mask__diagonal_7() {
     // Diagonal from a2 to g8 (8, 17, 26, 35, 44, 53, 62).
     let indices_a2_g8 = [
         [TWO.pow_32(8), 0x4020100804020000],
@@ -86,7 +89,7 @@ fn diagonal_mask__main_7() {
 
 // Test diagonals which are 6 squares long.
 #[test]
-fn diagonal_mask__main_6() {
+fn mask__diagonal_6() {
     // Diagonal from a3 to f8 (16, 25, 34, 43, 52, 61).
     let indices_a3_f8 = [
         [TWO.pow_32(16), 0x2010080402000000],
@@ -114,7 +117,7 @@ fn diagonal_mask__main_6() {
 
 // Test diagonals which are 5 squares long.
 #[test]
-fn diagonal_mask__main_5() {
+fn mask__diagonal_5() {
     // Diagonal from a4 to e8 (24, 33, 42, 51, 60).
     let indices_a4_e8 = [
         [TWO.pow_32(24), 0x1008040200000000],
@@ -140,7 +143,7 @@ fn diagonal_mask__main_5() {
 
 // Test diagonals which are 4 squares long.
 #[test]
-fn diagonal_mask__main_4() {
+fn mask__diagonal_4() {
     // Diagonal from a5 to d8 (32, 41, 50, 59).
     let indices_a5_d8 = [
         [TWO.pow_32(32), 0x0804020000000000],
@@ -164,7 +167,7 @@ fn diagonal_mask__main_4() {
 
 // Test diagonals which are 3 squares long.
 #[test]
-fn diagonal_mask__main_3() {
+fn mask__diagonal_3() {
     // Diagonal from a6 to c8 (40, 49, 58).
     let indices_a6_c8 = [
         [TWO.pow_32(40), 0x0402000000000000],
@@ -186,7 +189,7 @@ fn diagonal_mask__main_3() {
 
 // Test diagonals which are 2 squares long.
 #[test]
-fn diagonal_mask__main_2() {
+fn mask__diagonal_2() {
     // Diagonal from a7 to b8 (48, 57).
     let indices_a7_b8 = [
         [TWO.pow_32(48), 0x0200000000000000],
@@ -206,7 +209,7 @@ fn diagonal_mask__main_2() {
 
 // Test diagonals which are 1 square long.
 #[test]
-fn diagonal_mask__main_1() {
+fn mask__diagonal_1() {
     // Diagonal a8 (56).
     let indices_a8 = [[TWO.pow_32(56), 0x00]];
 
@@ -223,7 +226,7 @@ fn diagonal_mask__main_1() {
 
 // Test anti-diagonals which are 8 squares long (main anti-diagonal).
 #[test]
-fn diagonal_mask__anti_8() {
+fn mask__anti_diagonal_8() {
     // Anti-diagonal from a1 to h8 (7, 14, 21, 28, 35, 42, 49, 56).
     let indices_a8_h1 = [
         [TWO.pow_32(7), 0x0102040810204000],
@@ -241,7 +244,7 @@ fn diagonal_mask__anti_8() {
 
 // Test anti-diagonals which are 7 squares long.
 #[test]
-fn diagonal_mask__anti_7() {
+fn mask__anti_diagonal_7() {
     // Anti-diagonal from h2 to b8 (15, 22, 29, 36, 43, 50, 57).
     let indices_h2_b8 = [
         [TWO.pow_32(15), 0x0204081020400000],
@@ -271,7 +274,7 @@ fn diagonal_mask__anti_7() {
 
 // Test anti-diagonals which are 6 squares long.
 #[test]
-fn diagonal_mask__anti_6() {
+fn mask__anti_diagonal_6() {
     // Anti-diagonal from h3 to c8 (23, 30, 37, 44, 51, 58).
     let indices_h3_c8 = [
         [TWO.pow_32(23), 0x0408102040000000],
@@ -299,7 +302,7 @@ fn diagonal_mask__anti_6() {
 
 // Test anti-diagonals which are 5 squares long.
 #[test]
-fn diagonal_mask__anti_5() {
+fn mask__anti_diagonal_5() {
     // Anti-diagonal from h4 to d8 (31, 38, 45, 52, 59).
     let indices_h4_d8 = [
         [TWO.pow_32(31), 0x0810204000000000],
@@ -325,7 +328,7 @@ fn diagonal_mask__anti_5() {
 
 // Test anti-diagonals which are 4 squares long.
 #[test]
-fn diagonal_mask__anti_4() {
+fn mask__anti_diagonal_4() {
     // Anti-diagonal from h5 to e8 (39, 46, 53, 60).
     let indices_h5_e8 = [
         [TWO.pow_32(39), 0x1020400000000000],
@@ -349,7 +352,7 @@ fn diagonal_mask__anti_4() {
 
 // Test anti-diagonals which are 3 squares long.
 #[test]
-fn diagonal_mask__anti_3() {
+fn mask__anti_diagonal_3() {
     // Anti-diagonal from h6 to f8 (47, 54, 61).
     let indices_h6_f8 = [
         [TWO.pow_32(47), 0x2040000000000000],
@@ -371,7 +374,7 @@ fn diagonal_mask__anti_3() {
 
 // Test anti-diagonals which are 2 squares long.
 #[test]
-fn diagonal_mask__anti_2() {
+fn mask__anti_diagonal_2() {
     // Anti-diagonal from h7 to g8 (55, 62).
     let indices_h7_g8 = [
         [TWO.pow_32(55), 0x4000000000000000],
@@ -391,7 +394,7 @@ fn diagonal_mask__anti_2() {
 
 // Test anti-diagonals which are 1 square long.
 #[test]
-fn diagonal_mask__anti_1() {
+fn mask__anti_diagonal_1() {
     // Anti-diagonal h8 (63).
     let indices_h8 = [[TWO.pow_32(63), 0x00]];
 
@@ -488,4 +491,33 @@ fn on_same_anti_diagonal() {
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- LEAST/MOST-SIGNIFICANT BITS
+
+#[test]
+fn test_ls1bu8_happy() {
+    // 0xc0 & -0xc0 == 0x40
+    assert(bl::ls1b_8(0xc0) == 0x40);
+
+    // 0x20 & -0x20 == 0x20
+    assert(bl::ls1b_8(0x20) == 0x20);
+
+    // 0x06 & -0x06 == 0x02
+    assert(bl::ls1b_8(0x06) == 0x02);
+
+    // 0x80 & -0x80 == 0x80 (tests wrapping)
+    assert(bl::ls1b_8(0x80) == 0x80);
+
+    // 0x00 & -0x00 = 0x00 (tests overflow)
+    assert(bl::ls1b_8(0x00) == 0x00);
+
+    // 0xFF & -0xFF == 0x01
+    assert(bl::ls1b_8(0xFF) == 0x01);
+}
+
+#[test(should_fail)]
+fn test_ls1bu8_sad() {
+    assert(bl::ls1b_8(0x20) == 0x40);
 }
