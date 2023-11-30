@@ -65,6 +65,8 @@ struct Game {
     fullmove: Field
 }
 
+// TOOD: Put SHIFTED_ANTI_DIAGONAL and other such constants here.
+
 // TODO: When traits are no longer experimental have `validate` done that way.
 // trait Validateable {
 //     fn validate(slf: Self);

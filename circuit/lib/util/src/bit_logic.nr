@@ -1,17 +1,16 @@
-use dep::std::println;
 use dep::std::{wrapping_add, wrapping_mul};
 
 // Equiv. NOT_8_RANK & NOT_H_FILE; positive diagonal pre-shift masking.
-global FILL_A1_G7_MASK: u64 = 0x7f7f7f7f7f7f7f;
+global FILL_A1_G7_MASK: u64 = 0x7F7F7F7F7F7F7F;
 
 // Equiv. NOT_1_RANK & NOT_A_FILE; negative diagonal pre-shift masking.
-global FILL_B2_H8_MASK: u64 = 0xfefefefefefefe00;
+global FILL_B2_H8_MASK: u64 = 0xFEFEFEFEFEFEFE00;
 
 // Equiv. NOT_8_RANK & NOT_A_FILE; positive anti-diagonal pre-shift masking.
-global FILL_H1_B7_MASK: u64 = 0xfefefefefefefe;
+global FILL_H1_B7_MASK: u64 = 0xFEFEFEFEFEFEFE;
 
 // Equiv. NOT_1_RANK & NOT_H_FILE; negative anti-diagonal pre-shift masking.
-global FILL_G2_A8_MASK: u64 = 0x7f7f7f7f7f7f7f00;
+global FILL_G2_A8_MASK: u64 = 0x7F7F7F7F7F7F7F00;
 
 // 'LERLEF index' means a square index (0 - 63) in little endian rank, little
 //   endian file order; and NOT a single occupancy bitboard mask.
@@ -99,11 +98,17 @@ pub fn ms1b_idx_8_3(b: u8) -> u3 {
 }
 
 pub fn reverse_8(b: u8) -> u8 {
+    // TODO: If this more efficient or is to_le_bytes() and reconstructing
+    //       the value by successively calling .pow_32() and summing more
+    //       efficient on gates?
     (((b as u64) * 0x0202020202 as u64 & 0x010884422010 as u64) % 0x03ff) as u8
 }
 
 // XXX: I believe these are flattened when compiled so it's not actually
 //      "calling" another function at runtime.
+
+// TODO: Can generic with integer size so only one of these is needed with
+//       less scuffed naming?
 
 // Helper to prevent `as u3` spam.
 pub fn rank_idx_6_3(square_idx: u6) -> u3 {

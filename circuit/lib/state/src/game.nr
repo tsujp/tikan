@@ -3,30 +3,19 @@ use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 use dep::std::collections::vec::Vec;
 
 use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection, Game, Turn, Move};
-use dep::util::utility::{assert_u64, assert_u6, assert_u4, assert_u1};
 use crate::turn::{knight_moves};
 
 use dep::util::bit_logic as bl;
 
-// struct Game {
-//     // Square positions accessed in LERLEF order.
-//     bbs: [Bitboard; REQUIRED_BITBOARDS],
-//     army: u1,
-//     castle_rights: u4,
-//     en_passant: BitboardIndex,
-//     halfmove: Field,
-//     fullmove: Field
-// }
-
 global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
-  0xffff,
-  0xffff000000000000,
+  0xFFFF,
+  0xFFFF000000000000,
   0x4200000000000042,
   0x2400000000000024,
   0x8100000000000081,
   0x0800000000000008,
   0x1000000000000010,
-  0x00ff00000000ff00
+  0x00FF00000000FF00
 ];
 
 // Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
@@ -91,12 +80,12 @@ global PAWN_START_RANKS: [Bitboard; 2] = [
     0xFF000000000000
 ];
 
-global NOT_8_RANK: u64 = 0x00ffffffffffffff;
-global NOT_1_RANK: u64 = 0xffffffffffffff00;
+global NOT_8_RANK: u64 = 0x00FFFFFFFFFFFFFF;
+global NOT_1_RANK: u64 = 0xFFFFFFFFFFFFFF00;
 
 global A_FILE: u64 = 0x0101010101010101;
-global NOT_A_FILE: u64 = 0xfefefefefefefefe;
-global NOT_H_FILE: u64 = 0x7f7f7f7f7f7f7f7f;
+global NOT_A_FILE: u64 = 0xFEFEFEFEFEFEFEFE;
+global NOT_H_FILE: u64 = 0x7F7F7F7F7F7F7F7F;
 
 // Returns arguments for `valid_rank_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
@@ -439,8 +428,8 @@ impl Game {
             // TODO: In future if all ranks are pre-shifted to u8 could check indices are within 1 (numerically) either side to restrict king to single square instead.
 
             // 0xfe = not a1 in first-rank ; 0x7f = not h1 in first-rank.
-            let not_h_file = 0x7f7f7f7f7f7f7f7f as Bitboard;
-            let not_a_file = 0xfefefefefefefefe as Bitboard;
+            let not_h_file = 0x7F7F7F7F7F7F7F7F as Bitboard;
+            let not_a_file = 0xFEFEFEFEFEFEFEFE as Bitboard;
 
             // Pretend everything outside the 1-taxicab range a king can move is all our pieces
             //   thereby restricting king movement.
