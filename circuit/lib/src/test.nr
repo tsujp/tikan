@@ -1,9 +1,6 @@
 // Piece movement.
-// mod knight;
-mod rook;
+mod knight;
 mod sliding;
-// mod queen;
-// mod king;
 mod pawn;
 
 // Bit logic.
