@@ -3,7 +3,9 @@ use crate::test::util::dump_gamestate;
 
 use dep::state::types::{Game, Turn, Piece, Bitboard, BitboardIndex};
 
+//
 // Knight tests.
+//
 
 // TODO: Tests that a knight can capture a piece and the state of the `Game` afterwards matches (correct pieces removed etc).
 
