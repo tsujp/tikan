@@ -267,7 +267,7 @@ impl Game {
 
         let mut special_bb = 0 as Bitboard;
 
-        // let move_data = Move::check_legal(self, move);
+        let move_data = Move::check_legal(self, move);
 
         // TODO: Could probably make these accessed by keys to remove if-else
         //       chain, or at least order based on piece move frequencies but
@@ -275,12 +275,15 @@ impl Game {
         // ----------------------------------------------
         // ----------------------------------------------
         if move.piece == Piece::KNIGHT {
-            let moves = knight_moves(from_bb, self.bbs[army]);
+            // knight_moves(from_idx, to_idx);
 
-            assert(
-                bl::is_bit_set(moves, to_idx),
-                "KNIGHT move is INVALID"
-            );
+
+            // let moves = knight_moves(from_bb, self.bbs[army]);
+
+            // assert(
+            //     bl::is_bit_set(moves, to_idx),
+            //     "KNIGHT move is INVALID"
+            // );
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::PAWN {
