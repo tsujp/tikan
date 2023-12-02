@@ -497,7 +497,7 @@ fn on_same_anti_diagonal() {
 // ---------------------------------------------- LEAST/MOST-SIGNIFICANT BITS
 
 #[test]
-fn test_ls1bu8_happy() {
+fn ls1bu8() {
     // 0xc0 & -0xc0 == 0x40
     assert(bl::ls1b_8(0xc0) == 0x40);
 
@@ -518,6 +518,28 @@ fn test_ls1bu8_happy() {
 }
 
 #[test(should_fail)]
-fn test_ls1bu8_sad() {
+fn ls1bu8__sad() {
     assert(bl::ls1b_8(0x20) == 0x40);
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- ABSOLUTE DIFFERENCE
+
+#[test]
+fn absolute_difference_u6() {
+    // Because this test scenario is controlled `end - start` is our expected.
+    for i in 0..8 {
+        let start = i;
+
+        for j in 0..(8 - i) {
+            let end = start + j;
+
+            let expected = end - start;
+
+            assert(bl::abs_6(start, end) == expected); // Order...
+            assert(bl::abs_6(end, start) == expected); // ...should not matter.
+            // DBG: Uncomment below.
+            // println(f"s: u-{start}, e: u-{end}, expect: {expected}");
+        }
+    }
 }

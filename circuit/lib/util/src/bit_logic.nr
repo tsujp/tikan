@@ -146,14 +146,19 @@ pub fn rank_mask_6_64(square_idx: u6) -> u64 {
     (0xFF as u64) << (rank_start_idx_6(square_idx) as u64)
 }
 
-// pub fn abs(a: u6) -> u32 {
-//     let mut y = a as u32;
-//     let s = y >> 31;
-//     y ^= s;
-//     y -= s;
+// Intended to be used to find taxicab distances (absolute rank/file diffs)
+//   for knight move-validation.
+// Given two LERLEF square indices return the absolute difference between them
+//   without overflowing.
+pub fn abs_6(a: u6, b: u6) -> u6 {
+    let mut signed_diff_bits = ((a as i8) - (b as i8)) as u8;
+    let sub = signed_diff_bits >> 4;
 
-//     y
-// }
+    signed_diff_bits ^= sub;
+    signed_diff_bits -= sub;
+
+    (signed_diff_bits & 0x0F) as u6
+}
 
 // Given single occupancy bitboard mask return mask of diagonals about
 //   that mask.
