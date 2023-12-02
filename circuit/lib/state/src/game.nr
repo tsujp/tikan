@@ -3,7 +3,6 @@ use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 use dep::std::collections::vec::Vec;
 
 use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection, Game, Turn, Move};
-use crate::turn::{knight_moves};
 
 use dep::util::bit_logic as bl;
 
