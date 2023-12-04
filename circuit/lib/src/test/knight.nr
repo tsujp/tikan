@@ -92,12 +92,12 @@ fn empty_board_illegal_01_n01() {
     _apply(N_01, 1, 63);
 }
 
-#[test(should_fail_with = "KNIGHT move pattern invalid")]
+#[test(should_fail_with = "KNIGHT move PATTERN")]
 fn empty_board_illegal_02_n01() {
     _apply(N_01, 0, 35);
 }
 
-#[test(should_fail_with = "KNIGHT move pattern invalid")]
+#[test(should_fail_with = "KNIGHT move PATTERN")]
 fn empty_board_illegal_03_n01() {
     _apply(N_01, 0, 47);
 }
@@ -119,12 +119,12 @@ fn dense_board_illegal_02_n03() {
     _apply(N_03, 21, 31);
 }
 
-#[test(should_fail_with = "KNIGHT move pattern invalid")]
+#[test(should_fail_with = "KNIGHT move PATTERN")]
 fn dense_board_illegal_03_n03() {
     _apply(N_03, 13, 32);
 }
 
-#[test(should_fail_with = "KNIGHT move pattern invalid")]
+#[test(should_fail_with = "KNIGHT move PATTERN")]
 fn dense_board_illegal_04_n03() {
     _apply(N_03, 50, 2);
 }
@@ -134,44 +134,44 @@ fn dense_board_illegal_04_n03() {
 
 // ---------------- Scenario 2
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_board_blocked_01_n02() {
     _apply(N_02, 35, 52);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_board_blocked_02_n02() {
     _apply(N_02, 35, 50);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_board_blocked_03_n02() {
     _apply(N_02, 35, 20);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_board_blocked_04_n02() {
     _apply(N_02, 35, 18);
 }
 
 // ---------------- Scenario 3
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_board_blocked_01_n03() {
     _apply(N_03, 44, 27);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_board_blocked_02_n03() {
     _apply(N_03, 44, 50);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_board_blocked_03_n03() {
     _apply(N_03, 10, 27);
 }
 
-#[test(should_fail_with = "KNIGHT cannot capture friendly pieces")]
+#[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_board_blocked_04_n03() {
     _apply(N_03, 17, 27);
 }

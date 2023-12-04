@@ -1,8 +1,8 @@
-use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
+use dep::std::{wrapping_add, wrapping_mul, wrapping_sub};
 
 use dep::std::collections::vec::Vec;
 
-use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, SlidingDirection, Game, Turn, Move};
+use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, Sliding, Game, Turn, Move};
 
 use dep::util::bit_logic as bl;
 
@@ -26,10 +26,10 @@ fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: 
 
     if (bl::rank_idx_6_6(from_idx6) == bl::rank_idx_6_6(to_idx6)) {
         // Horizontal move if the rank indices are the same.
-        move_data = (SlidingDirection::HORIZONTAL, (from_idx6, from_bb, to_bb, us, them));
+        move_data = (Sliding::HORIZONTAL, (from_idx6, from_bb, to_bb, us, them));
     } else if (bl::file_idx_6_6(from_idx6) == bl::file_idx_6_6(to_idx6)) {
         // Vertical move if file indices are the same.
-        move_data = (SlidingDirection::VERTICAL, file_as_rank(from_idx6, to_idx6, bl::file_idx_6_3(to_idx6), us, them));
+        move_data = (Sliding::VERTICAL, file_as_rank(from_idx6, to_idx6, bl::file_idx_6_3(to_idx6), us, them));
     } else if (bl::on_same_diagonal(from_idx6, to_idx6)) {
         let diag_mask = bl::diagonal_mask_64(from_bb);
 
@@ -41,7 +41,7 @@ fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: 
         let c_us = bl::collapse_diagonal_to_rank_64_8(us & diag_mask) as u64;
         let c_them = bl::collapse_diagonal_to_rank_64_8(them & diag_mask) as u64;
 
-        move_data = (SlidingDirection::DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
+        move_data = (Sliding::DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
     } else if (bl::on_same_anti_diagonal(from_idx6, to_idx6)) {
         let diag_mask = bl::anti_diagonal_mask_64(from_bb);
 
@@ -55,7 +55,7 @@ fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: 
         let c_us = bl::collapse_diagonal_to_rank_64_8(us & diag_mask) as u64;
         let c_them = bl::collapse_diagonal_to_rank_64_8(them & diag_mask) as u64;
 
-        move_data = (SlidingDirection::ANTI_DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
+        move_data = (Sliding::ANTI_DIAGONAL, (c_from_idx, c_from_bb, c_to_bb, c_us, c_them));
     } else {
         assert(false, "Improper move pattern for given sliding piece");
     }
@@ -274,17 +274,7 @@ impl Game {
         // ----------------------------------------------
         // ----------------------------------------------
         if move.piece == Piece::KNIGHT {
-            // knight_moves(from_idx, to_idx);
 
-
-            // let moves = knight_moves(from_bb, self.bbs[army]);
-
-            // assert(
-            //     bl::is_bit_set(moves, to_idx),
-            //     "KNIGHT move is INVALID"
-            // );
-        // ----------------------------------------------
-        // ----------------------------------------------
         } else if move.piece == Piece::PAWN {
             // TODO: Pawn promotion.
 
@@ -357,13 +347,13 @@ impl Game {
 
             let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-            if direction == SlidingDirection::VERTICAL {
+            if direction == Sliding::VERTICAL {
             assert(
                     is_valid,
                     // ... XXX [1] `vertical`
                     "ROOK move VERTICAL is INVALID"
                 );
-            } else if direction == SlidingDirection::HORIZONTAL {
+            } else if direction == Sliding::HORIZONTAL {
             assert(
                     is_valid,
                     // ... XXX [1] `horizontal`
@@ -377,14 +367,14 @@ impl Game {
 
             let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-            if direction == SlidingDirection::DIAGONAL {
+            if direction == Sliding::DIAGONAL {
 
             assert(
                     is_valid,
                     // ... XXX [1] `diagonal`
                     "BISHOP move DIAGONAL is INVALID"
                 );
-            } else if direction == SlidingDirection::ANTI_DIAGONAL {
+            } else if direction == Sliding::ANTI_DIAGONAL {
 
             assert(
                     is_valid,
@@ -399,22 +389,22 @@ impl Game {
 
             let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, move_data.3, move_data.4);
 
-            if direction == SlidingDirection::VERTICAL {
+            if direction == Sliding::VERTICAL {
             assert(is_valid,"QUEEN move VERTICAL is INVALID"); // XXX [1] `vertical`
-            } else if direction == SlidingDirection::HORIZONTAL {
+            } else if direction == Sliding::HORIZONTAL {
             assert(
                     is_valid,
                     // ... XXX [1] `horizontal`
                     "QUEEN move HORIZONTAL is INVALID"
                 );
-            } else if direction == SlidingDirection::DIAGONAL {
+            } else if direction == Sliding::DIAGONAL {
 
             assert(
                     is_valid,
                     // ... XXX [1] `diagonal`
                     "QUEEN move DIAGONAL is INVALID"
                 );
-            } else if direction == SlidingDirection::ANTI_DIAGONAL {
+            } else if direction == Sliding::ANTI_DIAGONAL {
 
             assert(
                     is_valid,
@@ -425,43 +415,43 @@ impl Game {
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::KING {
-            let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
+            // let (direction, move_data) = rankified_sliding_data(move.from, move.to, from_bb, to_bb, self.bbs[army], self.bbs[!army]);
 
-            // TODO: In future if all ranks are pre-shifted to u8 could check indices are within 1 (numerically) either side to restrict king to single square instead.
+            // // TODO: In future if all ranks are pre-shifted to u8 could check indices are within 1 (numerically) either side to restrict king to single square instead.
 
-            // 0xfe = not a1 in first-rank ; 0x7f = not h1 in first-rank.
-            let not_h_file = 0x7F7F7F7F7F7F7F7F as Bitboard;
-            let not_a_file = 0xFEFEFEFEFEFEFEFE as Bitboard;
+            // // 0xfe = not a1 in first-rank ; 0x7f = not h1 in first-rank.
+            // let not_h_file = 0x7F7F7F7F7F7F7F7F as Bitboard;
+            // let not_a_file = 0xFEFEFEFEFEFEFEFE as Bitboard;
 
-            // Pretend everything outside the 1-taxicab range a king can move is all our pieces
-            //   thereby restricting king movement.
-            let king_mask = !(((not_a_file & move_data.1) >> 1) + ((not_h_file & move_data.1) << 1) + move_data.1);
+            // // Pretend everything outside the 1-taxicab range a king can move is all our pieces
+            // //   thereby restricting king movement.
+            // let king_mask = !(((not_a_file & move_data.1) >> 1) + ((not_h_file & move_data.1) << 1) + move_data.1);
 
-            let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, king_mask | move_data.3, move_data.4);
+            // let is_valid = valid_rank_move(move_data.0, move_data.1, move_data.2, king_mask | move_data.3, move_data.4);
 
-            if direction == SlidingDirection::VERTICAL {
-            assert(is_valid,"KING move VERTICAL is INVALID"); // XXX [1] `vertical`
-            } else if direction == SlidingDirection::HORIZONTAL {
-            assert(
-                    is_valid,
-                    // ... XXX [1] `horizontal`
-                    "KING move HORIZONTAL is INVALID"
-                );
-            } else if direction == SlidingDirection::DIAGONAL {
+            // if direction == Sliding::VERTICAL {
+            // assert(is_valid,"KING move VERTICAL is INVALID"); // XXX [1] `vertical`
+            // } else if direction == Sliding::HORIZONTAL {
+            // assert(
+            //         is_valid,
+            //         // ... XXX [1] `horizontal`
+            //         "KING move HORIZONTAL is INVALID"
+            //     );
+            // } else if direction == Sliding::DIAGONAL {
 
-            assert(
-                    is_valid,
-                    // ... XXX [1] `diagonal`
-                    "KING move DIAGONAL is INVALID"
-                );
-            } else if direction == SlidingDirection::ANTI_DIAGONAL {
+            // assert(
+            //         is_valid,
+            //         // ... XXX [1] `diagonal`
+            //         "KING move DIAGONAL is INVALID"
+            //     );
+            // } else if direction == Sliding::ANTI_DIAGONAL {
 
-            assert(
-                    is_valid,
-                    // ... XXX [1] `anti-diagonal`
-                    "KING move ANTI DIAGONAL is INVALID"
-                );
-            }
+            // assert(
+            //         is_valid,
+            //         // ... XXX [1] `anti-diagonal`
+            //         "KING move ANTI DIAGONAL is INVALID"
+            //     );
+            // }
         // ----------------------------------------------
         // ----------------------------------------------
         } else {

@@ -258,3 +258,13 @@ pub fn on_same_anti_diagonal(a_idx: u6, b_idx: u6) -> bool {
 
     (a_rank + a_file) == (b_rank + b_file)
 }
+
+// Given two square indices return true if those indices are on the same rank.
+pub fn on_same_rank(a_idx: u6, b_idx: u6) -> bool {
+    rank_idx_6_6(a_idx) == rank_idx_6_6(b_idx)
+}
+
+// Given two square indices return true if those indices are on the same file.
+pub fn on_same_file(a_idx: u6, b_idx: u6) -> bool {
+    file_idx_6_6(a_idx) == file_idx_6_6(b_idx)
+}

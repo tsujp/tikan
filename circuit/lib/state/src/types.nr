@@ -39,7 +39,7 @@ mod Piece {
     global PAWN: u3 = 5;
 }
 
-mod SlidingDirection {
+mod Sliding {
     global HORIZONTAL: u3 = 0;
     global VERTICAL: u3 = 1;
     global DIAGONAL: u3 = 2;
