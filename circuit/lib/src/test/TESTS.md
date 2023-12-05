@@ -9,33 +9,27 @@ Rather than keeping track of wanted tests within test files and having to open s
 #### Basic pattern
   e.g. a rook should only be able to move orthogonally.
 
-  - [ ] Knight.
-  - [ ] Bishop.
-  - [ ] Rook.
-  - [ ] Queen.
-  - [ ] King.
+  - [x] Knight.
+  - [x] Sliders (Bishop, Rook, Queen, King).
+  - [x] King (restricted sliding).
   - [ ] Pawn.
 
 
 ##### Empty board
   Tests which logically stress the implementation; typically by making moves at the edges of the board. Essentially a wide range gamut test on move patterns.
 
-  - [ ] Knight.
-  - [ ] Bishop.
-  - [ ] Rook.
-  - [ ] Queen.
-  - [ ] King.
+  - [x] Knight.
+  - [ ] Sliders (Bishop, Rook, Queen, King).
+  - [x] King (restricted sliding).
   - [ ] Pawn.
 
 
 ##### Complex scenarios
   Move tests under complex scenarios (pieces on the board) such as obstructions being in the way.
 
-  - [ ] Knight.
-  - [ ] Bishop.
-  - [ ] Rook.
-  - [ ] Queen.
-  - [ ] King.
+  - [x] Knight.
+  - [ ] Sliders (Bishop, Rook, Queen, King).
+  - [ ] King (restricted sliding).
   - [ ] Pawn.
 
 ## Logic
