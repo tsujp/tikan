@@ -4,33 +4,89 @@ Rather than keeping track of wanted tests within test files and having to open s
 
 ## All Pieces
 
-### Move validations
-
-#### Basic pattern
-  e.g. a rook should only be able to move orthogonally.
-
-  - [x] Knight.
-  - [x] Sliders (Bishop, Rook, Queen, King).
-  - [x] King (restricted sliding).
-  - [ ] Pawn.
-
-
-##### Empty board
-  Tests which logically stress the implementation; typically by making moves at the edges of the board. Essentially a wide range gamut test on move patterns.
-
-  - [x] Knight.
-  - [ ] Sliders (Bishop, Rook, Queen, King).
-  - [x] King (restricted sliding).
-  - [ ] Pawn.
-
-
-##### Complex scenarios
-  Move tests under complex scenarios (pieces on the board) such as obstructions being in the way.
-
-  - [x] Knight.
-  - [ ] Sliders (Bishop, Rook, Queen, King).
-  - [ ] King (restricted sliding).
-  - [ ] Pawn.
+<table>
+  <thead>
+    <tr>
+      <td rowspan="2" colspan="2" />
+      <th scope="colgroup" />
+      <th scope="colgroup" colspan="3">Sliders</th>
+    </tr>
+    <tr>
+      <th scope="col">Knight</th>
+      <th scope="col">Bishop / Rook / Queen</th>
+      <th scope="col">King</th>
+      <th scope="col">Pawn</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="2">Pattern</th>
+      <th scope="row">Empty board</th>
+      <td>✅</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>ON IT</td>
+    </tr>
+    <tr>
+      <th scope="row">Dense board</th>
+      <td>✅</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="2">Blocked</th>
+      <th scope="row">Minimal board</th>
+      <td>✅</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Dense board</th>
+      <td>✅</td>
+      <td>❌</td>
+      <td>✅</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="5">Special</th>
+      <th scope="row">King's side castle</th>
+      <td>-</td>
+      <td>-</td>
+      <td>❌</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <th scope="row">Queen's side castle</th>
+      <td>-</td>
+      <td>-</td>
+      <td>❌</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <th scope="row">Promotion</th>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">En-passant capture</th>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">En-passant target</th>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>❌</td>
+    </tr>
+  </tbody>
+</table>
 
 ## Logic
 
