@@ -20,7 +20,14 @@ global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
 // Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
 //   and then transforms the move into a rank-equivalent (for feeding into
 //   `valid_rank_move`).
-fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) {
+fn rankified_sliding_data(
+    from_idx6: u6,
+    to_idx6: u6,
+    from_bb: Bitboard,
+    to_bb: Bitboard,
+    us: Bitboard,
+    them: Bitboard
+) -> (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) {
     // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
     let mut move_data: (u3, (BitboardIndex, Bitboard, Bitboard, Bitboard, Bitboard)) = (7, (0, 0, 0, 0, 0));
 
@@ -66,7 +73,9 @@ fn rankified_sliding_data(from_idx6: u6, to_idx6: u6, from_bb: Bitboard, to_bb: 
 fn assert_piece(p: Field) -> u3 {
     let p_cast: u3 = p as u3;
 
-    assert((p == p_cast as Field) & (BitboardOf::PAWN as u3 <= p_cast) & (p_cast <= BitboardOf::KING as u3), "Given piece is NOT a pawn, knight, bishop, rook, queen, or king.");
+    assert(
+        (p == p_cast as Field) & (BitboardOf::PAWN as u3 <= p_cast) & (p_cast <= BitboardOf::KING as u3), "Given piece is NOT a pawn, knight, bishop, rook, queen, or king."
+    );
 
     p_cast
 }
@@ -88,7 +97,13 @@ global NOT_H_FILE: u64 = 0x7F7F7F7F7F7F7F7F;
 
 // Returns arguments for `valid_rank_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
-fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: Bitboard) -> (u6, u64, u64, u64, u64) {
+fn file_as_rank(
+    from_idx6: u6,
+    to_idx6: u6,
+    file_idx3: u3,
+    us: Bitboard,
+    them: Bitboard
+) -> (u6, u64, u64, u64, u64) {
     let file_mask64 = A_FILE * (1 << file_idx3 as u64);
     let file_shift64 = 7 - file_idx3;
 
@@ -132,7 +147,13 @@ fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: B
 //   should any be present. To form the final valid move mask the relative
 //   complement of the rank mask (without the from-piece's position set) is
 //   taken.
-fn valid_rank_move(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> bool {
+fn valid_rank_move(
+    from_idx6: BitboardIndex,
+    from_bb: Bitboard,
+    to_bb: Bitboard,
+    us: Bitboard,
+    them: Bitboard
+) -> bool {
     // STEP 1.
     //   1) Get index of square marking the start of the current rank so we can
     //        shift that rank down to the 1st (8-bits only) (and optionally back
@@ -264,9 +285,8 @@ impl Game {
         let from_bb = 0 as Bitboard | 1 << from_idx;
         let to_bb = 0 as Bitboard | 1 << to_idx;
 
-        let mut special_bb = 0 as Bitboard;
-
-        let move_data = Move::check_legal(self, move);
+        let move_result = Move::check_legal(self, move);
+        // dep::std::println(move_result);
 
         // TODO: Could probably make these accessed by keys to remove if-else
         //       chain, or at least order based on piece move frequencies but
@@ -274,64 +294,9 @@ impl Game {
         // ----------------------------------------------
         // ----------------------------------------------
         if move.piece == Piece::KNIGHT {
-
+            // Removed as part of legal-check refactor. TODO: Will clean-up once refactor complete.
         } else if move.piece == Piece::PAWN {
-            // TODO: Pawn promotion.
-
-            // println(f"PAWN: [start mask] {from_bb} [idx] {from_idx}");
-
-            // Universal shift offset (only applies when black moves).
-            let dir = (army as Bitboard) << 4;
-
-            let mut moves = if (PAWN_START_RANKS[army] & from_bb) > 0 {
-                // Set us as the en passant target.
-                // TODO: shift by direction, needs to be square BEHIND so we can
-                // use one simple lookup by index.
-                en_passant = move.to;
-
-                // Double push first move; universal shift.
-                let __tmp = (from_bb << 8) >> dir;
-                __tmp | (__tmp << 8) >> dir
-            } else {
-                // Single push first move; universal shift.
-                (from_bb << 8) >> dir
-            };
-
-            // File mask of pawn.
-            let file = A_FILE * (1 << (from_idx & 7));
-
-            // Mask of pieces in current file, pawns can only capture diagonally
-            //   so exclude these squares from our push options (if they so
-            //   happen to intersect).
-            let same_file_blockers = (self.bbs[army] | self.bbs[!army]) & file;
-            moves &= !same_file_blockers;
-
-            // En passant target.
-            let ep = (1 << self.en_passant as Bitboard);
-
-            // Mask of legal diagonal movements (because an enemy piece lets
-            //   us capture); this does not include en passant.
-            let diags = (((5 << from_idx - 1) << 8) >> dir) & self.bbs[!army];
-            moves |= (diags | ep);
-
-            // let foo_bb = ep_bb;
-            // to_bb = ep_bb;
-
-            // println(f"k-0xFF k-{from_bb} k-{moves} k-{same_file_blockers} k-{ep} k-{diags} k-{foo_bb} k-0x00 k-0x00");
-            // println(f"k-0x0");
-
-            assert(
-                bl::is_bit_set(moves, to_idx),
-                "PAWN move is INVALID"
-            );
-
-            // The (at this point) valid move was an en passant capture, need
-            //   to set the capture bitboard with the correct index.
-            if (move.to == self.en_passant) {
-                // println("was an ep capture");
-                let ep_bb = (ep >> 8) << dir;
-                special_bb = ep_bb;
-            }
+            // Removed as part of legal-check refactor. TODO: Will clean-up once refactor complete.
         // ----------------------------------------------
         // ----------------------------------------------
         } else if move.piece == Piece::ROOK {
@@ -485,6 +450,8 @@ impl Game {
         let army3 = army as u3;
         let enemy3 = (!army) as u3;
 
+        let special_bb = move_result.special_bb.unwrap_or(0);
+
         let mut new_bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
         for i in 0 .. REQUIRED_BITBOARDS {
             let idx3 = i as u3;
@@ -511,7 +478,7 @@ impl Game {
             bbs: new_bbs,
             army: !army,
             castle_rights: self.castle_rights,
-            en_passant: en_passant,
+            en_passant: move_result.en_passant.unwrap_or(0),
             halfmove: self.halfmove,
             fullmove: fullmove
         };

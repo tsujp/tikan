@@ -25,7 +25,7 @@ Rather than keeping track of wanted tests within test files and having to open s
       <td>✅</td>
       <td>❌</td>
       <td>✅</td>
-      <td>ON IT</td>
+      <td>✅</td>
     </tr>
     <tr>
       <th scope="row">Dense board</th>
@@ -76,14 +76,14 @@ Rather than keeping track of wanted tests within test files and having to open s
       <td>-</td>
       <td>-</td>
       <td>-</td>
-      <td>❌</td>
+      <td>✅</td>
     </tr>
     <tr>
       <th scope="row">En-passant target</th>
       <td>-</td>
       <td>-</td>
       <td>-</td>
-      <td>❌</td>
+      <td>✅</td>
     </tr>
   </tbody>
 </table>

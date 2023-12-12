@@ -37,7 +37,7 @@ pub fn is_bit_set(occupancy: u64, idx: u64) -> bool {
 //     ((occupancy >> idx) & 1) as bool
 // }
 
-// Return single occupancy mask marking position of most significant 1-bt in
+// Return single occupancy mask marking position of most significant 1-bit in
 //   the given 8-bit input, or 0 if the input has no bits set.
 pub fn ms1b_8(b: u8) -> u8 {
     if (b == 0) {

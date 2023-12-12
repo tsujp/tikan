@@ -1,6 +1,5 @@
 use dep::std::println;
-use crate::test::util::dump_gamestate;
-
+use crate::test::util::assert_bbs;
 use dep::state::types::{Game, Turn, Move, Piece, Bitboard, BitboardIndex, Sliding};
 
 //
@@ -15,6 +14,11 @@ use dep::state::types::{Game, Turn, Move, Piece, Bitboard, BitboardIndex, Slidin
 // BOARD_SCENARIOS: Diag-slider boards.
 
 // TODO: SL_01 and SL_02 from a generic/helper itself etc?
+
+global PAWN_START_RANKS: [BitboardIndex; 16] = [
+    8, 9, 10, 11, 12, 13, 14, 15,
+    48, 49, 50, 51, 52, 53, 54, 55
+];
 
 // TODO: Paste in board from bb_term.
 // Board consists of many pawns with but a few diag-sliders. Movement is fairly
@@ -50,6 +54,64 @@ global SL_03: Game = Game {
 // XXX: Test helper only.
 fn sl03(from: BitboardIndex, to: BitboardIndex) {
     let _ = SL_03.apply(Turn { piece: Piece::KING, from, to, promotion_piece: 0 });
+}
+
+// Pawn starting ranks for white and black.
+global SL_P_01: Game = Game {
+    bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00 ],
+    army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+// Same as SL_P_01 except black's turn.
+// TODO: A way to make games more easily, generic.
+global SL_P_02: Game = Game {
+    bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00 ],
+    army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+// Pawns for both sides have all made a single push.
+global SL_P_03: Game = Game {
+    bbs: [ 0xFF0000, 0xFF0000000000, 0, 0, 0, 0, 0, 0xFF0000FF0000 ],
+    army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+// Same as SL_P_03 except black's turn.
+global SL_P_04: Game = Game {
+    bbs: [ 0xFF0000, 0xFF0000000000, 0, 0, 0, 0, 0, 0xFF0000FF0000 ],
+    army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+// XXX: Test helper only.
+fn slp03(from: BitboardIndex, to: BitboardIndex) {
+    let _ = SL_P_03.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece: 0 });
+}
+
+// XXX: Test helper only.
+fn slp04(from: BitboardIndex, to: BitboardIndex) {
+    let _ = SL_P_04.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece: 0 });
+}
+
+// Curry a game and a piece for further (simple) tests.
+// fn _cur<Env>(game: Game, piece: u3) {}
+// fn _ting(wat: Field) -> fn[(Field, Field, Field)](Field) -> Field {
+//     let a = 0;
+//     let b = 0;
+//     let c = wat; // `c` is arg to `_ting`
+
+//     // `foo` is arg to returned lambda `x`.
+//     |foo| a + b + foo + blah
+// }
+// let x = _ting(3);
+// let y = x(1);
+// println(y);
+
+// Immutable `C`urried `C`losure.
+// Curried parameters `game` and `piece` are always the same for each call to the
+//   lambda returned by this function; meaning many test cases can be made
+//   against the same base state.
+// If the new state is desired one can bind the return value and invoke `.apply`.
+fn _cc(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex) -> Game {
+    |from, to| game.apply(Turn { piece, from, to, promotion_piece: 0 })
 }
 
 // ---------------------------------------------------------------------------
@@ -94,8 +156,8 @@ fn empty_board__diagonal__north_edge__south() {
 
     let new_board = board.apply(
         Turn {
-            piece: Piece::BISHOP,
-            //
+        piece: Piece::BISHOP,
+        //
         // from: 52,
         // to: 10,
         //
@@ -111,10 +173,10 @@ fn empty_board__diagonal__north_edge__south() {
         // from: 50,
         // to: 16,
         // diagonal
-            from: 20,
-            to: 27,
-            promotion_piece: 0
-        }
+        from: 20,
+        to: 27,
+        promotion_piece: 0
+    }
     );
 }
 
@@ -221,55 +283,89 @@ fn king_s03() {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN EMPTY BOARD
+
+#[test]
+fn pawxn_xx() {
+    let game = SL_P_01;
+    let piece = Piece::PAWN;
+
+    println(f"");
+
+    // White sut.
+    let sut_white = _cc(game, piece);
+    // println("----------- WHITE DOUBLE HOME");
+    // let w_double = sut_white(9, 25); // b2 -> b4.
+    // println(w_double);
+
+    let sut_black = _cc(SL_P_02, piece);
+    println("----------- BLACK DOUBLE HOME");
+    let b_double = sut_black(54, 38); // g7 -> g5.
+    println(b_double);
+    println("----------- BLACK SINGLE HOME");
+    let b_single = sut_black(50, 42); // c7 -> c6.
+    println(b_single);
+    println("----------- WHITE DOUBLE HOME"); // b2 -> b4.
+    let w_double_home = b_single.apply(Turn { piece, from: 9, to: 25, promotion_piece: 0 });
+    println(w_double_home);
+    println("----------- BLACK SINGLE AWAY");
+    let b_single_away = w_double_home.apply(Turn { piece, from: 42, to: 34, promotion_piece: 0 });
+    // let b_single_away = sut_black(44, 36); // e6 -> e5.
+    println(b_single_away);
+}
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------- KING ILLEGAL (MOVE PATTERN)
 
 // ---------------- Scenario 2
 
 #[test(should_fail_with = "KING move DIAGONAL PATTERN")]
-fn king_illegal_03_s02() {
+fn king_dense_pattern_03_s02() {
     // Attempt to move two squares north-east.
     sl02(34, 52);
 }
 
+// TODO: More dense tests?
+
 // ---------------- Scenario 3
 
 #[test(should_fail_with = "KING move VERTICAL PATTERN")]
-fn king_illegal_01_s03() {
+fn king_empty_pattern_01_s03() {
     sl03(20, 36); // n (e3 -> e5)
 }
 
 #[test(should_fail_with = "KING move DIAGONAL PATTERN")]
-fn king_illegal_02_s03() {
+fn king_empty_pattern_02_s03() {
     sl03(20, 38); // ne
 }
 
 #[test(should_fail_with = "KING move HORIZONTAL PATTERN")]
-fn king_illegal_03_s03() {
+fn king_empty_pattern_03_s03() {
     sl03(20, 22); // e
 }
 
 #[test(should_fail_with = "KING move ANTI DIAGONAL PATTERN")]
-fn king_illegal_04_s03() {
+fn king_empty_pattern_04_s03() {
     sl03(20, 6); // se
 }
 
 #[test(should_fail_with = "KING move VERTICAL PATTERN")]
-fn king_illegal_05_s03() {
+fn king_empty_pattern_05_s03() {
     sl03(20, 4); // s
 }
 
 #[test(should_fail_with = "KING move DIAGONAL PATTERN")]
-fn king_illegal_06_s03() {
+fn king_empty_pattern_06_s03() {
     sl03(20, 2); // sw
 }
 
 #[test(should_fail_with = "KING move HORIZONTAL PATTERN")]
-fn king_illegal_07_s03() {
+fn king_empty_pattern_07_s03() {
     sl03(20, 18); // w
 }
 
 #[test(should_fail_with = "KING move ANTI DIAGONAL PATTERN")]
-fn king_illegal_08_s03() {
+fn king_empty_pattern_08_s03() {
     sl03(20, 34); // nw
 }
 
@@ -277,19 +373,570 @@ fn king_illegal_08_s03() {
 // ---------------------------------------------- KING ILLEGAL (BLOCKED)
 
 #[test(should_fail_with = "SLIDER move HORIZONTAL BLOCKED")]
-fn king_illegal_01_s02() {
+fn king_dense_blocked_01_s02() {
     sl02(49, 48);
 }
 
 #[test(should_fail_with = "SLIDER move HORIZONTAL BLOCKED")]
-fn king_illegal_02_s02() {
+fn king_dense_blocked_02_s02() {
     sl02(49, 50);
+}
+
+// TODO: Moar king dense?
+// TODO: King minimal blocked.
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN ILLEGAL (MOVE PATTERN)
+
+// ---------------- Scenario P 3
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_01_slp03() {
+    slp03(16, 32); // Double vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_02_slp03() {
+    slp03(16, 40); // Triple vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_03_slp03() {
+    slp03(16, 48); // Quadruple vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_04_slp03() {
+    slp03(16, 56); // Quintuple vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIRECTION PATTERN")]
+fn pawn_empty_pattern_05_slp03() {
+    slp03(16, 8); // Backwards single vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIRECTION PATTERN")]
+fn pawn_empty_pattern_06_slp03() {
+    slp03(16, 0); // Backwards double vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_07_slp03() {
+    slp03(16, 25); // Diagonal (no capture) single.
+}
+
+#[test(should_fail_with = "PAWN move DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_08_slp03() {
+    slp03(16, 34); // Diagonal (no capture) double.
+}
+
+#[test(should_fail_with = "PAWN move ANTI-DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_09_slp03() {
+    slp03(18, 25); // Anti-diagonal (no capture) single.
+}
+
+#[test(should_fail_with = "PAWN move ANTI-DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_10_slp03() {
+    slp03(18, 32); // Anti-diagonal (no capture) double.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_11_slp03() {
+    slp03(16, 17); // Purely horizontal eastwards single.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN)]
+fn pawn_empty_pattern_12_slp03() {
+    slp03(17, 16); // Purely horizontal westwards single.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_13_slp03() {
+    slp03(16, 23); // Purely horizontal eastwards septuple.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_14_slp03() {
+    slp03(23, 16); // Purely horizontal westwards septuple.
+}
+
+// ---------------- Scenario P 4
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_01_slp04() {
+    slp04(40, 24); // Double vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_02_slp04() {
+    slp04(40, 16); // Triple vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_03_slp04() {
+    slp04(40, 8); // Quadruple vertical.
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_empty_pattern_04_slp04() {
+    slp04(40, 0); // Quintuple vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIRECTION PATTERN")]
+fn pawn_empty_pattern_05_slp04() {
+    slp04(40, 48); // Backwards single vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIRECTION PATTERN")]
+fn pawn_empty_pattern_06_slp04() {
+    slp04(40, 56); // Backwards double vertical.
+}
+
+#[test(should_fail_with = "PAWN move DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_07_slp04() {
+    slp04(47, 38); // Diagonal (no capture) single.
+}
+
+#[test(should_fail_with = "PAWN move DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_08_slp04() {
+    slp04(47, 29); // Diagonal (no capture) double.
+}
+
+#[test(should_fail_with = "PAWN move ANTI-DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_09_slp04() {
+    slp04(40, 33); // Anti-diagonal (no capture) single.
+}
+
+#[test(should_fail_with = "PAWN move ANTI-DIAGONAL CAPTURE PATTERN")]
+fn pawn_empty_pattern_10_slp04() {
+    slp04(40, 26); // Anti-diagonal (no capture) double.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_11_slp04() {
+    slp04(40, 41); // Purely horizontal eastwards single.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN)]
+fn pawn_empty_pattern_12_slp04() {
+    slp04(41, 40); // Purely horizontal westwards single.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_13_slp04() {
+    slp04(40, 47); // Purely horizontal eastwards septuple.
+}
+
+#[test(should_fail_with = "PAWN move HORIZONTAL PATTERN")]
+fn pawn_empty_pattern_14_slp04() {
+    slp04(47, 40); // Purely horizontal westwards septuple.
 }
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- GENERAL ILLEGAL (BLOCKED)
 
 #[test(should_fail_with = "SLIDER move ANTI DIAGONAL BLOCKED")]
-fn general_diag_blocked_s01() {
+fn general_dense_blocked_s01() {
     sl01(49, 21);
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN SPECIAL (PROMOTION)
+
+#[test]
+fn pawn_promotion_TODO() {
+    // TODO
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN SPECIAL (EP CAPTURE)
+
+// ---------------- White and black valid en-passant captures
+#[test]
+fn pawn_en_passant_pattern_01() {
+    // White can perform en-passant.
+    let g = Game {
+        bbs: [
+            0x080000F7FF,
+            0xFFEF001000000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xEF00180000F700
+        ],
+        army: 0,
+        castle_rights: 15,
+        en_passant: 44, // e6
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // White performs en passant capture.
+    let res = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 35, // d5
+        to: 44, // e6
+        promotion_piece: 0
+    }
+    );
+    assert_bbs(
+        res,
+        [
+        0x10000000F7FF,
+        0xFFEF000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xEF10000000F700
+    ]
+    );
+}
+
+#[test]
+fn pawn_en_passant_pattern_02() {
+    // Black can perform en-passant.
+    let g = Game {
+        bbs: [
+            0x1926C00FF,
+            0xFF01863840000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFF018639D26C00FF
+        ],
+        army: 1,
+        castle_rights: 15,
+        en_passant: 23, // h3
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // Black performs en passant capture.
+    let res = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 30, // g4
+        to: 23, // h3
+        promotion_piece: 0
+    }
+    );
+    assert_bbs(
+        res,
+        [
+        0x1126C00FF,
+        0xFF01863800800000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xFF01863912EC00FF
+    ]
+    );
+}
+
+// ---------------- White illegal en-passant captures
+
+#[test(should_fail_with = "SLIDER move PATTERN")]
+fn pawn_en_passant_pattern_03() {
+    // Black has just double-pushed a pawn and so that pawn is technically
+    //   en-passant capturable; however white has no pawns in-position to do so.
+    let g = Game {
+        bbs: [
+            0x40000FBFF,
+            0xFFEF001000000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFFEF00140000FBFF
+        ],
+        army: 0,
+        castle_rights: 15,
+        en_passant: 44, // e6
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // White tries to en-passant capture black's pawn from the other side of
+    //   the board. Naughty little fucker.
+    // In this case the pawn is not moving like a slider but as a knight, so
+    //   this fails when trying to rankify the data.
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 34, // c5
+        to: 44, // e6
+        promotion_piece: 0
+    }
+    );
+}
+
+#[test(should_fail_with = "PAWN special move DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_pattern_04() {
+    // Same as 2's but white's pawn along a diagonal.
+    let g = Game {
+        bbs: [
+            0x400FBFF,
+            0xFFEF001000000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFFEF00100400FBFF
+        ],
+        army: 0,
+        castle_rights: 15,
+        en_passant: 44, // e6
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // White is still being a naughty little fucker.
+    // This will fail in pawn-specific logic as the pawn is moving along a valid
+    //   sliding line (and so rankifying that data succeeds) but of course
+    //   moving along said line illegally.
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 26, // c4
+        to: 44, // e6
+        promotion_piece: 0
+    }
+    );
+}
+
+#[test(should_fail_with = "PAWN special move ANTI-DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_pattern_05() {
+    // Similar as 3's except along the anti-diagonal ...
+    let g = Game {
+        bbs: [
+            0xFFFF,
+            0xFFEF001000000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFFFE00010000FFFF
+        ],
+        army: 0,
+        castle_rights: 15,
+        en_passant: 40, // a6
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // ... and white is (illegally) en-passant'ing from their pawn home rank.
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 12, // e2
+        to: 40, // a6
+        promotion_piece: 0
+    }
+    );
+}
+
+// ---------------- Black illegal en-passant captures
+
+#[test(should_fail_with = "SLIDER move PATTERN")]
+fn pawn_en_passant_pattern_06() {
+    // White has just double pushed a pawn etc etc same as the scenarios
+    //   immediately above.
+    let g = Game {
+        bbs: [
+            0x55AA00FF,
+            0xFF00AA5500000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFF00AA5555AA00FF
+        ],
+        army: 1,
+        castle_rights: 15,
+        en_passant: 18, // c3
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // Black illegal en-passant capture (non-sliding movement).
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 43, // d6
+        to: 18, // c3
+        promotion_piece: 0
+    }
+    );
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_en_passant_pattern_07() {
+    // White has just double pushed a pawn etc etc same as the scenarios
+    //   immediately above.
+    let g = Game {
+        bbs: [
+            0x55AA00FF,
+            0xFF00AA5500000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFF00AA5555AA00FF
+        ],
+        army: 1,
+        castle_rights: 15,
+        en_passant: 18, // c3
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // Black illegal en-passant capture (slides through same file to en-passant
+    //   target square).
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 34, // c5
+        to: 18, // c3
+        promotion_piece: 0
+    }
+    );
+}
+
+#[test(should_fail_with = "PAWN special move DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_pattern_08() {
+    // White has just double pushed a pawn etc etc same as the scenarios
+    //   immediately above.
+    let g = Game {
+        bbs: [
+            0x55AA00FF,
+            0xFF00AA5500000000,
+            0x4200000000000042,
+            0x2400000000000024,
+            0x8100000000000081,
+            0x0800000000000008,
+            0x1000000000000010,
+            0xFF00AA5555AA00FF
+        ],
+        army: 1,
+        castle_rights: 15,
+        en_passant: 18, // c3
+        halfmove: 0,
+        fullmove: 1
+    };
+
+    // Black illegal en-passant capture (slides diagonally from far away).
+    let _ = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 36, // e5
+        to: 18, // c3
+        promotion_piece: 0
+    }
+    );
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN SPECIAL (EP TARGET)
+
+// A pawn that has just double-pushed should be the en-passant target.
+#[test]
+fn pawn_en_passant_target_double() {
+    let piece = Piece::PAWN;
+    let double_move_delta = 16;
+    let en_passant_delta = 8; // Same as a single move.
+
+    let sut_white = _cc(SL_P_01, piece);
+    let sut_black = _cc(SL_P_02, piece);
+
+    for from in PAWN_START_RANKS {
+        let data: (u6, Game) = if from > 15 {
+            let to = from - double_move_delta;
+            let ep = from - en_passant_delta;
+            (ep, sut_black(from, to))
+        } else {
+            let to = from + double_move_delta;
+            let ep = from + en_passant_delta;
+            (ep, sut_white(from, to))
+        };
+
+        assert(data.0 == data.1.en_passant);
+    }
+}
+
+// Do not set a pawn that single-pushes as an en-passant target.
+#[test]
+fn pawn_en_passant_target_single() {
+    let piece = Piece::PAWN;
+    let single_move_delta = 8;
+
+    let sut_white = _cc(SL_P_01, piece);
+    let sut_black = _cc(SL_P_02, piece);
+
+    for from in PAWN_START_RANKS {
+        let data: Game = if from > 15 {
+            let to = from - single_move_delta;
+            sut_black(from, to)
+        } else {
+            let to = from + single_move_delta;
+            sut_white(from, to)
+        };
+
+        assert(data.en_passant == 0);
+    }
+}
+
+// TODO: PR that empty tests should not be considered as ran, i.e. they should
+//       be ignored. A test should require an `assert` is made as well as
+//       having the `#[test]` attribute.
+// En-passant targets are only valid for the subsequent turn and must be
+//   cleared afterwards.
+#[test]
+fn pawn_en_passant_target_clear_slp01() {
+    let game = SL_P_01;
+    let piece = Piece::PAWN;
+
+    let white_to_move = _cc(game, piece);
+
+    let post_white = white_to_move(11, 27); // White d2 -> d4.
+    assert(post_white.en_passant == 19); // En-passant target is d3 (behind d4).
+    let black_to_move = _cc(post_white, piece);
+    let post_black = black_to_move(55, 47); // Black h7 -> h6.
+    assert(post_black.en_passant == 0); // En-passant target should be reset.
+}
+
+#[test]
+fn pawn_en_passant_target_clear_slp02() {
+    let game = SL_P_02;
+    let piece = Piece::PAWN;
+
+    let black_to_move = _cc(game, piece);
+
+    let post_black = black_to_move(50, 34); // Black c7 -> c5.
+    assert(post_black.en_passant == 42); // En-passant target is c6 (behind c7).
+    let white_to_move = _cc(post_black, piece);
+    let post_white = white_to_move(8, 16); // White a2 -> a3.
+    assert(post_white.en_passant == 0); // En-passant target should be reset.
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- KING / ROOK SPECIAL (CASTLE)
+
+#[test]
+fn king_side_castle_TODO() {}
+
+#[test]
+fn queen_side_castle_TODO() {}

@@ -7,9 +7,16 @@ use crate::types::{Bitboard, BitboardIndex};
 // For 90-degree clockwise single-file-to-rank rotation.
 global SHIFTED_ANTI_DIAGONAL: u64 = 0x02040810204081;
 
+// Indexed in the same order as `types.nr::Player` (white then black).
 global PAWN_START_RANKS: [Bitboard; 2] = [
     0xFF00,
     0xFF000000000000
+];
+
+// Indexed in the same order as `types.nr::Player` (white then black).
+global PAWN_END_RANKS: [Bitboard; 2] = [
+    0xFF00000000000000,
+    0xFF
 ];
 
 // Area masks for pre-shift overflow prevention.

@@ -1,3 +1,5 @@
+use dep::std::option::Option;
+
 type Bitboard = u64;
 type BitboardIndex = u6; // 6-bits required to index 64-bit bitboard.
 
@@ -47,6 +49,11 @@ mod Sliding {
 }
 
 struct Move {}
+
+struct MoveResult {
+    en_passant: Option<BitboardIndex>,
+    special_bb: Option<Bitboard> // Poorly named but removing bitboard implementation so as-is for now.
+}
 
 struct Turn {
     piece: u3,

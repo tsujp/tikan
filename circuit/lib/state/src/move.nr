@@ -1,6 +1,7 @@
 use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
+use dep::std::option::Option;
 use dep::util::bit_logic as bl;
-use crate::types::{Bitboard, BitboardIndex, Move, Game, Turn, Piece, Sliding};
+use crate::types::{Bitboard, BitboardIndex, Move, Game, Turn, Piece, Player, Sliding, MoveResult};
 use crate::bitboards as bb;
 
 //
@@ -16,6 +17,17 @@ use crate::bitboards as bb;
 //     statements are added purely to provide different assert messages to check
 //     in said tests (that a move is failing on the correct path). When `assert`
 //     supports templated strings all those `if` statements can be removed.
+
+// ---------------------------------------------------------------------------
+
+// When rankified white pawns starting index (from which they can double-push)
+//   is always 1 and black's is always 6.
+// `BitboardIndex` as we need to compare it to the rankified value which is this
+//   type.
+global PAWN_START_RANKIFIED: [BitboardIndex; 2] = [1, 6];
+
+// Similarly the promotion ranks when rankified for white and black are 7 and 0.
+global PAWN_PROMOTION_RANKIFIED: [BitboardIndex; 2] = [7, 0];
 
 // ---------------------------------------------------------------------------
 
@@ -51,7 +63,13 @@ impl Data {
 
 // Returns arguments for `valid_rank_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
-fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: Bitboard) -> (u6, u64, u6, u64, u64, u64) {
+fn file_as_rank(
+    from_idx6: u6,
+    to_idx6: u6,
+    file_idx3: u3,
+    us: Bitboard,
+    them: Bitboard
+) -> (u6, u64, u6, u64, u64, u64) {
     let file_mask64 = bb::A_FILE * (1 << file_idx3 as u64);
     let file_shift64 = 7 - file_idx3;
 
@@ -86,7 +104,12 @@ fn file_as_rank(from_idx6: u6, to_idx6: u6, file_idx3: u3, us: Bitboard, them: B
 // ---------------------------------------------- ANYTHING TO RANK
 
 //
-fn collapse_diag(from_bb: Bitboard, to_bb: Bitboard, us_occ_bb: Bitboard, them_occ_bb: Bitboard) -> (Bitboard, Bitboard, Bitboard, Bitboard) {
+fn collapse_diag(
+    from_bb: Bitboard,
+    to_bb: Bitboard,
+    us_occ_bb: Bitboard,
+    them_occ_bb: Bitboard
+) -> (Bitboard, Bitboard, Bitboard, Bitboard) {
     (
         bl::collapse_diagonal_to_rank_64_8(from_bb) as u64, bl::collapse_diagonal_to_rank_64_8(to_bb) as u64, bl::collapse_diagonal_to_rank_64_8(us_occ_bb) as u64, bl::collapse_diagonal_to_rank_64_8(them_occ_bb) as u64
     )
@@ -163,74 +186,6 @@ fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
     }
 }
 
-// To be returned from all `PIECE_legal` functions (common interface), only
-//   some have data we actually care about updating however.
-// struct MoveDelta {
-//     special_bb: Bitboard,
-//     en_passant: BitboardIndex,
-// }
-
-// TODO: Continue `game.nr` refactoring. Want to get that big if-statement to
-// 1. if pawn
-// 2. else if knight
-// 3. compute sliding move mask (since all remaining pieces are sliders)
-// 4. if king restrict that mask to 1 taxicab distance about the king
-
-// fn pawn_legal(d: Data) {
-//     // Universal shift offset (only applies when black moves).
-//     // TODO: u64 back to Bitboard when `nargo fmt` plain:: bug fixed.
-//     let dir = (d.game.army as u64) << 4;
-
-//     let mut en_passant: BitboardIndex = 0;
-
-//     let mut moves = if (bb::PAWN_START_RANKS[d.game.army] & d.from_bb) > 0 {
-//         // Double push, mark ourselves as an en-passant target.
-//         // TODO: Shift by direction, needs to be square BEHIND so we can
-//         // use one simple lookup by index. Current Jordan to past Jordan.. what? Look at this later on.
-//         en_passant = d.turn.to;
-
-//         // Double push first move; generalised shift.
-//         let __tmp = (d.from_bb << 8) >> dir;
-//         __tmp | (__tmp << 8) >> dir
-//     } else {
-//         // Single push first move; generalised shift.
-//         (d.from_bb << 8) >> dir
-//     };
-
-//     // File mask of pawn.
-//     let file = bb::A_FILE * (1 << (d.from_idx64 & 7));
-
-//     // Mask of pieces in current file, pawns can only capture diagonally
-//     //   so exclude these squares from our push options (if they so
-//     //   happen to intersect).
-//     let same_file_blockers = (self.bbs[army] | self.bbs[!army]) & file;
-//     moves &= !same_file_blockers;
-
-//     // En passant target.
-//     let ep = (1 << self.en_passant as plain::Bitboard);
-
-//     // Mask of legal diagonal movements (because an enemy piece lets
-//     //   us capture); this does not include en passant.
-//     let diags = (((5 << from_idx - 1) << 8) >> dir) & self.bbs[!army];
-//     moves |= (diags | ep);
-
-//     // let foo_bb = ep_bb;
-//     // to_bb = ep_bb;
-
-//     // println(f"k-0xFF k-{from_bb} k-{moves} k-{same_file_blockers} k-{ep} k-{diags} k-{foo_bb} k-0x00 k-0x00");
-//     // println(f"k-0x0");
-
-//     assert(bl::is_bit_set(moves, to_idx), "PAWN move is INVALID");
-
-//     // The (at this point) valid move was an en passant capture, need
-//     //   to set the capture bitboard with the correct index.
-//     if (move.to == self.en_passant) {
-//         // println("was an ep capture");
-//         let ep_bb = (ep >> 8) << dir;
-//         special_bb = ep_bb;
-//     }
-// }
-
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PIECE LEGAL CHECKS
 
@@ -250,7 +205,110 @@ fn knight_legal(d: Data) {
     assert((friendlies & d.to_bb) == 0, "KNIGHT move BLOCKED");
 }
 
-fn rank_legal(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> bool {
+fn king_pre_legal(direction: u3, rankified_turn: RankifiedTurn) {
+    // TODO: Take out `to`? Adds a lot of gates and is only needed
+    //       in this condition.
+    let abs_diff = bl::abs_6(rankified_turn.from, rankified_turn.to);
+
+    // If absolute difference between rankified to/from indices is >1 then bad.
+    let king_good = abs_diff == 1;
+
+    // ... XXX [1] (10 gates).
+    { // For folding.
+        if direction == Sliding::VERTICAL {
+            assert(king_good, "KING move VERTICAL PATTERN");
+        } else if direction == Sliding::HORIZONTAL {
+            assert(king_good, "KING move HORIZONTAL PATTERN");
+        } else if direction == Sliding::DIAGONAL {
+            assert(king_good, "KING move DIAGONAL PATTERN");
+        } else if direction == Sliding::ANTI_DIAGONAL {
+            assert(king_good, "KING move ANTI DIAGONAL PATTERN");
+        }
+    }
+}
+
+fn pawn_pre_legal(
+    d: Data,
+    direction: u3,
+    rankified_turn: RankifiedTurn,
+    move_result: &mut MoveResult
+) {
+    let player_white = d.game.army == Player::WHITE;
+
+    let correct_direction = if (player_white) {
+        bl::rank_idx_6_6(d.turn.to) > bl::rank_idx_6_6(d.turn.from)
+    } else {
+        bl::rank_idx_6_6(d.turn.to) < bl::rank_idx_6_6(d.turn.from)
+    };
+
+    let from_home_rank = (bb::PAWN_START_RANKS[d.game.army] & d.from_bb) > 0;
+    let abs_diff = bl::abs_6(rankified_turn.from, rankified_turn.to);
+
+    assert(direction != Sliding::HORIZONTAL, "PAWN move HORIZONTAL PATTERN");
+    assert(correct_direction, "PAWN move DIRECTION PATTERN");
+
+    if direction == Sliding::VERTICAL {
+        // No multi-pushes unless specifically a double-push IFF from pawns home rank.
+        if ((abs_diff == 2) & from_home_rank) {
+            // Legal to double-push; en-passant target is square behind the
+            //   just double-pushed pawn.
+            let square_behind = if (player_white) {
+                d.turn.to - 8
+            } else {
+                d.turn.to + 8
+            };
+            move_result.en_passant = Option::some(square_behind);
+        } else if (abs_diff > 1) {
+            // Illegal double (maybe-multi) push (not from home rank).
+            assert(false, "PAWN move MULTI-PUSH PATTERN");
+        }
+        // Later calls to `rank_legal` will determine if the pawn is blocked.
+    } else if (direction == Sliding::DIAGONAL) | (direction == Sliding::ANTI_DIAGONAL) {
+        // Possibly valid en-passant capture (as long as only 1 square away).
+        let is_en_passant = d.turn.to == d.game.en_passant;
+
+        // Otherwise can only capture diagonally if enemy occupies to square.
+        let is_enemy_present = (d.to_bb & d.game.bbs[!d.game.army]) > 0;
+
+        // A capture is only valid if an enemy occupies the target square, or if
+        //   the target square is empty if said square is the en-passant target
+        //   and finally in both cases where the move is only of 1 taxicab distance.
+        let valid_capture = (abs_diff == 1) & (is_enemy_present | is_en_passant);
+
+        // Like elsewhere this is organised in such a satanic way because we want
+        //   to test things fail in a certain way and need the string literals
+        //   in the right place.
+        if (is_en_passant) {
+            if (direction == Sliding::DIAGONAL) {
+                assert(valid_capture, "PAWN special move DIAGONAL EN-PASSANT PATTERN");
+            } else {
+                assert(valid_capture, "PAWN special move ANTI-DIAGONAL EN-PASSANT PATTERN");
+            }
+            // Valid en-passant capture, set special_bb for correct piece capture XORing.
+            let sq = if (player_white) {
+                d.turn.to - 8
+            } else {
+                d.turn.to + 8
+            };
+
+            let sq_ahead = 1 << (sq as u64);
+
+            move_result.special_bb = Option::some(sq_ahead);
+        } else if (direction == Sliding::DIAGONAL) {
+            assert(valid_capture, "PAWN move DIAGONAL CAPTURE PATTERN");
+        } else {
+            assert(valid_capture, "PAWN move ANTI-DIAGONAL CAPTURE PATTERN");
+        }
+    }
+}
+
+fn rank_legal(
+    from_idx6: BitboardIndex,
+    from_bb: Bitboard,
+    to_bb: Bitboard,
+    us: Bitboard,
+    them: Bitboard
+) -> bool {
     // STEP 1.
     //   1) Get index of square marking the start of the current rank so we can
     //        shift that rank down to the 1st (8-bits only) (and optionally back
@@ -338,9 +396,10 @@ fn rank_legal(from_idx6: BitboardIndex, from_bb: Bitboard, to_bb: Bitboard, us: 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- MOVE
 
+// I hate how much nesting is here.
 impl Move {
     // Assert move is good, return optional special_bb data to XOR.
-    pub fn check_legal(game: Game, turn: Turn) -> bool {
+    pub fn check_legal(game: Game, turn: Turn) -> MoveResult {
         // Check piece actually exists.
         assert(
             // See `XXX [420]` for magic number 2.
@@ -357,54 +416,41 @@ impl Move {
         // Helper-deduplication / convenient data-container.
         let in_data = Data::init(game, turn);
 
-        // Check the move is legal.
-        // TODO: Can I treat pawns as a weird bishop / rook and simply restrict the movement based on where it's moving to? I think I can and then I can reuse the sliding logic I already have.
-        // if turn.piece == Piece::PAWN {
-        //     pawn_legal(in_data);
-        // }
+        let mut move_result = MoveResult {
+            en_passant: Option::none(),
+            special_bb: Option::none(),
+        };
+
+        // Knights are the only purely pattern-moving pieces.
         if turn.piece == Piece::KNIGHT {
             knight_legal(in_data);
+        // Everything else is a slider in some form or another.
         } else {
-            let (direction, rankified_data) = rankified_sliding_data(in_data);
+            let (direction, rankified_turn) = rankified_sliding_data(in_data);
 
-            // If absolute difference between rankified to/from indices is
-            //   greater than 1 it's invalid.
-            if turn.piece == Piece::KING {
-                // TODO: Put the `to` here in rankified data also?
-                // TODO: Take out `to`? Adds a lot of gates and is only needed
-                //       in this condition.
-                let abs_diff = bl::abs_6(rankified_data.from, rankified_data.to);
+            // Not the most efficient but a rewrite to array-based legal checking
+            //   is happening so no point hyper-optimising something that is
+            //   going to be culled soon.
+            if turn.piece == Piece::PAWN { pawn_pre_legal(in_data, direction, rankified_turn, &mut move_result); }
+            if turn.piece == Piece::KING { king_pre_legal(direction, rankified_turn); }
 
-                // King tried to move more than 1 square.
-                let king_bad = !(abs_diff > 1);
-
-                // ... XXX [1] (10 gates).
-                if direction == Sliding::VERTICAL {
-                    assert(king_bad, "KING move VERTICAL PATTERN");
-                } else if direction == Sliding::HORIZONTAL {
-                    assert(king_bad, "KING move HORIZONTAL PATTERN");
-                } else if direction == Sliding::DIAGONAL {
-                    assert(king_bad, "KING move DIAGONAL PATTERN");
-                } else if direction == Sliding::ANTI_DIAGONAL {
-                    assert(king_bad, "KING move ANTI DIAGONAL PATTERN");
-                }
-            }
-
-            let is_valid = rank_legal(rankified_data.from, rankified_data.from_bb, rankified_data.to_bb, rankified_data.us, rankified_data.them);
+            let is_valid = rank_legal(rankified_turn.from, rankified_turn.from_bb, rankified_turn.to_bb, rankified_turn.us, rankified_turn.them);
 
             // ... XXX [1] (10 gates).
-            if direction == Sliding::VERTICAL {
-                assert(is_valid, "SLIDER move VERTICAL BLOCKED");
-            } else if direction == Sliding::HORIZONTAL {
-                assert(is_valid, "SLIDER move HORIZONTAL BLOCKED");
-            } else if direction == Sliding::DIAGONAL {
-                assert(is_valid, "SLIDER move DIAGONAL BLOCKED");
-            } else if direction == Sliding::ANTI_DIAGONAL {
-                assert(is_valid, "SLIDER move ANTI DIAGONAL BLOCKED");
+            { // For folding.
+                if direction == Sliding::VERTICAL {
+                    assert(is_valid, "SLIDER move VERTICAL BLOCKED");
+                } else if direction == Sliding::HORIZONTAL {
+                    assert(is_valid, "SLIDER move HORIZONTAL BLOCKED");
+                } else if direction == Sliding::DIAGONAL {
+                    assert(is_valid, "SLIDER move DIAGONAL BLOCKED");
+                } else if direction == Sliding::ANTI_DIAGONAL {
+                    assert(is_valid, "SLIDER move ANTI DIAGONAL BLOCKED");
+                }
             }
         }
 
-        true
+        move_result
     }
 
     // XXX: Having to put tests in another file requires I make this `pub` to test it. Yuck. Should be able to put unit tests in the same file and EASILY be able to run them.
