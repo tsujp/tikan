@@ -7,7 +7,7 @@ use dep::state::types::Piece;
 mod test;
 
 #[test(should_fail_with = "PAWN move is INVALID")]
-fn test_pawn_pushes_illegal() {
+fn test_pwn_pushes_illegal() {
     // Normal starting board; white's turn.
     let w1 = Game {
         bbs: [
@@ -29,20 +29,20 @@ fn test_pawn_pushes_illegal() {
     // White triple push.
     let _ = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 14, // g2
-            to: 38, // g5
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 14, // g2
+        to: 38, // g5
+        promotion_piece: 0
+    }
     );
     // Diagonal push when not capturing.
     let _ = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 14, // g2
-            to: 21, // f3
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 14, // g2
+        to: 21, // f3
+        promotion_piece: 0
+    }
     );
     // TODO: File a bug report, if a scenario fails with the expected assertion message but then another scenario fails with a different assertion message the #[test] still passes even though it should fail. Are #[test]s only meant to ever handle a single assert? So now need to use a different test function to avoid this.
     // TODO: Test scenario for occupied square blocking a pawn.
@@ -75,7 +75,7 @@ fn test_pawn_pushes_illegal() {
 }
 
 #[test(should_fail_with = "PAWN move is INVALID")]
-fn test_pawn_pushes_blocked() {
+fn test_pwn_pushes_blocked() {
     // Game where white and black's d-file pawns are head-to-head.
     let w1 = Game {
         bbs: [
@@ -97,11 +97,11 @@ fn test_pawn_pushes_blocked() {
     // White attempts to push pawn forward 'into' black's pawn.
     let _ = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 27, // d4
-            to: 35, // d5
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 27, // d4
+        to: 35, // d5
+        promotion_piece: 0
+    }
     );
 
     // Game where white and black's d-file pawns are head-to-head.
@@ -125,11 +125,11 @@ fn test_pawn_pushes_blocked() {
     // Black attempts to push pawn forward 'into' white's pawn.
     let _ = b1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 35, // d5
-            to: 27, // d4
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 35, // d5
+        to: 27, // d4
+        promotion_piece: 0
+    }
     );
 
     // Game where white has pawns that block some of black's double-pushing.
@@ -153,29 +153,29 @@ fn test_pawn_pushes_blocked() {
     // Black attempts to double push and 'skip over' a white pawn.
     let _ = b2.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 53, // f7
-            to: 37, // f5
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 53, // f7
+        to: 37, // f5
+        promotion_piece: 0
+    }
     );
     // Black attempts to push pawn forward 'into' white's pawn.
     let _ = b2.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 53, // f7
-            to: 45, // f6
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 53, // f7
+        to: 45, // f6
+        promotion_piece: 0
+    }
     );
     // Black attempts to double push pawn forward 'into' white's pawn.
     let _ = b2.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 54, // g7
-            to: 38, // g5
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 54, // g7
+        to: 38, // g5
+        promotion_piece: 0
+    }
     );
 }
 
@@ -204,25 +204,25 @@ fn test_en_passant_captures() {
     // White performs en passant capture.
     let ep1 = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 35, // d5
-            to: 44, // e6
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 35, // d5
+        to: 44, // e6
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0xE001, ep1);
     assert_bbs(
         ep1,
         [
-            0x10000000f7ff,
-            0xffef000000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xef10000000f700
-        ]
+        0x10000000f7ff,
+        0xffef000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xef10000000f700
+    ]
     );
 
     // Game where black can perform en-passant.
@@ -246,32 +246,32 @@ fn test_en_passant_captures() {
     // Black performs en passant capture.
     let ep2 = b1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 30, // g4
-            to: 21, // f3
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 30, // g4
+        to: 21, // f3
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0xE002, ep2);
     assert_bbs(
         ep2,
         [
-            0xdfff,
-            0xffbf000000200000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xbf00000020df00
-        ]
+        0xdfff,
+        0xffbf000000200000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xbf00000020df00
+    ]
     );
     // TODO: Test scenarios with en passant at the edges of the board.
 }
 
 //
 #[test]
-fn test_pawn_pushes() {
+fn test_pwn_pushes() {
     let w1 = Game {
         bbs: [
             0xffff,
@@ -295,97 +295,97 @@ fn test_pawn_pushes() {
     // White double push.
     let pp1 = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 14, // g2
-            to: 30, // g4
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 14, // g2
+        to: 30, // g4
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0x01, pp1);
     assert_bbs(
         pp1,
         [
-            0x4000bfff,
-            0xffff000000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xff00004000bf00
-        ]
+        0x4000bfff,
+        0xffff000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xff00004000bf00
+    ]
     );
 
     // White single push.
     let pp2 = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 14, // g2
-            to: 22, // g3
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 14, // g2
+        to: 22, // g3
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0x02, pp2);
     assert_bbs(
         pp2,
         [
-            0x40bfff,
-            0xffff000000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xff00000040bf00
-        ]
+        0x40bfff,
+        0xffff000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xff00000040bf00
+    ]
     );
 
     // White single push.
     let pp3 = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 9, // b2
-            to: 25, // b4
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 9, // b2
+        to: 25, // b4
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0x03, pp3);
     assert_bbs(
         pp3,
         [
-            0x0200fdff,
-            0xffff000000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xff00000200fd00
-        ]
+        0x0200fdff,
+        0xffff000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xff00000200fd00
+    ]
     );
 
     // White single push.
     let pp4 = w1.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 9, // b2
-            to: 17, // b3
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 9, // b2
+        to: 17, // b3
+        promotion_piece: 0
+    }
     );
     dump_gamestate(0x04, pp4);
     assert_bbs(
         pp4,
         [
-            0x02fdff,
-            0xffff000000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xff00000002fd00
-        ]
+        0x02fdff,
+        0xffff000000000000,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x0800000000000008,
+        0x1000000000000010,
+        0xff00000002fd00
+    ]
     );
 }
 
@@ -447,11 +447,11 @@ fn test_valid_input_gamestate() {
     // Knight.
     let b_k1 = b.apply(
         Turn {
-            piece: Piece::KNIGHT,
-            from: 6, // g1
-            to: 21, // f3
-            promotion_piece: 0 // No promotion (implicitly knight though).
-        }
+        piece: Piece::KNIGHT,
+        from: 6, // g1
+        to: 21, // f3
+        promotion_piece: 0 // No promotion (implicitly knight though).
+    }
     );
     // println(f"t-0x01");
     dump_gamestate(0x01, b_k1);
@@ -459,11 +459,11 @@ fn test_valid_input_gamestate() {
     // Pawn double push from start allowed.
     let b_p2 = b.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 9, // b2
-            to: 25, // b4
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 9, // b2
+        to: 25, // b4
+        promotion_piece: 0
+    }
     );
     // println(f"t-0x01");
     dump_gamestate(0x02, b_p2);
@@ -471,11 +471,11 @@ fn test_valid_input_gamestate() {
     // Pawn single push from start allowed.
     let b_p1 = b.apply(
         Turn {
-            piece: Piece::PAWN,
-            from: 9, // b2
-            to: 17, // b3
-            promotion_piece: 0
-        }
+        piece: Piece::PAWN,
+        from: 9, // b2
+        to: 17, // b3
+        promotion_piece: 0
+    }
     );
     // println(f"t-0x01");
     dump_gamestate(0x03, b_p1);
