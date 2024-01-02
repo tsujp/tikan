@@ -32,9 +32,246 @@ relevant files otherwise your build may not work.
 Currently (and as a goal) the entire project uses the same version of Noir for all circuits involved.
 
 ```
-Noir 0.19.3 (4e3a5a9)
+Noir 0.20.0 (0.20.0+54a1ed58c991eefa7ac9304b894c7046c294487b)
 acvm-backend-barretenberg 0.15.1
 ```
+
+## Tests
+
+Rather than keeping track of wanted tests within test files and having to open say 6 different files to check all have the same we can trust ourselves to keep this file up to date (famous last words) with the tests we want and whether or not we've implemented them. Ideally in the future this is automated.
+
+### All Pieces
+
+<table>
+  <thead>
+    <!-- <tr>
+      <td rowspan="2" colspan="2" />
+      <th scope="colgroup" />
+      <th scope="colgroup" colspan="2">Sliders</th>
+    </tr> -->
+    <tr>
+      <td rowspan="2" colspan="2" />
+      <th scope="colgroup" colspan="2">Knight</th>
+      <th scope="colgroup" colspan="2">Bishop / Rook / Queen</th>
+      <th scope="colgroup" colspan="2">King</th>
+      <th scope="colgroup" colspan="2">Pawn</th>
+    </tr>
+    <tr>
+      <th scope="col">L</th>
+      <th scope="col">I</th>
+      <th scope="col">Legal</th>
+      <th scope="col">Illegal</th>
+      <th scope="col">L</th>
+      <th scope="col">I</th>
+      <th scope="col">L</th>
+      <th scope="col">I</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="2">General</th>
+      <th scope="row">Capture</th>
+      <!-- N -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- B / R / Q -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Nothing move</th>
+      <!-- N -->
+      <td>--</td>
+      <td>✅</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>--</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="2">Pattern</th>
+      <th scope="row">Empty board</th>
+      <!-- N -->
+      <td>✅</td>
+      <td>✅</td>
+      <!-- B / R / Q -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Dense board</th>
+      <!-- N -->
+      <td>✅</td>
+      <td>✅</td>
+      <!-- B / R / Q -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="2">Blocked</th>
+      <th scope="row">Faux-empty board**</th>
+      <!-- N -->
+      <td>--</td>
+      <td>✅</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>--</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Dense board</th>
+      <!-- N -->
+      <td>--</td>
+      <td>✅</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>--</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>--</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="5">Special</th>
+      <th scope="row">King's side castle</th>
+      <!-- N -->
+      <td>--</td>
+      <td>--</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>--</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>--</td>
+      <td>--</td>
+    </tr>
+    <tr>
+      <th scope="row">Queen's side castle</th>
+      <!-- N -->
+      <td>--</td>
+      <td>--</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>--</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>--</td>
+      <td>--</td>
+    </tr>
+    <tr>
+      <th scope="row">Promotion</th>
+      <!-- N -->
+      <td>--</td>
+      <td>--</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>--</td>
+      <!-- K -->
+      <td>--</td>
+      <td>--</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">En-passant capture</th>
+      <!-- N -->
+      <td>--</td>
+      <td>--</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>--</td>
+      <!-- K -->
+      <td>--</td>
+      <td>--</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">En-passant target</th>
+      <!-- N -->
+      <td>--</td>
+      <td>--</td>
+      <!-- B / R / Q -->
+      <td>--</td>
+      <td>--</td>
+      <!-- K -->
+      <td>--</td>
+      <td>--</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+  </tbody>
+</table>
+
+✅ ❌
+
+#### Notes
+
+- Faux-empty board `**` isn't strictly empty, rather it contains the minimum required pieces for the test scenario. It is still named 'empty' in tests for easier running of tests by name-pattern.
+- Cells containing `--` are not applicable.
+
+### Logic
+
+#### LS1B
+
+  - [x] LS1B happy path.
+  - [x] LS1B sad path.
+
+#### MS1B
+
+  - [ ] MS1B happy path.
+  - [ ] LS1B sad path.
+
+#### Diagonals
+
+##### Masks
+  Diag masking is the basis for all diag (diagonal and anti-diagonal) sliding piece movement (bishop, queen, king), so these masks must be correct without weird wrapping or edge-artifacting.
+
+  - [x] Diagonal masks for every starting edge square.
+  - [x] Anti-diagonal masks for every starting edge square.
+
+##### Same-diagonal
+  Whether two given square indices are on the same diag forms the basis of computing the required diag mask.
+
+  - [x] Same diagonal and NOT same anti-diagonal.
+  - [x] Same anti-diagonal and NOT same diagonal.
 
 
 # TODOs
