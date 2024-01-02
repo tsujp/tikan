@@ -1,5 +1,14 @@
 use dep::std::{wrapping_add, wrapping_mul};
 
+// TODO: Comment which ones are used for what e.g. "this is for masking diagonal-mask generation" etc.
+global NOT_8_RANK: u64 = 0x00FFFFFFFFFFFFFF;
+global NOT_1_RANK: u64 = 0xFFFFFFFFFFFFFF00;
+
+global NOT_A_FILE: u64 = 0xFEFEFEFEFEFEFEFE;
+global NOT_H_FILE: u64 = 0x7F7F7F7F7F7F7F7F;
+
+// TODO: Move these global bitboard masks to `/lib/state/src/bitboards.nr`. Note that will be moving bitboard masks to this MODULE later so put them there instead.
+
 // Equiv. NOT_8_RANK & NOT_H_FILE; positive diagonal pre-shift masking.
 global FILL_A1_G7_MASK: u64 = 0x7F7F7F7F7F7F7F;
 
@@ -146,8 +155,6 @@ pub fn rank_mask_6_64(square_idx: u6) -> u64 {
     (0xFF as u64) << (rank_start_idx_6(square_idx) as u64)
 }
 
-// Intended to be used to find taxicab distances (absolute rank/file diffs)
-//   for knight move-validation.
 // Given two LERLEF square indices return the absolute difference between them
 //   without overflowing.
 pub fn abs_6(a: u6, b: u6) -> u6 {
@@ -214,6 +221,99 @@ pub fn anti_diagonal_mask_64(about_occ: u64) -> u64 {
     let _n_d = _n_d_1 + _n_d_2 + _n_d_3 + _n_d_4 + _n_d_5 + _n_d_6 + _n_d_7;
 
     _p_d + _n_d
+}
+
+// Single-step ordinal directions with overflow protection where
+//   applicable. These only work on versions of Noir above at least
+//   `0.20.0+54a1ed58c991eefa7ac9304b894c7046c294487b` as the Noir team finally
+//   saw the light and had the compiler optimise shifts that 'fall-off' to zero
+//   instead of requiring the programmer to do it.
+// TODO: Elsewhere in the codebase (and that's A LOT of places) remove logic that used to guard for this; or don't since array-based rewrite is coming soon.
+
+pub fn step_north(about_occ: u64) -> u64 {
+    about_occ << 8
+}
+
+pub fn step_north_east(about_occ: u64) -> u64 {
+    (about_occ & NOT_H_FILE) << 9
+}
+
+pub fn step_east(about_occ: u64) -> u64 {
+    (about_occ & NOT_H_FILE) << 1
+}
+
+pub fn step_south_east(about_occ: u64) -> u64 {
+    (about_occ & NOT_H_FILE) >> 7
+}
+
+pub fn step_south(about_occ: u64) -> u64 {
+    about_occ >> 8
+}
+
+pub fn step_south_west(about_occ: u64) -> u64 {
+    (about_occ & NOT_A_FILE) >> 9
+}
+
+pub fn step_west(about_occ: u64) -> u64 {
+    (about_occ & NOT_A_FILE) >> 1
+}
+
+pub fn step_north_west(about_occ: u64) -> u64 {
+    (about_occ & NOT_A_FILE) << 7
+}
+
+// Returns a 2-distance taxicab mask about the given point (single occupancy
+//   bitboard mask).
+pub fn taxi_mask(about_occ: u64) -> u64 {
+    // Variables are named according to their ordinal directions and how many
+    //   taxicab squares from the origin they are. So `w2` is west 2 squares.
+
+    // |  1  |  2  |  3  |  4  |  5  |     [Local File]
+    // +-----+-----+-----+-----+-----+
+
+    //             +-----+
+    //             |  N2 |
+    //       +-----+-----+-----+
+    //       | NW1 |  N1 | NE1 |
+    // +-----+-----+-----+-----+-----+
+    // |  W2 |  W1 | ___ |  E1 |  E2 |     [Taxicab Mask]
+    // +-----+-----+-----+-----+-----+
+    //       | SW1 |  S1 | SE1 |
+    //       +-----+-----+-----+
+    //             |  S2 |
+    //    X     Y  +-----+
+
+    // +-----+-----+-----+-----+-----+
+    // |  1  |  2  |  3  |  4  |  5  |     [Local File]
+
+    // XXX: This implementation is NOT aiming for efficiency since a rewrite
+    //      into array-based logic for the entire move-validation engine will
+    //      happen; so there's no point spending a bunch of time to optimise
+    //      what we know will be removed just over the horizon.
+
+    let n1 = step_north(about_occ);
+    let n2 = step_north(n1);
+
+    let ne1 = step_north_east(about_occ);
+
+    let e1 = step_east(about_occ);
+    let e2 = step_east(e1);
+
+    let se1 = step_south_east(about_occ);
+
+    let s1 = step_south(about_occ);
+    let s2 = step_south(s1);
+
+    let sw1 = step_south_west(about_occ);
+
+    let w1 = step_west(about_occ);
+    let w2 = step_west(w1);
+
+    let nw1 = step_north_west(about_occ);
+
+    let res = n2 | n1 | ne1 | e2 | e1 | se1 | s2 | s1 | sw1 | w2 | w1 | nw1;
+
+    res
 }
 
 // Given a bitboard with squares of interest on a diagonal masked, return a

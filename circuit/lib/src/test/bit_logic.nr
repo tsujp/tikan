@@ -543,3 +543,63 @@ fn absolute_difference_u6() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- TAXICAB MASKING
+
+// Various nasty scenarios in the middle of the board, and close to the edge of
+//   the board to check for overflow behaviour.
+
+#[test]
+fn taxi_mask_1() {
+    // Middle of board.
+    assert(bl::taxi_mask(0x8000000) == 0x81C361C0800);
+}
+
+#[test]
+fn taxi_mask_2() {
+    // a8.
+    assert(bl::taxi_mask(0x100000000000000) == 0x603010000000000);
+}
+
+#[test]
+fn taxi_mask_3() {
+    // c7.
+    assert(bl::taxi_mask(0x4000000000000) == 0xE1B0E0400000000);
+}
+
+#[test]
+fn taxi_mask_4() {
+    // h8.
+    assert(bl::taxi_mask(0x8000000000000000) == 0x60C0800000000000);
+}
+
+#[test]
+fn taxi_mask_5() {
+    // g6.
+    assert(bl::taxi_mask(0x400000000000) == 0x40E0B0E040000000);
+}
+
+#[test]
+fn taxi_mask_6() {
+    // h1.
+    assert(bl::taxi_mask(0x80) == 0x80C060);
+}
+
+#[test]
+fn taxi_mask_7() {
+    // e1.
+    assert(bl::taxi_mask(0x10) == 0x10386C);
+}
+
+#[test]
+fn taxi_mask_8() {
+    // a1.
+    assert(bl::taxi_mask(0x1) == 0x10306);
+}
+
+#[test]
+fn taxi_mask_9() {
+    // a3.
+    assert(bl::taxi_mask(0x10000) == 0x103060301);
+}
