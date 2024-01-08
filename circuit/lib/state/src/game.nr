@@ -239,6 +239,32 @@ fn valid_rank_move(
 }
 
 impl Game {
+    // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
+    // Creates a fog bitboard.
+    fn get_fog(self) -> Bitboard {
+        let all_pieces: Bitboard = self.bbs[BitboardOf::WHITE] | self.bbs[BitboardOf::BLACK];
+
+        let all_bits = (all_pieces as Field).to_le_bits(64);
+
+        let mut fog: Bitboard = 0;
+
+        // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
+        // for i in 0..all_bits.len() {
+        for i in 0..64 {
+            let bit = all_bits[i];
+
+            let bit_fog = if bit == 1 {
+                bl::taxi_mask((2 as Field).pow_32(i) as Bitboard)
+            } else {
+                0
+            };
+
+            fog |= bit_fog;
+        }
+
+        fog
+    }
+
     // Returns an array of struct members as Fields, for use in hashing
     //   functions (e.g. Pedersen).
     fn decompose(self) -> [Field; 13] {
