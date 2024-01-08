@@ -40,7 +40,7 @@ acvm-backend-barretenberg 0.15.1
 
 Rather than keeping track of wanted tests within test files and having to open say 6 different files to check all have the same we can trust ourselves to keep this file up to date (famous last words) with the tests we want and whether or not we've implemented them. Ideally in the future this is automated.
 
-### All Pieces
+### Pieces
 
 <table>
   <thead>

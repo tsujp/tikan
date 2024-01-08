@@ -3,7 +3,7 @@ name = 'tikan_lib_state'
 authors = [
   "Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
 ]
-compiler_version = '0.20.0+54a1ed58c991eefa7ac9304b894c7046c294487b'
+compiler_version = '0.22.0+fbb51ed33e9e4d9105d8946cdfc4ea387c85258e'
 type = 'lib'
 
 [dependencies]
