@@ -54,7 +54,7 @@ pub fn cc(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex)
 // FIXME: Errors when using `Bitboard` here for some reason?
 // fn create_simple<Bitboard, N>(given_bbs: [Bitboard; N]) -> Game {
 // XXX: Test helper only
-pub fn bb_game<N>(given_bbs: [u64; N]) -> Game {
+pub fn game<N>(given_bbs: [u64; N]) -> Game {
     let required_bbs = REQUIRED_BITBOARDS as u64; // Cannot use in println as `REQUIRED_BITBOARDS`.
 
     if N == 0 {
