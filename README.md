@@ -237,6 +237,37 @@ Rather than keeping track of wanted tests within test files and having to open s
       <td>❌</td>
       <td>❌</td>
     </tr>
+    <tr>
+      <th scope="rowgroup" rowspan="2">Fog</th>
+      <th scope="row">Movement</th>
+      <!-- N -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- B / R / Q -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Lights toggle</th>
+      <!-- N -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- B / R / Q -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+      <td>❌</td>
+      <!-- P -->
+      <td>❌</td>
+      <td>❌</td>
+    </tr>
   </tbody>
 </table>
 
