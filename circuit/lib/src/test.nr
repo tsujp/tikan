@@ -1,10 +1,12 @@
-// Piece movement.
-mod knight;
-mod sliding;
-mod pawn;
+// Passing and (expected to) failing tests.
+mod pass;
+mod fail;
 
-// Bit logic.
-mod bit_logic;
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- MADE AVAILABLE TO MODS ABOVE.
+
+// Board scenarios for testing.
+mod scenario;
 
 // Test utilities (not actual tests).
 mod util;

@@ -90,7 +90,7 @@ annotate_tests ()
   # Output is from a programming language (not shell): 0 means failure.
   if (( "$conv" == 0 )); then
     contiguous_passes=0
-    printf -v conv '\033[38;5;196m[FAIL]\033[0m' 
+    printf -v conv '\033[38;5;196m[FAIL]\033[0m'
   elif (( "$conv" == 1 )); then
     if (( "$contiguous_passes" > 0 )); then
       printf '\033[1F\033[%dC' "$contiguous_passes"
@@ -140,7 +140,7 @@ bitfield_frontend_debug ()
   else
     gamestate_data+=("$conv")
   fi
- 
+
   # Effectively swallows input by unsetting it (the referenced variable).
   unset conv
 }
@@ -169,7 +169,7 @@ format_line ()
   declare -I ln
 
   # For each conversion prefix we have...
-  for pfx_ptr in "${convs[@]}"; do  
+  for pfx_ptr in "${convs[@]}"; do
     declare -n pfx="$pfx_ptr"
 
     # Remove all space characters from conversion list (delimited by spaces).
@@ -189,10 +189,10 @@ format_line ()
       #   the end of the format specifier.
       # shellcheck disable=SC2183
       printf -v pad '%0*s0' "$(((${#pfx[$k_cnv]} - ${#cnv_stripped}) / 1))"
-      
+
       printf '%s' "${pfx[$k_cnv]}" | mapfile -d ' ' -t  cnv_list
     fi
-    
+
     declare -a cnv_shims=("${cnv_list[@]##*;}")
     declare -a cnv_fmts=("${cnv_list[@]%%;*}")
 
@@ -232,7 +232,7 @@ format_line ()
       # Add hard-coded grey coloured original value, with removed prefix and
       #   literal `0x`.
       converted="${converted/% $orig_data/$'\033[38;5;243m'&$'\033[0m'}"
-    
+
       # Replace original value in line with converted value(s).
       ln="${ln/$full_match/$converted}"
       ln="${ln/# /}" # Trim leading whitespace if any.
@@ -251,13 +251,11 @@ format_line ()
   fi
 }
 
-
 # Nargo outputs its own test running information to `stderr`, and function
 #   `println` to stdout. Merge these to keep ordering of output the same since
 #   the processing we're doing takes at least some time and will mess up the
 #   output order without this.
 printf 'RUN_ID: %s\n' "$datetime"
-# nargo test --workspace --show-output 2>&1 |
 nargo test --show-output "$@" 2>&1 |
   while IFS= read -r ln; do
     format_line
