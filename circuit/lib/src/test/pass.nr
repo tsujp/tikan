@@ -1,4 +1,5 @@
 // Pieces.
+mod common;
 mod knight;
 
 // Mechanics.

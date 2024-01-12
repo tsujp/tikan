@@ -1,17 +1,21 @@
-use crate::test::scenario::KNIGHT as K_SCENARIO;
-use crate::test::util;
-use dep::state::types::Piece;
+use dep::state::types::Game;
+use crate::test::util::cc as cc;
+use crate::test::util::swiss as t;
 
 //
 // FAILING KNIGHT TESTS
 //
+
+fn scenario(idx: u64, from: u6, to: u6) -> () {
+    let _ = cc(t::sc::KNIGHT[idx].no_fog.game, t::Piece::KNIGHT)(from, to);
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- NOTHING MOVE (ILLEGAL)
 
 #[test(should_fail_with = "Cannot move onto your own square in the same turn")]
 fn nothing_move() {
-    let _ = util::cc(K_SCENARIO[0], Piece::KNIGHT)(0, 0);
+    scenario(0, t::sq::a1, t::sq::a1);
 }
 
 // ---------------------------------------------------------------------------
@@ -21,44 +25,44 @@ fn nothing_move() {
 
 #[test(should_fail_with = "Piece in army does NOT EXIST at given index")]
 fn empty_pattern_01() {
-    let _ = util::cc(K_SCENARIO[0], Piece::KNIGHT)(1, 63);
+    scenario(0, t::sq::b1, t::sq::h8);
 }
 
 #[test(should_fail_with = "KNIGHT move PATTERN")]
 fn empty_pattern_02() {
-    let _ = util::cc(K_SCENARIO[0], Piece::KNIGHT)(0, 35);
+    scenario(0, t::sq::a1, t::sq::d5);
 }
 
 #[test(should_fail_with = "KNIGHT move PATTERN")]
 fn empty_pattern_03() {
-    let _ = util::cc(K_SCENARIO[0], Piece::KNIGHT)(0, 47);
+    scenario(0, t::sq::a1, t::sq::h6);
 }
 
 #[test(should_fail_with = "Piece in army does NOT EXIST at given index")]
 fn empty_pattern_04() {
-    let _ = util::cc(K_SCENARIO[0], Piece::KNIGHT)(19, 20);
+    scenario(0, t::sq::d3, t::sq::e3);
 }
 
 // ---------------- Scenario 2
 
 #[test(should_fail_with = "Piece in army does NOT EXIST at given index")]
 fn dense_pattern_01() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(42, 59);
+    scenario(2, t::sq::c6, t::sq::d8);
 }
 
 #[test(should_fail_with = "Piece in army does NOT EXIST at given index")]
 fn dense_pattern_02() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(21, 31);
+    scenario(2, t::sq::f3, t::sq::h4);
 }
 
 #[test(should_fail_with = "KNIGHT move PATTERN")]
 fn dense_pattern_03() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(13, 32);
+    scenario(2, t::sq::f2, t::sq::a5);
 }
 
 #[test(should_fail_with = "KNIGHT move PATTERN")]
 fn dense_pattern_04() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(50, 2);
+    scenario(2, t::sq::c7, t::sq::c2);
 }
 
 // ---------------------------------------------------------------------------
@@ -68,42 +72,42 @@ fn dense_pattern_04() {
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_blocked_01() {
-    let _ = util::cc(K_SCENARIO[1], Piece::KNIGHT)(35, 52);
+    scenario(1, t::sq::d5, t::sq::e7);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_blocked_02() {
-    let _ = util::cc(K_SCENARIO[1], Piece::KNIGHT)(35, 50);
+    scenario(1, t::sq::d5, t::sq::c7);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_blocked_03() {
-    let _ = util::cc(K_SCENARIO[1], Piece::KNIGHT)(35, 20);
+    scenario(1, t::sq::d5, t::sq::e3);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn empty_blocked_04() {
-    let _ = util::cc(K_SCENARIO[1], Piece::KNIGHT)(35, 18);
+    scenario(1, t::sq::d5, t::sq::c3);
 }
 
 // ---------------- Scenario 2
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_blocked_01() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(44, 27);
+    scenario(2, t::sq::e6, t::sq::d4);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_blocked_02() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(44, 50);
+    scenario(2, t::sq::e6, t::sq::c7);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_blocked_03() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(10, 27);
+    scenario(2, t::sq::c2, t::sq::d4);
 }
 
 #[test(should_fail_with = "KNIGHT move BLOCKED")]
 fn dense_blocked_04() {
-    let _ = util::cc(K_SCENARIO[2], Piece::KNIGHT)(17, 27);
+    scenario(2, t::sq::b3, t::sq::d4);
 }

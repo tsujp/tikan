@@ -1,6 +1,4 @@
-use crate::test::scenario::KNIGHT as K_SCENARIO;
-use crate::test::util;
-use dep::state::types::Piece;
+use crate::test::util::swiss as t;
 
 //
 // PASSING KNIGHT TESTS
@@ -11,93 +9,133 @@ use dep::state::types::Piece;
 
 #[test]
 fn empty_pattern() {
+    let piece = t::Piece::KNIGHT;
+    let s = t::sc::KNIGHT[0].no_fog;
+
     // a1 to c2.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(0, 10),
-        [0x8100000000000480, 0, 0x8100000000000480, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::a1,
+        t::sq::c2,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8100000000000480)]
     );
     // a1 to b3.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(0, 17),
-        [0x8100000000020080, 0, 0x8100000000020080, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::a1,
+        t::sq::b3,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8100000000020080)]
     );
     // a8 to c7.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(56, 50),
-        [0x8004000000000081, 0, 0x8004000000000081, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::a8,
+        t::sq::c7,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8004000000000081)]
     );
-    // a8 to c7.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(56, 41),
-        [0x8000020000000081, 0, 0x8000020000000081, 0, 0, 0, 0, 0]
+    // a8 to b6.
+    let _ = s.assert_delta(
+        piece,
+        t::sq::a8,
+        t::sq::b6,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8000020000000081)]
     );
     // h8 to f7.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(63, 53),
-        [0x120000000000081, 0, 0x120000000000081, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::h8,
+        t::sq::f7,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x120000000000081)]
     );
     // h8 to g6.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(63, 46),
-        [0x100400000000081, 0, 0x100400000000081, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::h8,
+        t::sq::g6,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x100400000000081)]
     );
     // h1 to f2.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(7, 13),
-        [0x8100000000002001, 0, 0x8100000000002001, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::h1,
+        t::sq::f2,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8100000000002001)]
     );
     // h1 to g3.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[0], Piece::KNIGHT)(7, 22),
-        [0x8100000000400001, 0, 0x8100000000400001, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::h1,
+        t::sq::g3,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8100000000400001)]
     );
 }
 
 #[test]
 fn dense_pattern() {
+    let piece = t::Piece::KNIGHT;
+    let s = t::sc::KNIGHT[2].no_fog;
+
     // b3 to c1.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(17, 2),
-        [0x8124520008402485, 0, 0x8124520008402485, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::b3,
+        t::sq::c1,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520008402485)]
     );
     // b3 to a5.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(17, 32),
-        [0x8124520108402481, 0, 0x8124520108402481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::b3,
+        t::sq::a5,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520108402481)]
     );
     // b3 to c5.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(17, 34),
-        [0x8124520408402481, 0, 0x8124520408402481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::b3,
+        t::sq::c5,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520408402481)]
     );
     // d4 to b5.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(27, 33),
-        [0x8124520200422481, 0, 0x8124520200422481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::d4,
+        t::sq::b5,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520200422481)]
     );
     // d4 to f5.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(27, 37),
-        [0x8124522000422481, 0, 0x8124522000422481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::d4,
+        t::sq::f5,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124522000422481)]
     );
     // d4 to f3.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(27, 21),
-        [0x8124520000622481, 0, 0x8124520000622481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::d4,
+        t::sq::f3,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520000622481)]
     );
     // d4 to e2.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(27, 12),
-        [0x8124520000423481, 0, 0x8124520000423481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::d4,
+        t::sq::e2,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124520000423481)]
     );
     // e6 to g5.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(44, 38),
-        [0x8124424008422481, 0, 0x8124424008422481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::e6,
+        t::sq::g5,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0x8124424008422481)]
     );
     // e6 to f8.
-    util::assert_bbs(
-        util::cc(K_SCENARIO[2], Piece::KNIGHT)(44, 61),
-        [0xa124420008422481, 0, 0xa124420008422481, 0, 0, 0, 0, 0]
+    let _ = s.assert_delta(
+        piece,
+        t::sq::e6,
+        t::sq::f8,
+        [(t::bb::WHITE, t::bb::KNIGHT, 0xa124420008422481)]
     );
 }
