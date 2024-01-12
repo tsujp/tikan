@@ -40,7 +40,9 @@ acvm-backend-barretenberg 0.15.1
 
 Rather than keeping track of wanted tests within test files and having to open say 6 different files to check all have the same we can trust ourselves to keep this file up to date (famous last words) with the tests we want and whether or not we've implemented them. Ideally in the future this is automated.
 
-### Pieces
+### Moves
+
+Focus is piece move patterns, legal and illegal versions of those, and special game mechanics like en-passant capture.
 
 <table>
   <thead>
@@ -271,12 +273,121 @@ Rather than keeping track of wanted tests within test files and having to open s
   </tbody>
 </table>
 
-✅ ❌
-
 #### Notes
 
 - Faux-empty board `**` isn't strictly empty, rather it contains the minimum required pieces for the test scenario. It is still named 'empty' in tests for easier running of tests by name-pattern.
 - Cells containing `--` are not applicable.
+
+### Captures
+
+Purely 'normal' piece captures.
+
+<table>
+  <thead>
+    <tr>
+      <td rowspan="1" colspan="1" />
+      <th scope="col">Pawn</th>
+      <th scope="col">Knight</th>
+      <th scope="col">Bishop</th>
+      <th scope="col">Rook</th>
+      <th scope="col">Queen</th>
+      <th scope="col">King</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">Pawn</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>✅</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Knight</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Bishop</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Rook</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">Queen</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+    <tr>
+      <th scope="row">King</th>
+      <!-- P -->
+      <td>❌</td>
+      <!-- N -->
+      <td>❌</td>
+      <!-- B -->
+      <td>❌</td>
+      <!-- R -->
+      <td>❌</td>
+      <!-- Q -->
+      <td>❌</td>
+      <!-- K -->
+      <td>❌</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ### Logic
 
@@ -313,6 +424,9 @@ Rather than keeping track of wanted tests within test files and having to open s
 - [] test.sh script.
 - [] Javascript test harness.
 - [] Project structure (bitboards etc).
+- [] bb_term project
+- [] break_to_seed.ts
+- [] gimme_that_enum.ts
 
 ## Circuits
 
@@ -359,3 +473,7 @@ Rather than keeping track of wanted tests within test files and having to open s
 
 Romanised for intuitive spelling -> tikun ange
 Abbreviated -> TIKun ANge -> tikan
+
+##### For you
+
+Checkmark and cross copy-pasta: ✅ ❌
