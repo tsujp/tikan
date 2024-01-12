@@ -37,6 +37,10 @@ function to_hex(num: bigint) {
     return `0x${easy} \x1b[38;5;243m(0x${base})\x1b[0m`
 }
 
+function bb_hex(bb: bigint) {
+    return `0x${bb.toString(16).toLocaleUpperCase()}`
+}
+
 function print_bbs(bbs: InputBbs) {
     bbs.forEach(bb => console.log(`0x${bb.toString(16).toLocaleUpperCase()}`))
 }
@@ -81,7 +85,7 @@ const player_bit_error = same_bit_error.bind(undefined, 'WHITE', 0, 'BLACK', 1)
 const phantom_error = single_bitboard_error.bind(undefined, 'phantom piece')
 const orphan_error = single_bitboard_error.bind(undefined, 'orphaned piece')
 
-function to_seed(bbs: InputBbs) {
+function check(bbs: InputBbs) {
     console.log('\x1b[1mChecking...\x1b[0m')
 
     // Computed player bitboard, extra bits in given player bitboard are
@@ -136,7 +140,7 @@ function to_seed(bbs: InputBbs) {
         return board ^ expect
     }, computed_white | computed_black)
 
-    process.stdout.write('\x1b[1mDONE:\x1b[0m ')
+    process.stdout.write('\x1b[1m...\x1b[0m ')
     if (was_error) {
         process.stdout.write('\x1b[91mbitboard has errors, see above to fix')
     } else {
@@ -145,17 +149,30 @@ function to_seed(bbs: InputBbs) {
     console.log('\x1b[0m')
 }
 
-const TO_BREAK_01 = board([
-    0x4221C044108n,
-    0x2047518002000000n,
-    0x1040002000000n,
-    0x42000008000000n,
-    0x2004000000004100n,
-    0x8000000008n,
-    0x100000040000n,
-    0x412214000000n
-])
+function to_seed(bbs: InputBbs) {
+    // Notice we don't abort if check fails because we might want a broken
+    //   bitboard for specific scenarios (like checking our circuit won't
+    //   accept such a board). Errors are very visible from `check` so it's
+    //   obvious if there are any.
+    check(bbs)
 
+    console.log('\x1b[1mSeeded Bitboard:\x1b[0m')
+
+    const white = bbs[0]
+    const black = bbs[1]
+    const pad = ' '.repeat(4)
+
+    // Drop-dead simple Noir codegen.
+    console.log('[')
+
+    PIECES.forEach((p, i) => {
+        const piece_idx = i + 2
+        console.log(`${pad}(bb::WHITE, bb::${p}, ${bb_hex(white & bbs[piece_idx])}),`)
+        console.log(`${pad}(bb::BLACK, bb::${p}, ${bb_hex(black & bbs[piece_idx])}),`)
+    })
+
+    console.log(']')
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- TESTS
@@ -210,7 +227,7 @@ const TEST__04 = board([
     0x80010080000n // error.
 ])
 
-// to_seed(TEST__01)
-// to_seed(TEST__02)
-// to_seed(TEST__03)
-// to_seed(TEST__04)
+// check(TEST__01)
+// check(TEST__02)
+// check(TEST__03)
+// check(TEST__04)
