@@ -298,7 +298,7 @@ Purely 'normal' piece captures.
     <tr>
       <th scope="row">Pawn</th>
       <!-- P -->
-      <td>❌</td>
+      <td>✅</td>
       <!-- N -->
       <td>❌</td>
       <!-- B -->
