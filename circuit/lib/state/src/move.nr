@@ -1,7 +1,7 @@
 use dep::std::{println, wrapping_add, wrapping_mul, wrapping_sub};
 use dep::std::option::Option;
 use dep::util::bit_logic as bl;
-use crate::types::{Bitboard, BitboardIndex, Move, Game, Turn, Piece, Player, Sliding, MoveResult};
+use crate::types::{Bitboard, BitboardIndex, BitboardOf, Move, Game, Turn, Piece, Player, Sliding, MoveResult, SpecialBbs, PIECE_OFFSET};
 use crate::bitboards as bb;
 
 //
@@ -54,7 +54,7 @@ impl Data {
             turn: turn,
             from_idx64: tf,
             to_idx64: tt,
-            piece: turn.piece + 2, // Offset to types.nr::BitboardOf
+            piece: turn.piece + PIECE_OFFSET, // Offset to types.nr::BitboardOf
             from_bb: 0 as Bitboard | 1 << tf,
             to_bb: 0 as Bitboard | 1 << tt
         }
@@ -189,6 +189,7 @@ fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PIECE LEGAL CHECKS
 
+// Knight legal movement.
 fn knight_legal(d: Data) {
     // Product of absolute difference between rank/file of to/from squares must
     //   be 2 for the move to be valid.
@@ -200,11 +201,16 @@ fn knight_legal(d: Data) {
 
     assert((bl::abs_6(r1, r2) as u12 * bl::abs_6(f1, f2) as u12) == 2, "KNIGHT move PATTERN");
 
+    // TODO: When rewritten to arrays this part can become a simpler index
+    //       check without having to use bit-logic.
+    assert(bl::is_bit_set(d.game.bbs[BitboardOf::FOG], d.turn.to as u64), "KNIGHT move FOG");
+
     // As well as not landing on a friendly piece.
     let friendlies = d.game.bbs[d.game.army];
     assert((friendlies & d.to_bb) == 0, "KNIGHT move BLOCKED");
 }
 
+// Restricts a king to 1-chebyshev distance movement.
 fn king_pre_legal(direction: u3, rankified_turn: RankifiedTurn) {
     // TODO: Take out `to`? Adds a lot of gates and is only needed
     //       in this condition.

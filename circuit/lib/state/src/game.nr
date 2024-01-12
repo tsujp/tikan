@@ -2,7 +2,7 @@ use dep::std::{wrapping_add, wrapping_mul, wrapping_sub};
 
 use dep::std::collections::vec::Vec;
 
-use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, BitboardOf, Player, Piece, Sliding, Game, Turn, Move};
+use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, PIECE_OFFSET, BitboardOf, Player, Piece, Sliding, Game, Turn, Move};
 
 use dep::util::bit_logic as bl;
 
@@ -14,7 +14,9 @@ global STARTING_BITBOARDS: [Bitboard; REQUIRED_BITBOARDS] = [
   0x8100000000000081,
   0x0800000000000008,
   0x1000000000000010,
-  0x00FF00000000FF00
+  0x00FF00000000FF00,
+  // TODO: Put proper starting fog mask here.
+  0x42069,
 ];
 
 // Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
@@ -238,33 +240,73 @@ fn valid_rank_move(
     (valid_moves & to_bb8) > 0
 }
 
-impl Game {
-    // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
-    // Creates a fog bitboard.
-    fn get_fog(self) -> Bitboard {
-        let all_pieces: Bitboard = self.bbs[BitboardOf::WHITE] | self.bbs[BitboardOf::BLACK];
+// These APIs are mostly for testing because inputs to circuits in the wild
+//   auto-instantiate the `Game` struct directly instead of calling a
+//   method, this method makes it easier than having multiple test helpers
+//   spread all over the place.
+// XXX: Put here and not on the `Game` struct because doing so there is giving:
+//      `expected global variable got local variable` in other files.
+pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
+    let required_bbs = REQUIRED_BITBOARDS as u64; // Cannot use in println as `REQUIRED_BITBOARDS`.
 
-        let all_bits = (all_pieces as Field).to_le_bits(64);
-
-        let mut fog: Bitboard = 0;
-
-        // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
-        // for i in 0..all_bits.len() {
-        for i in 0..64 {
-            let bit = all_bits[i];
-
-            let bit_fog = if bit == 1 {
-                bl::taxi_mask((2 as Field).pow_32(i) as Bitboard)
-            } else {
-                0
-            };
-
-            fog |= bit_fog;
-        }
-
-        fog
+    if N == 0 {
+        assert(false, "Need at least 1 Bitboard");
+    } else if N > required_bbs {
+        // Cannot template assertion messages.
+        dep::std::println(f"At most can receive {required_bbs} Bitboards, given {N}");
+        assert(false, "Too many Bitboards given, see REQUIRED_BITBOARDS");
     }
 
+    // FIXME: Lots of compiler type errors in here for some reason??
+    // FIXME: Cannot instantiate as [0 as Bitboard; REQUIRED_BITBOARDS] due to
+    //        LSP formatting `plain::Bitboard` bug.
+    // let mut bbs: [u64; REQUIRED_BITBOARDS] = [0 as Bitboard; REQUIRED_BITBOARDS];
+    // let mut set_bbs: [Bitboard; REQUIRED_BITBOARDS] = dep::std::unsafe::zeroed();
+    let mut bbs: [u64; REQUIRED_BITBOARDS] = [0 as u64; REQUIRED_BITBOARDS];
+
+    for idx in 0..given_bbs.len() {
+        bbs[idx] = given_bbs[idx];
+        // bbs[idx] = (given_bbs[idx] as u64); // Types erased by unsafe::zeroed().
+    }
+
+    // Last bitboard is fog. If the bitboard is all 1s it means to compute fog for the board.
+    bbs[BitboardOf::FOG] = if with_fog {
+        compute_fog(bbs[BitboardOf::WHITE], bbs[BitboardOf::BLACK])
+    } else {
+        0xFFFFFFFFFFFFFFFF // u64 max.
+    };
+
+    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1 }
+}
+
+// XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
+// Creates a fog bitboard.
+pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
+    let all_pieces: Bitboard = w | b;
+
+    let all_bits = (all_pieces as Field).to_le_bits(64);
+
+    let mut fog: Bitboard = 0;
+
+    // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
+    // for i in 0..all_bits.len() {
+    for i in 0..64 {
+        let bit = all_bits[i];
+
+        let bit_fog = if bit == 1 {
+            bl::taxi_mask((2 as Field).pow_32(i) as Bitboard)
+        } else {
+            0
+        };
+
+        fog |= bit_fog;
+    }
+
+    fog
+}
+
+
+impl Game {
     // Returns an array of struct members as Fields, for use in hashing
     //   functions (e.g. Pedersen).
     fn decompose(self) -> [Field; 13] {
@@ -289,7 +331,7 @@ impl Game {
         let army = self.army;
         let from_idx = move.from as Bitboard;
         let to_idx = move.to as Bitboard;
-        let piece = move.piece + 2;
+        let piece = move.piece + PIECE_OFFSET;
 
         let mut en_passant: BitboardIndex = 0;
 
@@ -452,8 +494,6 @@ impl Game {
         // TODO: Need anything specific for quiet moves anymore?
         // Specifically for quiet moves, or if captures only the capturing army.
 
-        // Good for quiet moves.
-        let update_piece_mask = from_bb ^ to_bb;
 
         // let update_piece_bb = self.bbs[piece] ^ update_piece_mask;
         // let update_army_bb = self.bbs[army] ^ update_piece_mask;
@@ -472,26 +512,93 @@ impl Game {
             // bbs[army] ^= update_piece_mask;
         // End panic.
 
-        // Workaround for the panic.
-        let army3 = army as u3;
-        let enemy3 = (!army) as u3;
 
-        let special_bb = move_result.special_bb.unwrap_or(0);
+        // ----------
+        let mut new_bbs = self.bbs;
 
-        let mut new_bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
-        for i in 0 .. REQUIRED_BITBOARDS {
-            let idx3 = i as u3;
+        // TODO: Rename `update_piece_bb` -> `us_update_bb`.
+        // let update_piece_bb = from_bb ^ to_bb ^ move_result.special_bbs.remove;
+        let update_piece_bb = from_bb ^ to_bb ^ move_result.special_bbs.remove;
+        // dep::std::println(f"update_piece_bb: {update_piece_bb}"); // TODO: Uncomment later.
 
-            if (idx3 == piece) {
-                new_bbs[i] = self.bbs[i] ^ update_piece_mask ^ special_bb;
-            } else if (idx3 == army3) {
-                new_bbs[i] = self.bbs[i] ^ update_piece_mask;
-            } else if (idx3 == enemy3) {
-                new_bbs[i] = self.bbs[i] ^ special_bb;
-            } else {
-                new_bbs[i] = self.bbs[i];
+        // TODO: Rename `ep_capture_bb` -> `them_update_bb`.
+        // let ep_capture_bb = move_result.ep_capture_bb.unwrap_or(to_bb);
+        let ep_capture_bb = move_result.ep_capture_bb.unwrap_or(0);
+        // dep::std::println(f"ep_capture_bb: {ep_capture_bb}"); // TODO: Uncomment later.
+
+        let summon_bb = move_result.special_bbs.summon.0;
+        let summon_piece = move_result.special_bbs.summon.1 as u3;
+        // dep::std::println(f"summon_bb: {summon_bb}, {summon_piece}"); // TODO: Uncomment later.
+        // TODO: PR cannot print global constants.
+        // dep::std::println(f"piece_offset: {PIECE_OFFSET}");
+
+        // dep::std::println(f"to_bb?: {to_bb}");
+
+        // Since we don't take an input of the type of piece captured we need to
+        //   execute this for every piece bitboard.
+        let mut is_capture = false;
+        for bb_idx in BitboardOf::KNIGHT..BitboardOf::PAWN + 1 {
+            let current_bb = new_bbs[bb_idx];
+            // dep::std::println(f"current bb: {current_bb}");
+
+            // if ((bb_idx != piece as u4) & (new_bbs[bb_idx] & to_bb) > 0) {
+            if ((new_bbs[bb_idx] & to_bb) > 0) {
+                // Captured piece.
+                new_bbs[bb_idx] ^= to_bb;
+                // dep::std::println(f"wat: {to_bb}");
+                is_capture = true;
             }
         }
+
+        // dep::std::println(f"is capture?: {is_capture}");
+
+        // Piece that did the moving.
+        new_bbs[piece] ^= update_piece_bb ^ ep_capture_bb;
+
+        new_bbs[summon_piece + PIECE_OFFSET] |= summon_bb;
+        new_bbs[army] ^= (update_piece_bb | summon_bb);
+        new_bbs[!army] ^= ep_capture_bb | if is_capture { to_bb } else { 0 };
+
+        // dep::std::println(f"new_bbs: {new_bbs}");
+
+        // ---------
+
+        // Workaround for the panic.
+        // let army3 = army as u3;
+        // let enemy3 = (!army) as u3;
+
+        // let special_remove_bb = move_result.special_bbs.remove;
+
+        // Good for quiet moves.
+        // let update_piece_mask = from_bb ^ to_bb ^ special_remove_bb;
+        // dep::std::println(f"update_piece_mask: {update_piece_mask}");
+
+        // let ep_capture_bb = move_result.ep_capture_bb.unwrap_or(0);
+        // dep::std::println(f"update_capture_bb: {ep_capture_bb}");
+
+        // let summon_mask = move_result.special_bbs.summon.0;
+        // let summon_piece = move_result.special_bbs.summon.1;
+        // dep::std::println(f"summon_mask: {summon_mask}");
+
+        // let mut new_bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
+        // for i in 0 .. REQUIRED_BITBOARDS {
+        //     let idx3 = i as u3;
+
+        //     if (idx3 == piece) {
+        //         dep::std::println("hit one");
+        //         new_bbs[i] = (self.bbs[i] ^ update_piece_bb ^ ep_capture_bb) | summon_bb;
+        //     } else if (idx3 == army3) {
+        //         dep::std::println("hit two");
+        //         new_bbs[i] = (self.bbs[i] ^ update_piece_bb) | summon_bb;
+        //     } else if (idx3 == enemy3) {
+        //         dep::std::println("hit three");
+        //         new_bbs[i] = self.bbs[i] ^ ep_capture_bb;
+        //     } else {
+        //         dep::std::println("hit four");
+        //         new_bbs[i] = self.bbs[i];
+        //     }
+        // }
+        // dep::std::println(new_bbs);
         // End ugly workaround.
 
         // `fullmove` is incremented after black's turn.

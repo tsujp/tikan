@@ -4,6 +4,8 @@ use crate::types::{Bitboard, BitboardIndex};
 // Pre-defined bitboard constants.
 //
 
+// TODO: Move this file to the `util/src/` module because I think it makes more sense there and we cannot have `/util/src` circlularly depending on `/state` as `/state` depends on `/util/src`.
+
 // For 90-degree clockwise single-file-to-rank rotation.
 global SHIFTED_ANTI_DIAGONAL: u64 = 0x02040810204081;
 
@@ -22,7 +24,7 @@ global PAWN_END_RANKS: [Bitboard; 2] = [
 // Area masks for pre-shift overflow prevention.
 global A_FILE: u64 = 0x0101010101010101;
 
-// TODO: Check these are what they say they are, also comment which ones are used for what e.g. "this is for masking diagonal-mask generation" etc.
+// TODO: Comment which ones are used for what e.g. "this is for masking diagonal-mask generation" etc.
 global NOT_8_RANK: u64 = 0x00FFFFFFFFFFFFFF;
 global NOT_1_RANK: u64 = 0xFFFFFFFFFFFFFF00;
 

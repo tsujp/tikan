@@ -3,7 +3,9 @@ use dep::std::option::Option;
 type Bitboard = u64;
 type BitboardIndex = u6; // 6-bits required to index 64-bit bitboard.
 
-global REQUIRED_BITBOARDS: Field = 8;
+global REQUIRED_BITBOARDS: Field = 9;
+
+global PIECE_OFFSET: u3 = 2;
 
 // 6x2 bitboard board storage.
 
@@ -11,15 +13,16 @@ global REQUIRED_BITBOARDS: Field = 8;
 //   man's enum.
 mod BitboardOf {
     // XXX: MUST appear in same order as mod Player.
-    global WHITE: u3 = 0;
-    global BLACK: u3 = 1;
+    global WHITE: u4 = 0;
+    global BLACK: u4 = 1;
     // XXX: MUST appear in same order as mod Piece.
-    global KNIGHT: u3 = 2;
-    global BISHOP: u3 = 3;
-    global ROOK: u3 = 4;
-    global QUEEN: u3 = 5;
-    global KING: u3 = 6;
-    global PAWN: u3 = 7;
+    global KNIGHT: u4 = 2;
+    global BISHOP: u4 = 3;
+    global ROOK: u4 = 4;
+    global QUEEN: u4 = 5;
+    global KING: u4 = 6;
+    global PAWN: u4 = 7;
+    global FOG: u4 = 8;
 }
 
 mod Player {
@@ -41,6 +44,14 @@ mod Piece {
     global PAWN: u3 = 5;
 }
 
+// Needs it's own because u3 -> u2. Must be in the same order as Piece.
+mod Promote {
+    global KNIGHT: u2 = 0;
+    global BISHOP: u2 = 1;
+    global ROOK: u2 = 2;
+    global QUEEN: u2 = 3;
+}
+
 mod Sliding {
     global HORIZONTAL: u3 = 0;
     global VERTICAL: u3 = 1;
@@ -50,9 +61,15 @@ mod Sliding {
 
 struct Move {}
 
+struct SpecialBbs {
+    remove: Bitboard,
+    summon: (Bitboard, u2),
+}
+
 struct MoveResult {
     en_passant: Option<BitboardIndex>,
-    special_bb: Option<Bitboard> // Poorly named but removing bitboard implementation so as-is for now.
+    ep_capture_bb: Option<Bitboard>,
+    special_bbs: SpecialBbs
 }
 
 struct Turn {
