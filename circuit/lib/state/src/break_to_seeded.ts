@@ -167,8 +167,8 @@ function to_seed(bbs: InputBbs) {
 
     PIECES.forEach((p, i) => {
         const piece_idx = i + 2
-        console.log(`${pad}(bb::WHITE, bb::${p}, ${bb_hex(white & bbs[piece_idx])}),`)
-        console.log(`${pad}(bb::BLACK, bb::${p}, ${bb_hex(black & bbs[piece_idx])}),`)
+        console.log(`${pad}(t::bb::WHITE, t::bb::${p}, ${bb_hex(white & bbs[piece_idx])}),`)
+        console.log(`${pad}(t::bb::BLACK, t::bb::${p}, ${bb_hex(black & bbs[piece_idx])}),`)
     })
 
     console.log(']')
@@ -231,3 +231,10 @@ const TEST__04 = board([
 // check(TEST__02)
 // check(TEST__03)
 // check(TEST__04)
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- ACTUAL
+const XXX = board([
+    0x658200000000FFn, 0x1C02000000000000n, 0x42n, 0x24n, 0x81n, 0x8n, 0x10n, 0x1C67820000000000n
+])
+to_seed(XXX)
