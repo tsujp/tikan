@@ -32,7 +32,7 @@ relevant files otherwise your build may not work.
 Currently (and as a goal) the entire project uses the same version of Noir for all circuits involved.
 
 ```
-Noir 0.20.0 (0.20.0+54a1ed58c991eefa7ac9304b894c7046c294487b)
+Noir 0.22.0 (0.22.0+420a5c74a14dcfeede04337a42282093a7b5e63e)
 acvm-backend-barretenberg 0.15.1
 ```
 
