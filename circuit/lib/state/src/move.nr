@@ -319,7 +319,7 @@ fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result
     //   a u2).
     if (at_promotion_rank) {
         let blah = d.to_bb;
-        println(f"to_bb: {blah}");
+        // println(f"to_bb: {blah}");
         // Promoted pawns get removed, for our purposes a "self-capture".
         move_result.special_bbs.remove = d.to_bb;
         move_result.special_bbs.summon = (d.to_bb, d.turn.promotion_piece);
