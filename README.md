@@ -243,8 +243,8 @@ Focus is piece move patterns, legal and illegal versions of those, and special g
       <th scope="rowgroup" rowspan="2">Fog</th>
       <th scope="row">Movement</th>
       <!-- N -->
-      <td>❌</td>
-      <td>❌</td>
+      <td>✅</td>
+      <td>✅</td>
       <!-- B / R / Q -->
       <td>❌</td>
       <td>❌</td>
@@ -252,8 +252,8 @@ Focus is piece move patterns, legal and illegal versions of those, and special g
       <td>❌</td>
       <td>❌</td>
       <!-- P -->
-      <td>❌</td>
-      <td>❌</td>
+      <td>--</td>
+      <td>--</td>
     </tr>
     <tr>
       <th scope="row">Lights toggle</th>
