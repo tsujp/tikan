@@ -11,7 +11,6 @@ struct Scenario {
 
 // Make scenario.
 fn mk_s<N>(bb_defs: [t::sg::BbDef; N]) -> Scenario {
-    // Scenario { no_fog: seeded, with_fog: game::init(seeded.game.bbs, true) }
     Scenario { no_fog: t::sg::init(bb_defs), with_fog: t::sg::init_fog(bb_defs) }
 }
 
