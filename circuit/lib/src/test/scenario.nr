@@ -101,9 +101,31 @@ global KNIGHT: [Scenario; 3] = [
 ];
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------- BISHOPS
+
+// TODO: This test scenario can go into COMMON when thats reworked to use the
+//       improved t::sg::SeededGame isntead of Scenario.
+global COMMON_SLIDING: [t::sg::SeededGame; 1] = [
+
+    // ---------------- Scenario 0
+
+    // Sliding pieces in position to capture others if only there wasn't fog
+    //   in the way, i.e. none of these pieces can legally capture the intended
+    //   others.
+    // TODO: Board render.
+    t::sg::init_fog(t::Player::WHITE, [
+        (t::bb::WHITE, t::bb::BISHOP, 0x1), // To take black queen.
+        (t::bb::BLACK, t::bb::BISHOP, 0x100000000000000),
+        (t::bb::WHITE, t::bb::ROOK, 0x1000000001000000), // To take black rook.
+        (t::bb::BLACK, t::bb::ROOK, 0x80000010),
+        (t::bb::WHITE, t::bb::QUEEN, 0x80), // To take black bishop.
+        (t::bb::BLACK, t::bb::QUEEN, 0x8000000000000000),
+    ]),
+];
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWNS
 
-// global PAWN: [Scenario; 1] = [
 global PAWN: [t::sg::SeededGame; 3] = [
 
     // ---------------- Scenario 0
@@ -139,18 +161,4 @@ global PAWN: [t::sg::SeededGame; 3] = [
         (t::bb::WHITE, t::bb::PAWN, 0x65820000000000),
         (t::bb::BLACK, t::bb::PAWN, 0x1C02000000000000)
     ]),
-    
 ];
-
-// // Pawn starting ranks for white and black.
-// global SL_P_01: Game = Game {
-//     bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00, 0 ],
-//     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
-// };
-
-// // Same as SL_P_01 except black's turn.
-// // TODO: A way to make games more easily, generic.
-// global SL_P_02: Game = Game {
-//     bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00, 0 ],
-//     army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
-// };

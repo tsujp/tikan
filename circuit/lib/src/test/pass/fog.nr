@@ -1,21 +1,27 @@
+use crate::test::util::cc as cc;
 use crate::test::util::swiss as t;
 
 //
 // PASSING FOG
 //
 
+// TODO: Temp until `assert_delta` in slider tests.
+fn slider_s(from: u6, to: u6, piece: u3) -> () {
+    let _ = cc(t::sc::COMMON_SLIDING[0].game, piece)(from, to);
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- FOG MASKS
 
 #[test]
 fn complex() {
-    assert(t::compute_fog(0x8002200000044001, 0) == 0x67FDDF766EFBBFE6);
+    assert(t::compute_fog(0x8002200000044001, 0) == 0xE7FFFF766EFFFFE7);
     assert(t::compute_fog(0x1000064301001A, 0x1C05420080004000) == 0x7FFFFFFFFFFFFFFF);
 }
 
 #[test]
 fn simple() {
-    assert(t::compute_fog(0x8000000, 0) == 0x81C361C0800);
+    assert(t::compute_fog(0x8000000, 0) == 0x81C3E1C0800);
 }
 
 #[test]
@@ -76,9 +82,30 @@ fn knight() {
     );
 }
 
-// ---------------- Bishops
-// ---------------- Rooks
-// ---------------- Queens
+#[test]
+fn slider_bishop_rook_queen_1() {
+    // Diagonal.
+    slider_s(t::sq::a1, t::sq::b2, t::Piece::BISHOP);
+}
+
+#[test]
+fn slider_bishop_rook_queen_2() {
+    // Anti-diagonal.
+    slider_s(t::sq::h1, t::sq::g2, t::Piece::QUEEN);
+}
+
+#[test]
+fn slider_bishop_rook_queen_3() {
+    // Horizontal.
+    slider_s(t::sq::a4, t::sq::c4, t::Piece::ROOK);
+}
+
+#[test]
+fn slider_bishop_rook_queen_4() {
+    // Vertical.
+    slider_s(t::sq::e8, t::sq::e6, t::Piece::ROOK);
+}
+
 // ---------------- Kings
 
 // XXX: KINGS ONLY REQUIRE MOVE TESTS FOR SPECIAL CASTLING MOVE __UNDER THE CURRENT FOG MASK__ (taxicab-2).

@@ -68,8 +68,9 @@ fn file_as_rank(
     to_idx6: u6,
     file_idx3: u3,
     us: Bitboard,
-    them: Bitboard
-) -> (u6, u64, u6, u64, u64, u64) {
+    them: Bitboard,
+    fog: Bitboard
+) -> (u6, u64, u6, u64, u64, u64, u64) {
     let file_mask64 = bb::A_FILE * (1 << file_idx3 as u64);
     let file_shift64 = 7 - file_idx3;
 
@@ -90,6 +91,12 @@ fn file_as_rank(
     )
         >> 56;
 
+    let fog_bb8 = wrapping_mul(
+        bb::SHIFTED_ANTI_DIAGONAL,
+        (file_mask64 & fog) << (file_shift64 as u64)
+    )
+        >> 56;
+
     let from_idx3 = bl::rank_idx_6_3(from_idx6) as u6;
     let from_bb = 1 << (from_idx3 as u64);
     let to_bb = 1 << (bl::rank_idx_6_3(to_idx6) as u64);
@@ -97,7 +104,7 @@ fn file_as_rank(
     // To index is rank index when rotated 90-deg cw.
     let to_idx3 = bl::rank_idx_6_3(to_idx6) as u6;
 
-    (from_idx3, from_bb, to_idx3, to_bb, us_bb8, them_bb8)
+    (from_idx3, from_bb, to_idx3, to_bb, us_bb8, them_bb8, fog_bb8)
 }
 
 // ---------------------------------------------------------------------------
@@ -108,10 +115,11 @@ fn collapse_diag(
     from_bb: Bitboard,
     to_bb: Bitboard,
     us_occ_bb: Bitboard,
-    them_occ_bb: Bitboard
-) -> (Bitboard, Bitboard, Bitboard, Bitboard) {
+    them_occ_bb: Bitboard,
+    fog_bb: Bitboard
+) -> (Bitboard, Bitboard, Bitboard, Bitboard, Bitboard) {
     (
-        bl::collapse_diagonal_to_rank_64_8(from_bb) as u64, bl::collapse_diagonal_to_rank_64_8(to_bb) as u64, bl::collapse_diagonal_to_rank_64_8(us_occ_bb) as u64, bl::collapse_diagonal_to_rank_64_8(them_occ_bb) as u64
+        bl::collapse_diagonal_to_rank_64_8(from_bb) as u64, bl::collapse_diagonal_to_rank_64_8(to_bb) as u64, bl::collapse_diagonal_to_rank_64_8(us_occ_bb) as u64, bl::collapse_diagonal_to_rank_64_8(them_occ_bb) as u64, bl::collapse_diagonal_to_rank_64_8(fog_bb) as u64
     )
 }
 
@@ -122,18 +130,21 @@ struct RankifiedTurn {
     to: BitboardIndex,
     to_bb: Bitboard,
     us: Bitboard,
-    them: Bitboard
+    them: Bitboard,
+    fog: Bitboard
 }
 
 impl RankifiedTurn {
-    pub fn init(from: BitboardIndex, from_bb: Bitboard, to: BitboardIndex, to_bb: Bitboard, us: Bitboard, them: Bitboard) -> Self {
+    // TODO: When horizontal is pre-rankfieid these will become 8bit bitboards instead of 64bit.
+    pub fn init(from: BitboardIndex, from_bb: Bitboard, to: BitboardIndex, to_bb: Bitboard, us: Bitboard, them: Bitboard, fog: Bitboard) -> Self {
         Self {
             from,
             from_bb,
             to,
             to_bb,
             us,
-            them
+            them,
+            fog
         }
     }
 }
@@ -144,6 +155,7 @@ impl RankifiedTurn {
 fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
     let us = d.game.bbs[d.game.army];
     let them = d.game.bbs[!d.game.army];
+    let fog = d.game.bbs[BitboardOf::FOG];
 
     // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
     // let mut turn_data: (u3, RankifiedTurn) = (7, RankifiedTurn::init());
@@ -152,13 +164,20 @@ fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
         // HORIZONTAL MOVE if the rank indices are the same.
         // TODO: Reduce this to first rank.
         (
-            Sliding::HORIZONTAL, RankifiedTurn::init(d.turn.from, d.from_bb, d.turn.to, d.to_bb, us, them)
+            Sliding::HORIZONTAL, RankifiedTurn::init(d.turn.from, d.from_bb, d.turn.to, d.to_bb, us, them, fog)
         )
     } else if (bl::on_same_file(d.turn.from, d.turn.to)) {
         // VERTICAL MOVE if file indices are the same.
-        let f = file_as_rank(d.turn.from, d.turn.to, bl::file_idx_6_3(d.turn.to), us, them);
+        let f = file_as_rank(
+            d.turn.from,
+            d.turn.to,
+            bl::file_idx_6_3(d.turn.to),
+            us,
+            them,
+            fog
+        );
 
-        (Sliding::VERTICAL, RankifiedTurn::init(f.0, f.1, f.2, f.3, f.4, f.5))
+        (Sliding::VERTICAL, RankifiedTurn::init(f.0, f.1, f.2, f.3, f.4, f.5, f.6))
     } else {
         let (dir, mask) = if (bl::on_same_diagonal(d.turn.from, d.turn.to)) {
             // DIAGONAL MOVE.
@@ -167,7 +186,7 @@ fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
             // ANTI-DIAGONAL MOVE.
             (Sliding::ANTI_DIAGONAL, bl::anti_diagonal_mask_64(d.from_bb))
         } else {
-            // I dislike that it has to be this way. Use a better pattern here.
+            // TODO: I dislike that it has to be this way. Use a better pattern here.
             (1, 337)
         };
 
@@ -176,13 +195,14 @@ fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
             assert(false, "SLIDER move PATTERN");
         }
 
-        let c = collapse_diag(d.from_bb, d.to_bb, us & mask, them & mask);
+        let masked_fog = (fog & mask) | d.from_bb;
+        let c = collapse_diag(d.from_bb, d.to_bb, us & mask, them & mask, masked_fog);
 
         // TODO: Wait why is it this and not rank?
         let c_from_idx = bl::file_idx_6_6(d.turn.from);
         let c_to_idx = bl::file_idx_6_6(d.turn.to);
 
-        (dir, RankifiedTurn::init(c_from_idx, c.0, c_to_idx, c.1, c.2, c.3))
+        (dir, RankifiedTurn::init(c_from_idx, c.0, c_to_idx, c.1, c.2, c.3, c.4))
     }
 }
 
@@ -333,12 +353,14 @@ fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result
 //   knights are considered sliders however pawns and kings have their own
 //   special pre-checks due to their altered movement (in addition to calling
 //   this function afterwards).
+// TODO: When horizontal pre-shift done these become u8 not u64.
 fn rank_legal(
     from_idx6: BitboardIndex,
     from_bb: Bitboard,
     to_bb: Bitboard,
     us: Bitboard,
-    them: Bitboard
+    them: Bitboard,
+    fog: Bitboard
 ) -> bool {
     // STEP 1.
     //   1) Get index of square marking the start of the current rank so we can
@@ -348,7 +370,11 @@ fn rank_legal(
     //   3) Get occupancy masks and shift to the first rank.
     //   4) Shift move from/to single occupancy masks to first rank.
 
-    // TODO: This can go into `get_masked_move_data` instead.
+    // TODO: This can go into `rankified_sliding_data` instead in the first
+    //       if statement block i.e. `bl::on_same_rank` because all other
+    //       blocks (vertical, or diag) get reduced to the first-rank equivalent
+    //       anyway. This chunk of code is purely for the already horizontal
+    //       stuff.
     let rank_shift64 = bl::rank_start_idx_6(from_idx6) as u64; // 1.1
     let rank_mask64 = bl::rank_mask_6_64(from_idx6); // 1.2
 
@@ -357,7 +383,21 @@ fn rank_legal(
 
     let from_bb8 = (from_bb >> rank_shift64) as u8; // 1.4
     let to_bb8 = (to_bb >> rank_shift64) as u8; // 1.4
+
+    let fog_bb8 = ((rank_mask64 & fog) >> rank_shift64) as u8;
     // ---/ end TODO.
+
+    // TODO: When u64 -> u8 horizontal these are parameters to this function.
+    // The contiguous squares the piece slides through, including the start (from)
+    //   and end (to) squares.
+    let slide_region = if to_bb8 > from_bb8 {
+        (to_bb8 - from_bb8) + to_bb8
+    } else {
+        (from_bb8 - to_bb8) + from_bb8
+    };
+
+    // TODO: See above u8 cast wont be neccersary.
+    assert(((fog_bb8 as u8) & slide_region) == slide_region, "SLIDER move FOG");
 
     //
     // STEP 2.
@@ -471,7 +511,7 @@ impl Move {
             // Kings can only move 1-chebyshev distance at a time.
             if turn.piece == Piece::KING { king_pre_legal(direction, rankified_turn); }
 
-            let is_valid = rank_legal(rankified_turn.from, rankified_turn.from_bb, rankified_turn.to_bb, rankified_turn.us, rankified_turn.them);
+            let is_valid = rank_legal(rankified_turn.from, rankified_turn.from_bb, rankified_turn.to_bb, rankified_turn.us, rankified_turn.them, rankified_turn.fog);
 
             // ... XXX [1] (10 gates).
             { // For folding.
