@@ -11,10 +11,16 @@ struct Scenario {
 
 // Make scenario.
 fn mk_s<N>(bb_defs: [t::sg::BbDef; N]) -> Scenario {
-    Scenario { no_fog: t::sg::init(bb_defs), with_fog: t::sg::init_fog(bb_defs) }
+    Scenario { no_fog: t::sg::init(0, bb_defs), with_fog: t::sg::init_fog(0, bb_defs) }
 }
 
-// ---------------------------------------------------------------------------
+// ----
+
+fn mk_s_TWO<N>(turn: u1, bb_defs: [t::sg::BbDef; N]) -> t::sg::SeededGame {
+    t::sg::init(turn, bb_defs)
+}
+
+// ***************************************************************************
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- COMMON
@@ -74,8 +80,6 @@ global COMMON: [Scenario; 2] = [
 ];
 
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // ---------------------------------------------- KNIGHTS
 
 global KNIGHT: [Scenario; 3] = [
@@ -95,3 +99,58 @@ global KNIGHT: [Scenario; 3] = [
     // Dense, lots of (and only) white pieces.
     mk_s([(t::bb::WHITE, t::bb::KNIGHT,  0x8124520008422481)]),
 ];
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWNS
+
+// global PAWN: [Scenario; 1] = [
+global PAWN: [t::sg::SeededGame; 3] = [
+
+    // ---------------- Scenario 0
+
+    // Pawns for both players on their respective starting ranks.
+    mk_s_TWO(t::Player::WHITE, [
+        (t::bb::WHITE, t::bb::PAWN, 0xFF00),
+        (t::bb::BLACK, t::bb::PAWN, 0xFF000000000000)
+    ]),
+
+    // ---------------- Scenario 1
+
+    // Same as scenario 0 except black's turn.
+    mk_s_TWO(t::Player::BLACK, [
+        (t::bb::WHITE, t::bb::PAWN, 0xFF00),
+        (t::bb::BLACK, t::bb::PAWN, 0xFF000000000000)
+    ]),
+
+    // ---------------- Scenario 2
+
+    // Pawn promotion scenarios for white.
+    mk_s_TWO(t::Player::WHITE, [
+        (t::bb::WHITE, t::bb::KNIGHT, 0x42),
+        (t::bb::BLACK, t::bb::KNIGHT, 0x0),
+        (t::bb::WHITE, t::bb::BISHOP, 0x24),
+        (t::bb::BLACK, t::bb::BISHOP, 0x0),
+        (t::bb::WHITE, t::bb::ROOK, 0x81),
+        (t::bb::BLACK, t::bb::ROOK, 0x0),
+        (t::bb::WHITE, t::bb::QUEEN, 0x8),
+        (t::bb::BLACK, t::bb::QUEEN, 0x0),
+        (t::bb::WHITE, t::bb::KING, 0x10),
+        (t::bb::BLACK, t::bb::KING, 0x0),
+        (t::bb::WHITE, t::bb::PAWN, 0x65820000000000),
+        (t::bb::BLACK, t::bb::PAWN, 0x1C02000000000000)
+    ]),
+    
+];
+
+// // Pawn starting ranks for white and black.
+// global SL_P_01: Game = Game {
+//     bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00, 0 ],
+//     army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+// };
+
+// // Same as SL_P_01 except black's turn.
+// // TODO: A way to make games more easily, generic.
+// global SL_P_02: Game = Game {
+//     bbs: [ 0xFF00, 0xFF000000000000, 0, 0, 0, 0, 0, 0xFF00000000FF00, 0 ],
+//     army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+// };

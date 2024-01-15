@@ -3,12 +3,11 @@ use dep::state::types::{Game, Turn, Bitboard, BitboardIndex, BitboardOf, REQUIRE
 
 // Namespace that wraps things commonly required for tests.
 mod swiss {
-    use dep::state::game::init as init_game;
     use dep::state::game::compute_fog;
     use crate::test::util::Sq as sq;
     use crate::test::util::SeedGame as sg;
     use crate::test::scenario as sc;
-    use dep::state::types::Piece;
+    use dep::state::types::{Piece, Player};
     use dep::state::types::BitboardOf as bb;
 }
 
@@ -237,14 +236,13 @@ pub fn cc(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex)
 
 mod SeedGame {
     use dep::state::types::{Game, Turn, Bitboard, BitboardIndex, REQUIRED_BITBOARDS};
-    // use dep::state::game::{init, compute_fog};
 
-    pub fn init<N>(bb_defs: [BbDef; N]) -> SeededGame {
-        SeededGame::init(bb_defs, false)
+    pub fn init<N>(turn: u1, bb_defs: [BbDef; N]) -> SeededGame {
+        SeededGame::init(turn, bb_defs, false)
     }
 
-    pub fn init_fog<N>(bb_defs: [BbDef; N]) -> SeededGame {
-        SeededGame::init(bb_defs, true)
+    pub fn init_fog<N>(turn: u1, bb_defs: [BbDef; N]) -> SeededGame {
+        SeededGame::init(turn, bb_defs, true)
     }
 
     type Seed = [[Bitboard; 6]; 2];
@@ -261,30 +259,21 @@ mod SeedGame {
     }
 
     impl SeededGame {
-
         // u4 is the same type as members of `types::BitboardOf`.
-        fn init<N>(bb_defs: [BbDef; N], with_fog: bool) -> Self {
-            // let seed = [
-            //     [0x5, 0xA, 0x10, 0xA0, 0x40, 0x8900],
-            //     [0x1200000000000000, 0xC00000000000000, 0x100000000000000, 0x8000000000000000, 0x6000000000000000, 0x52000000000000],
-            // ];
-
-            let seed = [
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-            ];
+        fn init<N>(turn: u1, bb_defs: [BbDef; N], with_fog: bool) -> Self {
+            let seed = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]];
 
             let (post_seed, bbs) = compute_seeded(seed, bb_defs, with_fog);
 
             Self {
-                game: dep::state::game::init(bbs, with_fog),
+                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1 },
                 seed: post_seed, // Saving the seed effectively saves pre-move bitboards per player.
                 has_fog: with_fog,
             }
         }
-
-        pub fn assert_delta<N>(mut self, piece: u3, from: BitboardIndex, to: BitboardIndex, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
-            let game_post = self.game.apply(Turn { piece, from, to, promotion_piece: 0 });
+        
+        fn __assert<N>(self, piece: u3, from: BitboardIndex, to: BitboardIndex, promotion: u2, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
+            let game_post = self.game.apply(Turn { piece, from, to, promotion_piece: promotion });
 
             let (seed_post, bbs_post) = compute_seeded(self.seed, bb_defs, self.has_fog);
 
@@ -297,6 +286,29 @@ mod SeedGame {
                 seed: seed_post,
                 has_fog: self.has_fog,
             }
+        }
+
+        pub fn assert_delta<N>(self, piece: u3, from: BitboardIndex, to: BitboardIndex, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
+            self.__assert(piece, from, to, 0, bb_defs)
+            // let game_post = self.game.apply(Turn { piece, from, to, promotion_piece: 0 });
+
+            // let (seed_post, bbs_post) = compute_seeded(self.seed, bb_defs, self.has_fog);
+
+            // crate::test::util::assert_bbs(game_post, bbs_post);
+
+            // // Didn't fail an assertion so we can return a new `SeedGame` where the
+            // //   seed is the move just made.
+            // Self {
+            //     game: game_post,
+            //     seed: seed_post,
+            //     has_fog: self.has_fog,
+            // }
+        }
+
+        // Yes it's not super DRY but it also makes it clearer when writing tests
+        //   versus constructing `Turn` (even literally) ourselves.
+        pub fn assert_delta_promote<N>(self, piece: u3, from: BitboardIndex, to: BitboardIndex, promote: u2, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
+            self.__assert(piece, from, to, promote, bb_defs)
         }
     }
 

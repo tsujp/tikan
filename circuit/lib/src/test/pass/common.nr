@@ -212,6 +212,7 @@ fn pawn_capture_queen() {
     let piece = t::Piece::PAWN;
 
     let white_s1 = t::sg::init(
+        t::Player::WHITE,
         [
         (t::bb::WHITE, t::bb::QUEEN, 0x24000000000),
         (t::bb::WHITE, t::bb::PAWN, 0x40000000),
@@ -263,6 +264,7 @@ fn pawn_capture_pawn() {
     let piece = t::Piece::PAWN;
 
     let white_s1 = t::sg::init(
+        t::Player::WHITE,
         [
         (t::bb::WHITE, t::bb::QUEEN, 0x24000000000),
         (t::bb::WHITE, t::bb::PAWN, 0x40000000),
