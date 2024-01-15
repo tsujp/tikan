@@ -112,30 +112,6 @@ pub fn dump_gamestate(t: Field, b: Game) -> () {
 pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
     check_count_bbs(N);
 
-    let mut given = real.bbs[0];
-    let mut expected = checks[0];
-
-    if expected != given {
-        dep::std::println(f"");
-        dep::std::println(f"expected: {expected}");
-        dep::std::println(f"given: {given}");
-        assert(false, "WHITE bitboards MISMATCH");
-    }
-    // assert(real.bbs[0] == checks[0], "WHITE bitboards MISMATCH");
-
-    // -------
-
-    let mut given = real.bbs[1];
-    let mut expected = checks[1];
-
-    if expected != given {
-        dep::std::println(f"");
-        dep::std::println(f"expected: {expected}");
-        dep::std::println(f"given: {given}");
-        assert(false, "BLACK bitboards MISATCH");
-    }
-    // assert(real.bbs[1] == checks[1], "BLACK bitboards MISATCH");
-
     // -------
 
     let mut given = real.bbs[2];
@@ -147,7 +123,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "KNIGHT bitboards MISATCH");
     }
-    // assert(real.bbs[2] == checks[2], "KNIGHT bitboards MISATCH");
 
     // -------
 
@@ -160,7 +135,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "BISHOP bitboards MISATCH");
     }
-    // assert(real.bbs[3] == checks[3], "BISHOP bitboards MISATCH");
 
     // -------
 
@@ -173,7 +147,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "ROOK bitboards MISATCH");
     }
-    // assert(real.bbs[4] == checks[4], "ROOK bitboards MISATCH");
 
     // -------
 
@@ -186,7 +159,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "QUEEN bitboards MISATCH");
     }
-    // assert(real.bbs[5] == checks[5], "QUEEN bitboards MISATCH");
 
     // -------
 
@@ -199,7 +171,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "KING bitboards MISATCH");
     }
-    // assert(real.bbs[6] == checks[6], "KING bitboards MISATCH");
 
     // -------
 
@@ -212,7 +183,6 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
         dep::std::println(f"given: {given}");
         assert(false, "PAWN bitboards MISATCH");
     }
-    // assert(real.bbs[7] == checks[7], "PAWN bitboards MISATCH");
 
     // -------
 
@@ -226,7 +196,30 @@ pub fn assert_bbs<N>(real: Game, checks: [u64; N]) {
             dep::std::println(f"given: {given}");
             assert(false, "FOG bitboards MISATCH");
         }
-        // assert(real.bbs[8] == checks[8], "FOG bitboards MISATCH");
+    }
+
+    // -------
+
+    let mut given = real.bbs[0];
+    let mut expected = checks[0];
+
+    if expected != given {
+        dep::std::println(f"");
+        dep::std::println(f"expected: {expected}");
+        dep::std::println(f"given: {given}");
+        assert(false, "WHITE bitboards MISMATCH");
+    }
+
+    // -------
+
+    let mut given = real.bbs[1];
+    let mut expected = checks[1];
+
+    if expected != given {
+        dep::std::println(f"");
+        dep::std::println(f"expected: {expected}");
+        dep::std::println(f"given: {given}");
+        assert(false, "BLACK bitboards MISATCH");
     }
 }
 
