@@ -311,7 +311,7 @@ pub fn taxi_mask(about_occ: u64) -> u64 {
 
     let nw1 = step_north_west(about_occ);
 
-    let res = n2 | n1 | ne1 | e2 | e1 | se1 | s2 | s1 | sw1 | w2 | w1 | nw1;
+    let res = n2 | n1 | ne1 | e2 | e1 | se1 | s2 | s1 | sw1 | w2 | w1 | nw1 | about_occ;
 
     res
 }
