@@ -2,6 +2,10 @@ use dep::std::println;
 
 use dep::util::bit_logic as bl;
 
+//
+// PASSING BIT LOGIC
+//
+
 global TWO: Field = 2;
 
 // TODO: Put these tests (bit_logic) in their own file.

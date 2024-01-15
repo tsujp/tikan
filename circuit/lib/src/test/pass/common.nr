@@ -1,7 +1,7 @@
 use crate::test::util::swiss as t;
 
 //
-// PASSING COMMON TESTS
+// PASSING COMMON
 //
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 use crate::test::util::swiss as t;
 
 //
-// PASSING KNIGHT TESTS
+// PASSING KNIGHT
 //
 
 // ---------------------------------------------------------------------------

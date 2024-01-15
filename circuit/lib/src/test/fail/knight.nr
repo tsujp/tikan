@@ -2,10 +2,10 @@ use dep::state::types::Game;
 use crate::test::util::cc as cc;
 use crate::test::util::swiss as t;
 
-// TODO: Is my satanic mod hack thing what is slowing this down...?
+// FIXME: Is my satanic mod hack thing what is slowing this down...? [OPT]
 
 //
-// FAILING KNIGHT TESTS
+// FAILING KNIGHT
 //
 
 fn scenario(idx: u64, from: u6, to: u6) -> () {
