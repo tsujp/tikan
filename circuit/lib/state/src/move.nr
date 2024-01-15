@@ -24,10 +24,10 @@ use crate::bitboards as bb;
 //   is always 1 and black's is always 6.
 // `BitboardIndex` as we need to compare it to the rankified value which is this
 //   type.
-global PAWN_START_RANKIFIED: [BitboardIndex; 2] = [1, 6];
+// global PAWN_START_RANKIFIED: [BitboardIndex; 2] = [1, 6];
 
-// Similarly the promotion ranks when rankified for white and black are 7 and 0.
-global PAWN_PROMOTION_RANKIFIED: [BitboardIndex; 2] = [7, 0];
+// // Similarly the promotion ranks when rankified for white and black are 7 and 0.
+// global PAWN_PROMOTION_RANKIFIED: [BitboardIndex; 2] = [7, 0];
 
 // ---------------------------------------------------------------------------
 
@@ -233,12 +233,12 @@ fn king_pre_legal(direction: u3, rankified_turn: RankifiedTurn) {
     }
 }
 
-fn pawn_pre_legal(
-    d: Data,
-    direction: u3,
-    rankified_turn: RankifiedTurn,
-    move_result: &mut MoveResult
-) {
+// Pawn legal movement.
+//   1. Can only move diagonally once if there is an enemy piece at the target.
+//   2. En-passant captures, and target setting for double-pushed pawns.
+//   3. Double-push validation (i.e. only from that pawns home rank).
+//   4. Promotions.
+fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result: &mut MoveResult) {
     let player_white = d.game.army == Player::WHITE;
 
     let correct_direction = if (player_white) {
@@ -252,6 +252,20 @@ fn pawn_pre_legal(
 
     assert(direction != Sliding::HORIZONTAL, "PAWN move HORIZONTAL PATTERN");
     assert(correct_direction, "PAWN move DIRECTION PATTERN");
+
+    // Even though captures and en-passant is diag-only we need these after
+    //   pattern validation so lift them here rather than `mut` everything.
+
+    // Possibly valid en-passant capture (as long as only 1 square away).
+    let is_en_passant = d.turn.to == d.game.en_passant;
+
+    // Otherwise can only capture diagonally if enemy occupies to square.
+    let is_enemy_present = (d.to_bb & d.game.bbs[!d.game.army]) > 0;
+
+    // A capture is only valid if an enemy occupies the target square, or if
+    //   the target square is empty if said square is the en-passant target
+    //   and finally in both cases where the move is only of 1-chebyshev distance.
+    let valid_capture = (abs_diff == 1) & (is_enemy_present | is_en_passant);
 
     if direction == Sliding::VERTICAL {
         // No multi-pushes unless specifically a double-push IFF from pawns home rank.
@@ -270,17 +284,6 @@ fn pawn_pre_legal(
         }
         // Later calls to `rank_legal` will determine if the pawn is blocked.
     } else if (direction == Sliding::DIAGONAL) | (direction == Sliding::ANTI_DIAGONAL) {
-        // Possibly valid en-passant capture (as long as only 1 square away).
-        let is_en_passant = d.turn.to == d.game.en_passant;
-
-        // Otherwise can only capture diagonally if enemy occupies to square.
-        let is_enemy_present = (d.to_bb & d.game.bbs[!d.game.army]) > 0;
-
-        // A capture is only valid if an enemy occupies the target square, or if
-        //   the target square is empty if said square is the en-passant target
-        //   and finally in both cases where the move is only of 1 taxicab distance.
-        let valid_capture = (abs_diff == 1) & (is_enemy_present | is_en_passant);
-
         // Like elsewhere this is organised in such a satanic way because we want
         //   to test things fail in a certain way and need the string literals
         //   in the right place.
@@ -290,7 +293,7 @@ fn pawn_pre_legal(
             } else {
                 assert(valid_capture, "PAWN special move ANTI-DIAGONAL EN-PASSANT PATTERN");
             }
-            // Valid en-passant capture, set special_bb for correct piece capture XORing.
+            // Valid en-passant capture, set ep_capture_bb for correct piece capture XORing.
             let sq = if (player_white) {
                 d.turn.to - 8
             } else {
@@ -299,15 +302,37 @@ fn pawn_pre_legal(
 
             let sq_ahead = 1 << (sq as u64);
 
-            move_result.special_bb = Option::some(sq_ahead);
+            move_result.ep_capture_bb = Option::some(sq_ahead);
         } else if (direction == Sliding::DIAGONAL) {
             assert(valid_capture, "PAWN move DIAGONAL CAPTURE PATTERN");
         } else {
             assert(valid_capture, "PAWN move ANTI-DIAGONAL CAPTURE PATTERN");
         }
     }
+
+    // At this point the move is valid save for the final promotion check here.
+    let at_promotion_rank = (bb::PAWN_END_RANKS[d.game.army] & d.to_bb) > 0;
+    // println(f"promotion?: {at_promotion_rank}");
+
+    // Don't need to check that `promotion_piece` is set because it must be for
+    //   the circuit to even execute to here (cannot provide a null input for
+    //   a u2).
+    if (at_promotion_rank) {
+        let blah = d.to_bb;
+        println(f"to_bb: {blah}");
+        // Promoted pawns get removed, for our purposes a "self-capture".
+        move_result.special_bbs.remove = d.to_bb;
+        move_result.special_bbs.summon = (d.to_bb, d.turn.promotion_piece);
+        // The promoted piece is added. Promoted pieces do not have to have been
+        //   previously captured (standard rule).
+        //
+    }
 }
 
+// Generalised rank movement validation for typical sliders. All pieces except
+//   knights are considered sliders however pawns and kings have their own
+//   special pre-checks due to their altered movement (in addition to calling
+//   this function afterwards).
 fn rank_legal(
     from_idx6: BitboardIndex,
     from_bb: Bitboard,
@@ -424,20 +449,26 @@ impl Move {
 
         let mut move_result = MoveResult {
             en_passant: Option::none(),
-            special_bb: Option::none(),
+            ep_capture_bb: Option::none(),
+            special_bbs: SpecialBbs {
+                remove: 0,
+                summon: (0, 0),
+            },
         };
 
         // Knights are the only purely pattern-moving pieces.
         if turn.piece == Piece::KNIGHT {
             knight_legal(in_data);
-        // Everything else is a slider in some form or another.
+        // Pawns are sliders but have such heavily restricted movement patterns
+        //   it's not worth generalising them so they too have their own checks.
+        } else if turn.piece == Piece::PAWN {
+            let (direction, rankified_turn) = rankified_sliding_data(in_data);
+            pawn_legal(in_data, direction, rankified_turn, &mut move_result);
+        // Everything else is a generalise-able slider.
         } else {
             let (direction, rankified_turn) = rankified_sliding_data(in_data);
 
-            // Not the most efficient but a rewrite to array-based legal checking
-            //   is happening so no point hyper-optimising something that is
-            //   going to be culled soon.
-            if turn.piece == Piece::PAWN { pawn_pre_legal(in_data, direction, rankified_turn, &mut move_result); }
+            // Kings can only move 1-chebyshev distance at a time.
             if turn.piece == Piece::KING { king_pre_legal(direction, rankified_turn); }
 
             let is_valid = rank_legal(rankified_turn.from, rankified_turn.from_bb, rankified_turn.to_bb, rankified_turn.us, rankified_turn.them);

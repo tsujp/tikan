@@ -1,12 +1,12 @@
 use dep::std::println;
 use crate::test::util::assert_bbs;
-use dep::state::types::{Game, Turn, Move, Piece, Bitboard, BitboardIndex, Sliding};
+use dep::state::types::{Game, Turn, Move, Piece, Promote, Bitboard, BitboardIndex, Sliding};
 
 //
 // Tests for sliding pieces (rook, bishop, queen, king). All these pieces share
 //   the same move-check logic so a test on one is a test for all with the
 //   exception of the king which requires an additional small mask to create the
-//   correct 1-taxicab distance move restriction.
+//   correct 1-chebyshev distance move restriction.
 //
 
 // ---------------------------------------------------------------------------
@@ -33,7 +33,6 @@ fn sl01(from: BitboardIndex, to: BitboardIndex) {
     let _ = SL_01.apply(Turn { piece: Piece::QUEEN, from, to, promotion_piece: 0 });
 }
 
-// TODO: Paste in board from bb_term.
 // Same as 01 except sliders are kings and not queens.
 global SL_02: Game = Game {
     bbs: [ 0x27004400009630, 0x9050c232d3f20005, 0, 0, 0, 0, 0x27004400009630, 0x9077c276d3f29635 ],
@@ -81,6 +80,46 @@ global SL_P_04: Game = Game {
     army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
 };
 
+// ---------------- SL_P_05
+
+// [RANK]                        [INDICES]
+
+//    8      . 56   . 57  bP 58  bP 59  bP 60   . 61   . 62   . 63
+//    7     wP 48  bP 49  wP 50   . 51   . 52  wP 53  wP 54   . 55
+//    6      . 40  wP 41   . 42   . 43   . 44   . 45   . 46  wP 47
+//    5      . 32   . 33   . 34   . 35   . 36   . 37   . 38   . 39
+//    4      . 24   . 25   . 26   . 27   . 28   . 29   . 30   . 31
+//    3      . 16   . 17   . 18   . 19   . 20   . 21   . 22   . 23
+//    2      .  8   .  9   . 10   . 11   . 12   . 13   . 14   . 15
+//    1     wR  0  wN  1  wB  2  wQ  3  wK  4  wB  5  wN  6  wR  7
+
+//           a      b      c      d      e      f      g      h      [FILE]
+
+// Pawn promotions scenarios for white.
+global SL_P_05: Game = Game {
+    bbs: [ 0x658200000000FF, 0x1C02000000000000, 0x42, 0x24, 0x81, 0x8, 0x10, 0x1C67820000000000 ],
+    army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+fn slp05(from: BitboardIndex, to: BitboardIndex, promotion_piece: u2) -> Game {
+    SL_P_05.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece })
+}
+
+//    0x55AA00FF,
+//     0xFF00AA5500000000,
+//     0x4200000000000042,
+//     0x2400000000000024,
+//     0x8100000000000081,
+//     0x0800000000000008,
+//     0x1000000000000010,
+//     0xFF00AA5555AA00FF
+
+// Pawn promotions scenarios for black.
+// global SL_P_06: Game = Game {
+//     bbs: [ 0xFF0000, 0xFF0000000000, 0, 0, 0, 0, 0, 0xFF0000FF0000 ],
+//     army: 1, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+// };
+
 // XXX: Test helper only.
 fn slp03(from: BitboardIndex, to: BitboardIndex) {
     let _ = SL_P_03.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece: 0 });
@@ -89,6 +128,31 @@ fn slp03(from: BitboardIndex, to: BitboardIndex) {
 // XXX: Test helper only.
 fn slp04(from: BitboardIndex, to: BitboardIndex) {
     let _ = SL_P_04.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece: 0 });
+}
+
+// ---------------- SL_P_07
+
+// [RANK]                        [INDICES]
+
+//    8     bR 56  bN 57  bB 58  bQ 59  bK 60  bB 61  bN 62  bR 63
+//    7      . 48   . 49   . 50   . 51  bP 52   . 53   . 54   . 55
+//    6      . 40  bP 41  bP 42  bP 43   . 44   . 45   . 46   . 47
+//    5     wP 32   . 33  wP 34  wP 35   . 36  bP 37  wP 38  bP 39
+//    4      . 24  wP 25   . 26   . 27  wP 28   . 29   . 30  wP 31
+//    3      . 16   . 17   . 18   . 19   . 20   . 21   . 22   . 23
+//    2      .  8   .  9   . 10   . 11   . 12   . 13   . 14   . 15
+//    1     wR  0  wN  1  wB  2  wQ  3  wK  4  wB  5  wN  6  wR  7
+
+//           a      b      c      d      e      f      g      h      [FILE]
+
+// Pawn diag capture scenarios; white to move.
+global SL_P_07: Game = Game {
+    bbs: [ 0x4D920000FF, 0xFF100EA000000000, 0x4200000000000042, 0x2400000000000024, 0x8100000000000081, 0x0800000000000008, 0x1000000000000010, 0x100EED92000000 ],
+    army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1
+};
+
+fn slp07(from: BitboardIndex, to: BitboardIndex) -> Game {
+    SL_P_07.apply(Turn { piece: Piece::PAWN, from, to, promotion_piece: 0 })
 }
 
 // Curry a game and a piece for further (simple) tests.
@@ -137,48 +201,48 @@ fn rankified_sliding_data_01() {
 // ---------------------------------------------------------------------------
 
 // TODO: CLEANUP THIS FROM HERE ...
-#[test]
-fn empty_board__diagonal__north_edge__south() {
-    println("foo");
-    // 0x10708c48548eaa21
+// #[test]
+// fn empty_board__diagonal__north_edge__south() {
+//     println("foo");
+//     // 0x10708c48548eaa21
 
-    // Omega dense all pawns: 9077c276d3f29635
+//     // Omega dense all pawns: 9077c276d3f29635
 
-    let board = Game {
-        // bbs: [ 0x10708c48548eaa21, 0, 0, 0x10708c48548eaa21, 0, 0, 0, 0 ],
-        bbs: [0x9077c276d3f29635, 0, 0, 0x9077c276d3f29635, 0, 0, 0, 0],
-        army: 0,
-        castle_rights: 0x0000,
-        en_passant: 0,
-        halfmove: 0,
-        fullmove: 1
-    };
+//     let board = Game {
+//         // bbs: [ 0x10708c48548eaa21, 0, 0, 0x10708c48548eaa21, 0, 0, 0, 0 ],
+//         bbs: [0x9077c276d3f29635, 0, 0, 0x9077c276d3f29635, 0, 0, 0, 0],
+//         army: 0,
+//         castle_rights: 0x0000,
+//         en_passant: 0,
+//         halfmove: 0,
+//         fullmove: 1
+//     };
 
-    let new_board = board.apply(
-        Turn {
-        piece: Piece::BISHOP,
-        //
-        // from: 52,
-        // to: 10,
-        //
-        // from: 23,
-        // to: 0,
-        //
-        // from: 22,
-        // to: 4,
-        // diagonal
-        // from: 4,
-        // to: 31,
-        // anti-diagonal
-        // from: 50,
-        // to: 16,
-        // diagonal
-        from: 20,
-        to: 27,
-        promotion_piece: 0
-    }
-    );
-}
+//     let new_board = board.apply(
+//         Turn {
+//         piece: Piece::BISHOP,
+//         //
+//         // from: 52,
+//         // to: 10,
+//         //
+//         // from: 23,
+//         // to: 0,
+//         //
+//         // from: 22,
+//         // to: 4,
+//         // diagonal
+//         // from: 4,
+//         // to: 31,
+//         // anti-diagonal
+//         // from: 50,
+//         // to: 16,
+//         // diagonal
+//         from: 20,
+//         to: 27,
+//         promotion_piece: 0
+//     }
+//     );
+// }
 
 // #[test]
 // fn empty_board__anti_diagonal__north_edge__south () {
@@ -285,34 +349,77 @@ fn king_s03() {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWN EMPTY BOARD
 
+// ---------------- White and black diagonal captures.
 #[test]
-fn pawxn_xx() {
-    let game = SL_P_01;
-    let piece = Piece::PAWN;
+fn pawn_empty_01() {
+    let g = Game {
+        bbs: [
+            0x8000000,
+            0x1000000000,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0x1008000000
+        ],
+        army: 0,
+        castle_rights: 15,
+        en_passant: 0,
+        halfmove: 0,
+        fullmove: 1
+    };
 
-    println(f"");
-
-    // White sut.
-    let sut_white = _cc(game, piece);
-    // println("----------- WHITE DOUBLE HOME");
-    // let w_double = sut_white(9, 25); // b2 -> b4.
-    // println(w_double);
-
-    let sut_black = _cc(SL_P_02, piece);
-    println("----------- BLACK DOUBLE HOME");
-    let b_double = sut_black(54, 38); // g7 -> g5.
-    println(b_double);
-    println("----------- BLACK SINGLE HOME");
-    let b_single = sut_black(50, 42); // c7 -> c6.
-    println(b_single);
-    println("----------- WHITE DOUBLE HOME"); // b2 -> b4.
-    let w_double_home = b_single.apply(Turn { piece, from: 9, to: 25, promotion_piece: 0 });
-    println(w_double_home);
-    println("----------- BLACK SINGLE AWAY");
-    let b_single_away = w_double_home.apply(Turn { piece, from: 42, to: 34, promotion_piece: 0 });
-    // let b_single_away = sut_black(44, 36); // e6 -> e5.
-    println(b_single_away);
+    let c1 = g.apply(
+        Turn {
+        piece: Piece::PAWN,
+        from: 27, // d4
+        to: 36, // e5
+        promotion_piece: 0
+    }
+    );
 }
+
+// #[test]
+// fn pawxn_xx() {
+//     let game = SL_P_01;
+//     let piece = Piece::PAWN;
+
+//     println(f"");
+
+//     // White sut.
+//     let sut_white = _cc(game, piece);
+//     // println("----------- WHITE DOUBLE HOME");
+//     // let w_double = sut_white(9, 25); // b2 -> b4.
+//     // println(w_double);
+
+//     let sut_black = _cc(SL_P_02, piece);
+//     println("----------- BLACK DOUBLE HOME");
+//     let b_double = sut_black(54, 38); // g7 -> g5.
+//     println(b_double);
+//     println("----------- BLACK SINGLE HOME");
+//     let b_single = sut_black(50, 42); // c7 -> c6.
+//     println(b_single);
+//     println("----------- WHITE DOUBLE HOME"); // b2 -> b4.
+//     let w_double_home = b_single.apply(Turn { piece, from: 9, to: 25, promotion_piece: 0 });
+//     println(w_double_home);
+//     println("----------- BLACK SINGLE AWAY");
+//     let b_single_away = w_double_home.apply(Turn { piece, from: 42, to: 34, promotion_piece: 0 });
+//     // let b_single_away = sut_black(44, 36); // e6 -> e5.
+//     println(b_single_away);
+// }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- PAWN DENSE BOARD
+
+// ---------------- White and black diagonal captures.
+#[test]
+fn pawn_dense_01() {
+    let c1 = slp07(34, 43);
+}
+
+// ---------------- White and black anti-diagonal captures.
+// TODO:
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- KING ILLEGAL (MOVE PATTERN)
@@ -543,9 +650,129 @@ fn general_dense_blocked_s01() {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWN SPECIAL (PROMOTION)
 
+// ---------------- White and black vertical promotions.
+
 #[test]
-fn pawn_promotion_TODO() {
+fn pawn_promotion_01() {
+    // Knight.
+    let n = slp05(48, 56, Promote::KNIGHT);
+    assert_bbs(
+        n,
+        [
+        0x1648200000000FF,
+        0x1C02000000000000,
+        0x100000000000042,
+        0x24,
+        0x81,
+        0x8,
+        0x10,
+        0x1C66820000000000
+    ]
+    );
+
+    // Bishop.
+    let b = slp05(53, 61, Promote::BISHOP);
+    assert_bbs(
+        b,
+        [
+        0x20458200000000FF,
+        0x1C02000000000000,
+        0x42,
+        0x2000000000000024,
+        0x81,
+        0x8,
+        0x10,
+        0x1C47820000000000
+    ]
+    );
+
+    // Rook.
+    let r = slp05(54, 62, Promote::ROOK);
+    assert_bbs(
+        r,
+        [
+        0x40258200000000FF,
+        0x1C02000000000000,
+        0x42,
+        0x24,
+        0x4000000000000081,
+        0x8,
+        0x10,
+        0x1C27820000000000
+    ]
+    );
+
+    // Queen.
+    let q = slp05(48, 56, Promote::QUEEN);
+    assert_bbs(
+        q,
+        [
+        0x1648200000000FF,
+        0x1C02000000000000,
+        0x42,
+        0x24,
+        0x81,
+        0x100000000000008,
+        0x10,
+        0x1C66820000000000
+    ]
+    );
+}
+
+#[test]
+fn pawn_promotion_02() {
+    // TODO: Black.
+}
+
+// ---------------- White and black diagonal promotions (involving capture).
+
+#[test]
+fn pawn_promotion_03() {
+    let n = slp05(50, 59, Promote::KNIGHT);
+    assert_bbs(
+        n,
+        [
+        0x8618200000000FF,
+        0x1402000000000000,
+        0x800000000000042,
+        0x24,
+        0x81,
+        0x8,
+        0x10,
+        0x1463820000000000
+    ]
+    );
+}
+
+#[test]
+fn pawn_promotion_04() {
+    // TODO: Black.
+}
+
+// ---------------- White and black anti-diagonal promotions (involving capture).
+
+#[test]
+fn pawn_promotion_05() {
     // TODO
+}
+
+#[test]
+fn pawn_promotion_06() {
+    // TODO: Black.
+}
+
+// ---------------- Failing cases (these are really just checking u2, meh).
+
+// Cannot promote a pawn to a pawn.
+#[test(should_fail)]
+fn pawn_promotion_07() {
+    let _ = slp05(48, 56, 4); // Attempt to promote to king.
+}
+
+// Cannot promote a pawn to a king.
+#[test(should_fail)]
+fn pawn_promotion_08() {
+    let _ = slp05(48, 56, 5); // Attempt to promote to pawn.
 }
 
 // ---------------------------------------------------------------------------
@@ -572,6 +799,7 @@ fn pawn_en_passant_pattern_01() {
         halfmove: 0,
         fullmove: 1
     };
+    println(g);
 
     // White performs en passant capture.
     let res = g.apply(
@@ -936,7 +1164,11 @@ fn pawn_en_passant_target_clear_slp02() {
 // ---------------------------------------------- KING / ROOK SPECIAL (CASTLE)
 
 #[test]
-fn king_side_castle_TODO() {}
+fn king_side_castle_TODO() {
+    // TODO: White and black.
+}
 
 #[test]
-fn queen_side_castle_TODO() {}
+fn queen_side_castle_TODO() {
+    // TODO: White and black.
+}
