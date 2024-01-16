@@ -93,13 +93,13 @@ Focus is piece move patterns, legal and illegal versions of those, and special g
       <td>✅</td>
       <!-- B / R / Q -->
       <td>--</td>
-      <td>❌</td>
+      <td>✅</td>
       <!-- K -->
       <td>--</td>
-      <td>❌</td>
+      <td>✅</td>
       <!-- P -->
       <td>--</td>
-      <td>❌</td>
+      <td>✅</td>
     </tr>
     <tr>
       <th scope="rowgroup" rowspan="2">Pattern</th>

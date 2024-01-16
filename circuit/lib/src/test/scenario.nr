@@ -105,7 +105,7 @@ global KNIGHT: [Scenario; 3] = [
 
 // TODO: This test scenario can go into COMMON when thats reworked to use the
 //       improved t::sg::SeededGame isntead of Scenario.
-global COMMON_SLIDING: [t::sg::SeededGame; 1] = [
+global COMMON_SLIDING: [t::sg::SeededGame; 2] = [
 
     // ---------------- Scenario 0
 
@@ -120,6 +120,16 @@ global COMMON_SLIDING: [t::sg::SeededGame; 1] = [
         (t::bb::BLACK, t::bb::ROOK, 0x80000010),
         (t::bb::WHITE, t::bb::QUEEN, 0x80), // To take black bishop.
         (t::bb::BLACK, t::bb::QUEEN, 0x8000000000000000),
+    ]),
+
+    // ---------------- Scenario 1
+
+    // Sliding pieces simply present for testing illegality of nothing-moves.
+    t::sg::init_fog(t::Player::WHITE, [
+        (t::bb::WHITE, t::bb::BISHOP, 0x1),
+        (t::bb::WHITE, t::bb::ROOK, 0x200),
+        (t::bb::WHITE, t::bb::QUEEN, 0x40000),
+        (t::bb::WHITE, t::bb::KING, 0x8000000),
     ]),
 ];
 

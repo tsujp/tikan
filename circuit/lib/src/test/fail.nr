@@ -1,6 +1,8 @@
 // Pieces (moves).
 mod common;
 mod knight;
+mod slider;
+mod pawn;
 
 // Mechanics.
 mod fog;
