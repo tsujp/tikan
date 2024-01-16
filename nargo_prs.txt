@@ -1,0 +1,57 @@
+These are building up in the codebase, temporarily dumping here until PRs are made:
+
+// TODO: This attempt at DRY produces a compiler error. Make a PR for it.
+// [tikan_lib] Testing test::pass::special::pawn_promote_vertical_black... error: Internal Consistency Evaluators Errors:
+//                     This is likely a bug. Consider Opening an issue at https://github.com/noir-lang/noir/issues
+//   ┌─ /Users/tsujp/programming/~aztec/tikan/circuit/lib/state/src/game.nr:1:1
+//   │
+// 1 │ use dep::std::{wrapping_add, wrapping_mul, wrapping_sub};
+//   │ - ICE: Expected "a numeric value", found "[Var(AcirVar(1019), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1020), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1019), NumericType(Unsigned { bit_size: 64 })), Var(AcirVar(1018), NumericType(Unsigned { bit_size: 64 }))]"
+//   │
+//   = Call stack:
+//     1. /Users/tsujp/programming/~aztec/tikan/circuit/lib/src/test/pass/special.nr:89:17
+//     2. /Users/tsujp/programming/~aztec/tikan/circuit/lib/src/test/util.nr:235:33
+//     3. /Users/tsujp/programming/~aztec/tikan/circuit/lib/state/src/game.nr:334:21
+// #[test]
+// fn pawn_promote_vertical_black() {
+//     let piece = t::Piece::PAWN;
+//     let single_move_delta = 8;
+
+//     let white = t::sg::init_fog(
+//         t::Player::WHITE,
+//         [(t::bb::WHITE, t::bb::PAWN, 0xFF000000000000)]
+//     ).game;
+//     let sut_white = cc_promote(white, piece);
+
+//     let black = t::sg::init_fog(t::Player::BLACK, [(t::bb::BLACK, t::bb::PAWN, 0xFF00)]).game;
+//     let sut_black = cc_promote(black, piece);
+
+//     let suts = [sut_white, sut_black];
+
+//     // Index into poor-man's enum `Promote`.
+//     let mut promote_piece: u2 = 0;
+
+//     // We don't really need the SeedGame structure for these tests so it's not used for speed.
+//     for from in PAWN_START_RANKS {
+//         let data: (u1, u6) = if from > 15 {
+//             // White promotion at black's end.
+//             let to = from + single_move_delta;
+//             (0, to)
+//             // sut_white(from, to, promote_piece);
+//         } else {
+//             // Black promotion at white's end.
+//             let to = from - single_move_delta;
+//             (1, to)
+//             // sut_black(from, to, promote_piece);
+//         };
+
+//         let x = suts[data.0];
+//         let z = data.1;
+//         let y = x(from, z, promote_piece);
+
+//         let promoted_pawn = (2 as Field).pow_32(from as Field) as u64;
+
+//         promote_piece = dep::std::wrapping_add(promote_piece, 1);
+
+//     }
+// }
