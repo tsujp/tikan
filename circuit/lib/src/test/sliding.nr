@@ -608,23 +608,6 @@ fn general_dense_blocked_s01() {
 }
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------- PAWN SPECIAL (PROMOTION)
-
-// ---------------- Failing cases (these are really just checking u2, meh).
-
-// Cannot promote a pawn to a pawn.
-#[test(should_fail)]
-fn pawn_promotion_07() {
-    let _ = slp05(48, 56, 4); // Attempt to promote to king.
-}
-
-// Cannot promote a pawn to a king.
-#[test(should_fail)]
-fn pawn_promotion_08() {
-    let _ = slp05(48, 56, 5); // Attempt to promote to pawn.
-}
-
-// ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWN SPECIAL (EP CAPTURE)
 
 // ---------------- White and black valid en-passant captures

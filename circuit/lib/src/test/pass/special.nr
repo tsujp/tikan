@@ -220,3 +220,6 @@ fn pawn_en_passant_target_clear_2() {
     let post_white = white_to_move(8, 16); // White a2 -> a3.
     assert(post_white.en_passant == 0); // En-passant target should be reset.
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- CASTLING
