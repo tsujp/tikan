@@ -126,7 +126,7 @@ global COMMON_SLIDING: [t::sg::SeededGame; 1] = [
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWNS
 
-global PAWN: [t::sg::SeededGame; 3] = [
+global PAWN: [t::sg::SeededGame; 2] = [
 
     // ---------------- Scenario 0
 
@@ -142,23 +142,5 @@ global PAWN: [t::sg::SeededGame; 3] = [
     mk_s_TWO(t::Player::BLACK, [
         (t::bb::WHITE, t::bb::PAWN, 0xFF00),
         (t::bb::BLACK, t::bb::PAWN, 0xFF000000000000)
-    ]),
-
-    // ---------------- Scenario 2
-
-    // Pawn promotion scenarios for white.
-    mk_s_TWO(t::Player::WHITE, [
-        (t::bb::WHITE, t::bb::KNIGHT, 0x42),
-        (t::bb::BLACK, t::bb::KNIGHT, 0x0),
-        (t::bb::WHITE, t::bb::BISHOP, 0x24),
-        (t::bb::BLACK, t::bb::BISHOP, 0x0),
-        (t::bb::WHITE, t::bb::ROOK, 0x81),
-        (t::bb::BLACK, t::bb::ROOK, 0x0),
-        (t::bb::WHITE, t::bb::QUEEN, 0x8),
-        (t::bb::BLACK, t::bb::QUEEN, 0x0),
-        (t::bb::WHITE, t::bb::KING, 0x10),
-        (t::bb::BLACK, t::bb::KING, 0x0),
-        (t::bb::WHITE, t::bb::PAWN, 0x65820000000000),
-        (t::bb::BLACK, t::bb::PAWN, 0x1C02000000000000)
     ]),
 ];

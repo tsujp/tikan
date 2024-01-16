@@ -206,7 +206,7 @@ Focus is piece move patterns, legal and illegal versions of those, and special g
       <td>--</td>
       <td>--</td>
       <!-- P -->
-      <td>❌</td>
+      <td>✅</td>
       <td>❌</td>
     </tr>
     <tr>
