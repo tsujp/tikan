@@ -51,7 +51,7 @@ global COMMON: [Scenario; 2] = [
     // Board with pieces mostly in positions to be captured, including captures
     //   resulting in one side having no more of the piece in question.
 
-    //     [RANK]                        [INDICES]
+    // [RANK]                        [INDICES]
 
     //    8      . 56   . 57   . 58   . 59   . 60  bR 61   . 62   . 63
     //    7     bN 48  bB 49  bR 50   . 51   . 52   . 53  bB 54   . 55
@@ -126,7 +126,7 @@ global COMMON_SLIDING: [t::sg::SeededGame; 1] = [
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PAWNS
 
-global PAWN: [t::sg::SeededGame; 2] = [
+global PAWN: [t::sg::SeededGame; 4] = [
 
     // ---------------- Scenario 0
 
@@ -143,4 +143,74 @@ global PAWN: [t::sg::SeededGame; 2] = [
         (t::bb::WHITE, t::bb::PAWN, 0xFF00),
         (t::bb::BLACK, t::bb::PAWN, 0xFF000000000000)
     ]),
+
+    // ---------------- Scenario 2
+
+    // White en-passant capture scenario.
+
+    // [RANK]                        [INDICES]
+
+    //    8     bR 56  bN 57  bB 58  bQ 59  bK 60  bB 61  bN 62  bR 63
+    //    7     bP 48  bP 49  bP 50  bP 51   . 52  bP 53  bP 54  bP 55
+    //    6      . 40   . 41   . 42   . 43   . 44   . 45   . 46   . 47
+    //    5      . 32   . 33   . 34  wP 35  bP 36   . 37   . 38   . 39
+    //    4      . 24   . 25   . 26   . 27   . 28   . 29   . 30   . 31
+    //    3      . 16   . 17   . 18   . 19   . 20   . 21   . 22  wP 23
+    //    2     wP  8  wP  9  wP 10   . 11  wP 12  wP 13  wP 14   . 15
+    //    1     wR  0  wN  1  wB  2  wQ  3  wK  4  wB  5  wN  6  wR  7
+
+    //           a      b      c      d      e      f      g      h      [FILE]
+    t::sg::init_ep(
+        t::Player::WHITE,
+        [
+            (t::bb::WHITE, t::bb::KNIGHT, 0x42),
+            (t::bb::BLACK, t::bb::KNIGHT, 0x4200000000000000),
+            (t::bb::WHITE, t::bb::BISHOP, 0x24),
+            (t::bb::BLACK, t::bb::BISHOP, 0x2400000000000000),
+            (t::bb::WHITE, t::bb::ROOK, 0x81),
+            (t::bb::BLACK, t::bb::ROOK, 0x8100000000000000),
+            (t::bb::WHITE, t::bb::QUEEN, 0x8),
+            (t::bb::BLACK, t::bb::QUEEN, 0x800000000000000),
+            (t::bb::WHITE, t::bb::KING, 0x10),
+            (t::bb::BLACK, t::bb::KING, 0x1000000000000000),
+            (t::bb::WHITE, t::bb::PAWN, 0x800807700),
+            (t::bb::BLACK, t::bb::PAWN, 0xEF001000000000)
+        ],
+        t::sq::e6 // e6 can be captured via en-passant.
+    ),
+
+    // ---------------- Scenario 3
+
+    // Black en-passant capture scenario.
+
+    // [RANK]                        [INDICES]
+
+    //    8     bR 56  bN 57  bB 58  bQ 59  bK 60  bB 61  bN 62  bR 63
+    //    7     bP 48   . 49   . 50   . 51   . 52   . 53   . 54   . 55
+    //    6      . 40  bP 41  bP 42   . 43   . 44   . 45   . 46  bP 47
+    //    5     wP 32   . 33   . 34  bP 35  bP 36  bP 37   . 38   . 39
+    //    4      . 24  wP 25   . 26   . 27  wP 28   . 29  bP 30  wP 31
+    //    3      . 16   . 17  wP 18  wP 19   . 20  wP 21  wP 22   . 23
+    //    2      .  8   .  9   . 10   . 11   . 12   . 13   . 14   . 15
+    //    1     wR  0  wN  1  wB  2  wQ  3  wK  4  wB  5  wN  6  wR  7
+
+    //           a      b      c      d      e      f      g      h      [FILE]
+    t::sg::init_ep(
+        t::Player::BLACK,
+        [
+            (t::bb::WHITE, t::bb::KNIGHT, 0x42),
+            (t::bb::BLACK, t::bb::KNIGHT, 0x4200000000000000),
+            (t::bb::WHITE, t::bb::BISHOP, 0x24),
+            (t::bb::BLACK, t::bb::BISHOP, 0x2400000000000000),
+            (t::bb::WHITE, t::bb::ROOK, 0x81),
+            (t::bb::BLACK, t::bb::ROOK, 0x8100000000000000),
+            (t::bb::WHITE, t::bb::QUEEN, 0x8),
+            (t::bb::BLACK, t::bb::QUEEN, 0x800000000000000),
+            (t::bb::WHITE, t::bb::KING, 0x10),
+            (t::bb::BLACK, t::bb::KING, 0x1000000000000000),
+            (t::bb::WHITE, t::bb::PAWN, 0x1926C0000),
+            (t::bb::BLACK, t::bb::PAWN, 0x1863840000000),
+        ],
+        t::sq::h3 // h3 can be captured via en-passant.
+    ),
 ];

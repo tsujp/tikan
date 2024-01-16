@@ -1,4 +1,4 @@
-use dep::state::types::{Game, BitboardIndex, Promote};
+use dep::state::types::{Game, Turn, BitboardIndex, Promote};
 use crate::test::util::{cc, cc_promote, assert_bbs};
 use crate::test::util::swiss as t;
 
@@ -80,7 +80,7 @@ fn pawn_promote_diag() {
 
     let piece = t::Piece::PAWN;
 
-    //     [RANK]                        [INDICES]
+    // [RANK]                        [INDICES]
 
     //    8      . 56   . 57  bP 58  bP 59  bP 60   . 61   . 62   . 63
     //    7     wP 48  bP 49  wP 50   . 51   . 52  wP 53  wP 54   . 55
@@ -137,6 +137,32 @@ fn pawn_promote_diag() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- EN-PASSANT CAPTURE
+
+#[test]
+fn pawn_en_passant_capture_white() {
+    let _ = t::sc::PAWN[2].assert_delta(
+        t::Piece::PAWN,
+        t::sq::d5,
+        t::sq::e6,
+        [
+        (t::bb::WHITE, t::bb::PAWN, 0x100000807700),
+        (t::bb::BLACK, t::bb::PAWN, 0xEF000000000000)
+    ]
+    );
+}
+
+#[test]
+fn pawn_en_passant_capture_black() {
+    let _ = t::sc::PAWN[3].assert_delta(
+        t::Piece::PAWN,
+        t::sq::g4,
+        t::sq::h3,
+        [
+        (t::bb::WHITE, t::bb::PAWN, 0x1126C0000),
+        (t::bb::BLACK, t::bb::PAWN, 0x1863800800000)
+    ]
+    );
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- EN-PASSANT TARGET

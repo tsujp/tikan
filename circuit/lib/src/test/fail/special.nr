@@ -82,6 +82,70 @@ fn pawn_promote_diag_4() {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- EN-PASSANT CAPTURE
 
+// ---------------- White illegal.
+
+#[test(should_fail_with = "SLIDER move PATTERN")]
+fn pawn_en_passant_capture_white_1() {
+    let _ = t::sc::PAWN[2].assert_delta(
+        t::Piece::PAWN,
+        t::sq::c2, // Cannot magically teleport to the en-passant capture square.
+        t::sq::e6,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
+#[test(should_fail_with = "PAWN special move DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_capture_white_2() {
+    let _ = t::sc::PAWN[2].assert_delta(
+        t::Piece::PAWN,
+        t::sq::a2, // Illegal diagonal sliding.
+        t::sq::e6,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
+#[test(should_fail_with = "PAWN special move ANTI-DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_capture_white_3() {
+    let _ = t::sc::PAWN[2].assert_delta(
+        t::Piece::PAWN,
+        t::sq::h3, // Illegal anti-diagonal sliding.
+        t::sq::e6,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
+// ---------------- Black illegal.
+
+#[test(should_fail_with = "SLIDER move PATTERN")]
+fn pawn_en_passant_capture_black_1() {
+    let _ = t::sc::PAWN[3].assert_delta(
+        t::Piece::PAWN,
+        t::sq::a7,
+        t::sq::h3,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
+#[test(should_fail_with = "PAWN move MULTI-PUSH PATTERN")]
+fn pawn_en_passant_capture_black_2() {
+    let _ = t::sc::PAWN[3].assert_delta(
+        t::Piece::PAWN,
+        t::sq::h6,
+        t::sq::h3,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
+#[test(should_fail_with = "PAWN special move ANTI-DIAGONAL EN-PASSANT PATTERN")]
+fn pawn_en_passant_capture_black_3() {
+    let _ = t::sc::PAWN[3].assert_delta(
+        t::Piece::PAWN,
+        t::sq::f5,
+        t::sq::h3,
+        [(t::bb::WHITE, t::bb::PAWN, 0xFF)] // Doesn't matter what is here.
+    );
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- EN-PASSANT TARGET
 

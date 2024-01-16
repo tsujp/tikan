@@ -242,11 +242,16 @@ mod SeedGame {
     use dep::state::types::{Game, Turn, Bitboard, BitboardIndex, REQUIRED_BITBOARDS};
 
     pub fn init<N>(turn: u1, bb_defs: [BbDef; N]) -> SeededGame {
-        SeededGame::init(turn, bb_defs, false)
+        SeededGame::init(turn, bb_defs, false, 0)
     }
 
     pub fn init_fog<N>(turn: u1, bb_defs: [BbDef; N]) -> SeededGame {
-        SeededGame::init(turn, bb_defs, true)
+        SeededGame::init(turn, bb_defs, true, 0)
+    }
+
+    pub fn init_ep<N>(turn: u1, bb_defs: [BbDef; N], en_passant_target: BitboardIndex) -> SeededGame {
+        // No point having fog with an en-passant test _UNDER CURRENT FOG PATTERN_ (taxicab-2).
+        SeededGame::init(turn, bb_defs, false, en_passant_target)
     }
 
     type Seed = [[Bitboard; 6]; 2];
@@ -264,13 +269,13 @@ mod SeedGame {
 
     impl SeededGame {
         // u4 is the same type as members of `types::BitboardOf`.
-        fn init<N>(turn: u1, bb_defs: [BbDef; N], with_fog: bool) -> Self {
+        fn init<N>(turn: u1, bb_defs: [BbDef; N], with_fog: bool, en_passant: BitboardIndex) -> Self {
             let seed = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]];
 
             let (post_seed, bbs) = compute_seeded(seed, bb_defs, with_fog);
 
             Self {
-                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog },
+                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant, halfmove: 0, fullmove: 1, has_fog: with_fog },
                 seed: post_seed, // Saving the seed effectively saves pre-move bitboards per player.
                 has_fog: with_fog,
             }
