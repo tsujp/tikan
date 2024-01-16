@@ -276,7 +276,7 @@ pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
         0xFFFFFFFFFFFFFFFF // u64 max.
     };
 
-    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1 }
+    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog }
 }
 
 // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
@@ -294,7 +294,7 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
         let bit = all_bits[i];
 
         let bit_fog = if bit == 1 {
-            bl::taxi_mask((2 as Field).pow_32(i) as Bitboard)
+            bl::taxi_mask((2 as Field).pow_32(i) as u64)
         } else {
             0
         };
@@ -304,7 +304,6 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
 
     fog
 }
-
 
 impl Game {
     // Returns an array of struct members as Fields, for use in hashing
@@ -604,6 +603,10 @@ impl Game {
         // `fullmove` is incremented after black's turn.
         let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
 
+        // Update fog.
+        if self.has_fog {
+            new_bbs[BitboardOf::FOG] = compute_fog(new_bbs[BitboardOf::WHITE], new_bbs[BitboardOf::BLACK]);
+        }
 
         // TODO: Update castle rights.
 
@@ -613,7 +616,8 @@ impl Game {
             castle_rights: self.castle_rights,
             en_passant: move_result.en_passant.unwrap_or(0),
             halfmove: self.halfmove,
-            fullmove: fullmove
+            fullmove: fullmove,
+            has_fog: self.has_fog
         };
 
         new_board

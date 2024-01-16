@@ -266,12 +266,12 @@ mod SeedGame {
             let (post_seed, bbs) = compute_seeded(seed, bb_defs, with_fog);
 
             Self {
-                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1 },
+                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog },
                 seed: post_seed, // Saving the seed effectively saves pre-move bitboards per player.
                 has_fog: with_fog,
             }
         }
-        
+
         fn __assert<N>(self, piece: u3, from: BitboardIndex, to: BitboardIndex, promotion: u2, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
             let game_post = self.game.apply(Turn { piece, from, to, promotion_piece: promotion });
 

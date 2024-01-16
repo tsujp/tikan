@@ -86,7 +86,11 @@ struct Game {
     castle_rights: u4,
     en_passant: BitboardIndex,
     halfmove: Field,
-    fullmove: Field
+    fullmove: Field,
+    // Realistically this will always be true however current bitboard-based
+    //   fog computation is very slow, this field exists purely to speed up
+    //   tests. I hate it but yadda yadda rewrite into arrays.
+    has_fog: bool
 }
 
 // TOOD: Put SHIFTED_ANTI_DIAGONAL and other such constants here.

@@ -17,6 +17,8 @@ fn slider_s(from: u6, to: u6, piece: u3) -> () {
 fn complex() {
     assert(t::compute_fog(0x8002200000044001, 0) == 0xE7FFFF766EFFFFE7);
     assert(t::compute_fog(0x1000064301001A, 0x1C05420080004000) == 0x7FFFFFFFFFFFFFFF);
+    assert(t::compute_fog(0x1C478200000000FF, 0) == 0xFFFFFFC782FFFFFF);
+    assert(t::compute_fog(0x1C638200000000FF, 0) == 0xFFFFFFE782FFFFFF);
 }
 
 #[test]
