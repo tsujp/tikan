@@ -231,6 +231,10 @@ pub fn cc(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex)
     |from, to| game.apply(Turn { piece, from, to, promotion_piece: 0 })
 }
 
+pub fn cc_promote(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex, u2) -> Game {
+    |from, to, promotion_piece| game.apply(Turn { piece, from, to, promotion_piece })
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- SEEDABLE GAME.
 
@@ -290,19 +294,6 @@ mod SeedGame {
 
         pub fn assert_delta<N>(self, piece: u3, from: BitboardIndex, to: BitboardIndex, bb_defs: [(u4, u4, Bitboard); N]) -> Self {
             self.__assert(piece, from, to, 0, bb_defs)
-            // let game_post = self.game.apply(Turn { piece, from, to, promotion_piece: 0 });
-
-            // let (seed_post, bbs_post) = compute_seeded(self.seed, bb_defs, self.has_fog);
-
-            // crate::test::util::assert_bbs(game_post, bbs_post);
-
-            // // Didn't fail an assertion so we can return a new `SeedGame` where the
-            // //   seed is the move just made.
-            // Self {
-            //     game: game_post,
-            //     seed: seed_post,
-            //     has_fog: self.has_fog,
-            // }
         }
 
         // Yes it's not super DRY but it also makes it clearer when writing tests
