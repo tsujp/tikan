@@ -82,7 +82,7 @@ fn pawn_promote_diag_4() {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- EN-PASSANT CAPTURE
 
-// ---------------- White illegal.
+// ---------------- White illegal
 
 #[test(should_fail_with = "SLIDER move PATTERN")]
 fn pawn_en_passant_capture_white_1() {
@@ -114,7 +114,7 @@ fn pawn_en_passant_capture_white_3() {
     );
 }
 
-// ---------------- Black illegal.
+// ---------------- Black illegal
 
 #[test(should_fail_with = "SLIDER move PATTERN")]
 fn pawn_en_passant_capture_black_1() {
@@ -147,7 +147,6 @@ fn pawn_en_passant_capture_black_3() {
 }
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------- EN-PASSANT TARGET
-
-// ---------------------------------------------------------------------------
 // ---------------------------------------------- CASTLING
+
+// TODO

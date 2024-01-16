@@ -15,7 +15,7 @@ global PAWN_START_RANKS: [BitboardIndex; 16] = [
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PROMOTION
 
-// ---------------- White and black vertical promotions.
+// ---------------- White and black vertical promotions
 
 #[test]
 fn pawn_promote_vertical() {
@@ -70,7 +70,7 @@ fn pawn_promote_vertical() {
     }
 }
 
-// ---------------- White diagonal promotions (i.e. with captures).
+// ---------------- White diagonal promotions (i.e. with captures)
 
 #[test]
 fn pawn_promote_diag() {
@@ -249,3 +249,5 @@ fn pawn_en_passant_target_clear_2() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- CASTLING
+
+// TODO

@@ -19,3 +19,5 @@
 
 //     dep::std::println(k1);
 // }
+
+// TODO: Illegal normal piece captures.
