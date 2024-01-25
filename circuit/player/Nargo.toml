@@ -1,10 +1,11 @@
 [package]
 name = 'tikan_player'
 authors = [
-  "Jordan Ellis Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
+  "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
 ]
 compiler_version = '0.22.0+420a5c74a14dcfeede04337a42282093a7b5e63e'
 type = 'bin'
+entry = 'player.nr'
 
 [dependencies]
 lib = { path = '../lib' }

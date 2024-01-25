@@ -23,13 +23,15 @@ fn example_move_commitment() {
             0x8100000000000081,
             0x0800000000000008,
             0x1000000000000010,
-            0xef00180000f700
+            0xef00180000f700,
+            0xFFFFFFFFFFFFFFFF
         ],
         army: 0,
         castle_rights: 15,
         en_passant: 44, // e6
         halfmove: 0,
-        fullmove: 1
+        fullmove: 1,
+        has_fog: true
     };
 
     // From white performs en passant capture ep1 w1

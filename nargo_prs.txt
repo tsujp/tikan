@@ -1,5 +1,12 @@
 These are building up in the codebase, temporarily dumping here until PRs are made:
 
+// TODO: Stop trying to read .DS_Store
+The application panicked (crashed).
+Message:  could not read file "/Users/tsujp/Desktop/tikan/circuit/lib/state/.DS_Store" into string
+Location: tooling/nargo/src/lib.rs:75
+This is a bug. We may have already fixed this in newer versions of Nargo so try searching for similar issues at https://github.com/noir-lang/noir/issues/.
+If there isn't an open issue for this bug, consider opening one at https://github.com/noir-lang/noir/issues/new?labels=bug&template=bug_report.yml
+
 // TODO: This attempt at DRY produces a compiler error. Make a PR for it.
 // [tikan_lib] Testing test::pass::special::pawn_promote_vertical_black... error: Internal Consistency Evaluators Errors:
 //                     This is likely a bug. Consider Opening an issue at https://github.com/noir-lang/noir/issues

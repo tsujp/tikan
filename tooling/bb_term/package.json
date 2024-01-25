@@ -2,7 +2,7 @@
   "name": "bb_term",
   "version": "1.0.0",
   "description": "Terminal-based viewer for Tikan bitboard states.",
-  "author": "tsujp <jc+git [at] wz [dot] ht>",
+  "author": "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
   "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {

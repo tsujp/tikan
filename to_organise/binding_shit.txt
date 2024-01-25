@@ -1,0 +1,5 @@
+// Old binding stuff:
+
+grep '@TEST_SUITE:BIND_PLEASE' --recursive --include \*.nr --byte-offset --exclude-dir node_modules ${PWD}
+
+// @TEST_SUITE:BIND_PLEASE

@@ -2,17 +2,21 @@
   "name": "@tikan/project",
   "private": true,
   "version": "0.1.0",
-  "author": "tsujp <jc+git [at] wz [dot] ht>",
+  "author": "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
   "license": "BSD-3-Clause",
   "type": "module",
   "workspaces": [
-    "./util/*",
-    "./circuit"
+    "./tooling/*",
+    "./test"
   ],
+  "circuits": {
+    "player": "./circuit/player",
+    "state_commitment": "./circuit/pedersen"
+  },
   "scripts": {
-    "bb:term": "bun run --cwd util/bb_term do",
-    "bb:web": "bun run --cwd util/bb_web do",
-    "test": "bun run --cwd circuit test22",
+    "bb:term": "bun run --cwd tooling/bb_term do",
+    "bb:web": "bun run --cwd tooling/bb_web do",
+    "bingbong": "bun run --cwd test bingbong ",
     "test:watch": "bun run --cwd circuit test:watch",
     "fmt": "dprint fmt"
   },

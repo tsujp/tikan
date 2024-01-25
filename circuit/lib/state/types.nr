@@ -35,6 +35,7 @@ mod Player {
 //   promote to another pawn or a king leaving 4 possible pieces which can be
 //   described with 2-bits and those selfsame pieces are in that range when
 //   pawns and kings are enumerated last.
+// XXX: TypeScript type of the same name is bound to this.
 mod Piece {
     global KNIGHT: u3 = 0;
     global BISHOP: u3 = 1;
@@ -45,6 +46,7 @@ mod Piece {
 }
 
 // Needs it's own because u3 -> u2. Must be in the same order as Piece.
+// @TEST_SUITE:BIND_PLEASE
 mod Promote {
     global KNIGHT: u2 = 0;
     global BISHOP: u2 = 1;

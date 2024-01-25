@@ -2,7 +2,7 @@
   "name": "dev",
   "version": "0.1.0",
   "description": "Workspace package others can depend on to unify versions",
-  "author": "tsujp <jc+git [at] wz [dot] ht>",
+  "author": "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
   "license": "BSD-3-Clause",
   "devDependencies": {
     "@types/node": "^18.15.5",

@@ -3,7 +3,7 @@ mod pass;
 mod fail;
 
 // ---------------------------------------------------------------------------
-// ---------------------------------------------- MADE AVAILABLE TO MODS ABOVE.
+// ---------------------------------------------- MADE AVAILABLE TO MODS ABOVE
 
 // Board scenarios for testing.
 mod scenario;
