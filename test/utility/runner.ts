@@ -1,10 +1,26 @@
 // Calling process.exit() with any status code will prevent `bun --watch test`
 //   from re-executing, so for the development task use a thin wrapper.
 
-const wd = process.cwd()
+import { getNoirCircuits } from './get_circuits'
+import { checkTestEnvironmentV2 } from './precheck'
+import { resolveProjectRootDir, logHeading } from './misc'
 
 // * * * * * * * * * * * * * * * * * * * * * * * PRE-CHECK EXECUTION
 // * * * * * * * * * * * * *
+
+const root_dir = await resolveProjectRootDir()
+const circuits = await getNoirCircuits(root_dir)
+
+const { checks, args } = await checkTestEnvironmentV2(root_dir, circuits)
+
+if (checks === false) process.exit(1)
+
+logHeading('Executing tests')
+
+// Hardcoded `bin` tests only for now.
+import { join } from 'path'
+const wd = join(root_dir, 'test')
+// ---/
 
 const precheck_proc = Bun.spawn(['bun', 'test'], {
     cwd: wd,

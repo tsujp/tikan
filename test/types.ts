@@ -10,6 +10,15 @@ export type Circuits = EachCircuit<CompiledCircuit>
 //    { white: BarretenbergBackend; black: BarretenbergBackend }
 // >
 export type CircuitDefinition = { [key: string]: { path: string; circuit: string } }
+export type NoirArtifactDefinitions = {
+    circuits: {
+        [key: string]: { path: string; circuit: string }
+    },
+    libraries: {
+        [key: string]: { path: string }
+    },
+}
+
 
 export type Circuit = CompiledCircuit
 

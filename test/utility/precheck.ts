@@ -1,94 +1,19 @@
-import chalk from 'chalk'
-import { type CircuitDefinition } from '../types'
+import { type AllCircuits } from '../types'
+import { behaviour as args } from './parse_args'
 
-const roseChar = '-'
-const successNoStdout = `${chalk.gray('<')}${chalk.green('success')}${chalk.gray('>')}`
-
-class NonZeroReturnError extends Error {
-    constructor (message: string, cause: string) {
-        super(message)
-        this.name = 'NonZeroReturnError'
-        this.cause = cause
-    }
-}
-
-// Single line string only; if left and right padding is odd will preference
-//   left side (i.e. right side will receive the extra str pad).
-export function padCentre (str: string, padStr: string, max = 80) {
-    if (str.length > max) {
-        return str
-    }
-
-    const spaceStr = ` ${str} `
-
-    return spaceStr.padStart(Math.floor(spaceStr.length / 2) + Math.floor(max / 2), padStr)
-        .padEnd(max, padStr)
-}
-
-// Prints pre-formatted test environment item for sanity preamble.
-function logItem (item: string, str: string) {
-    return console.log(`${chalk.cyan(item)}${chalk.gray(':')} ${chalk.reset(str)}`)
-}
-
-function logItemError (item: string, str: string) {
-    // Not console.error because this test harness is mostly to facilitate sanely
-    //   orchestrating Nargo for integration and end-to-end tests and not for
-    //   perfect logging etc. Outputting to console.error (stderr) will require
-    //   explicit buffer synchronisation which is way too much for _orchestrating
-    //   nargo_.
-    return console.log(
-        `${chalk.red('[ERROR]')} ${chalk.cyan(item)}${chalk.gray(':')} ${chalk.reset(str)}`,
-    )
-}
-
-export function logCommand (
-    cmdDef: Parameters<typeof Bun.spawnSync>,
-    item: string,
-    errMsg: string,
-) {
-    try {
-        const { exitCode, stdout, stderr } = Bun.spawnSync(...cmdDef)
-
-        if (exitCode !== 0) {
-            throw new NonZeroReturnError(errMsg, new TextDecoder().decode(stderr).trim())
-        } else {
-            const cmdStdout = new TextDecoder().decode(stdout).trim()
-            logItem(item, cmdStdout.length === 0 ? successNoStdout : cmdStdout)
-        }
-    } catch (e: unknown) {
-        // XXX: TypeScript has cursed exception type-narrowing in switch-case even
-        //      though JavaScript uses non-value exceptions, hilarious. Hey guys
-        //      let's have an exception system where you cannot even narrow on
-        //      exception types in a switch-case who would ever need that??????
-        if (e instanceof Error) {
-            logItemError(item, e.stack ?? '<NO STACK TRACE>')
-            if (e.cause) {
-                console.log(`\n${e.cause}`)
-            }
-        }
-
-        // Errors.
-        return false
-    }
-
-    // No errors.
-    return true
-}
+import { logCommand, logHeading, COMMAND_DESC } from './misc'
 
 // Block while printing chosen Nargo information; this is extremely important
 //   being that Nargo comprises the system under test and having to guess
 //   what version (e.g. multiple installs) is being used sucks, so print it.
-export function checkTestEnvironment (wd: string, circuits: CircuitDefinition) {
-    console.log(
-        chalk.yellow(padCentre('Check test environment & build circuits', roseChar)),
-    )
+export async function checkTestEnvironmentV2(wd: string, circuits: AllCircuits) {
+    logHeading('Check test environment & build circuits')
 
-    logItem('cwd', wd)
+    console.log(COMMAND_DESC('project root', wd))
 
     // ------------------------------ Actual checks like command availability.
 
-    // This executes immediately and fills prechecks with true/false values.
-    const envChecks = [
+    const env_cmds = [
         logCommand(
             [['command', '-v', 'nargo'], { cwd: wd }],
             'nargo executable',
@@ -101,10 +26,10 @@ export function checkTestEnvironment (wd: string, circuits: CircuitDefinition) {
         ),
     ]
 
-    const envSuccess = envChecks.every((res) => res === true)
-
-    if (envSuccess === false) {
-        console.log(chalk.red('ENVIRONMENT CHECKS FAILED!'))
+    // Exit early.
+    if ((await Promise.all(env_cmds)).every((res) => res === true) === false) {
+        console.error('ENVIRONMENT CHECKS FAILED!')
+        return false
     }
 
     // ------------------------------ Compile circuits.
@@ -119,22 +44,37 @@ export function checkTestEnvironment (wd: string, circuits: CircuitDefinition) {
 
     const buildStub = ['nargo', 'compile', '--include-keys']
 
-    const circuitSuccess = Object.entries(circuits).every(([name, details]) => {
-        // Build circuit.
-        const build = logCommand(
-            [buildStub, { cwd: details.path }],
-            `circuit compile '${name}'`,
-            `COULD NOT COMPILE circuit '${name}' at ${details.path}`,
+    const lib_checks = circuits.lib.map(({ name, root }) =>
+        // Check constraint system (as we cannot compile a library circuit).
+        logCommand(
+            [['nargo', 'check', args.s.do ? args.s.payload : ''], { cwd: root }],
+            `[lib] check '${name}'`,
+            `circuit CONSTRAINT SYSTEM ERROR in ${root}`,
         )
-        // Check we know path to compiled circuit (arguably pedantic since we
-        //   import it later but fine for now; also slow).
-        const artifact = logCommand(
-            [['test', '-f', details.circuit], { cwd: wd }],
-            `circuit artifacts for '${details.path}'`,
-            `circuit ARTIFACTS MISSING expected at '${details.circuit}'`,
-        )
+    )
 
-        return (build && artifact) === true
+    const bin_checks = circuits.bin.map(({ name, root, artifact }) => {
+        return new Promise(async (resolve) => {
+            // Build circuit.
+            const chk_build = await logCommand(
+                // XXX: Upstream `--include-keys` to `nargo compile` was removed.
+                [['nargo', 'compile', args.s.do ? args.s.payload : ''], { cwd: root }],
+                `[bin] compile '${name}'`,
+                `COULD NOT COMPILE circuit '${name}' at ${root}`,
+            )
+            // Early return on build circuit, no point checking if we couldn't build.
+            if (chk_build === false) return resolve(false)
+
+            // Check we know path to compiled circuit (arguably pedantic since we
+            //   import it later but fine for now; also slow).
+            const chk_artifact = await logCommand(
+                [['test', '-f', artifact], { cwd: wd }],
+                `[bin] artifacts '${name}'`,
+                `circuit ARTIFACTS MISSING expected at '${root}'`,
+            )
+
+            return resolve(chk_artifact)
+        })
     })
 
     console.log(chalk.yellow(roseChar.repeat(80)))

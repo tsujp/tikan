@@ -9,9 +9,14 @@
     "./tooling/*",
     "./test"
   ],
-  "circuits": {
-    "player": "./circuit/player",
-    "state_commitment": "./circuit/pedersen"
+  "noir": {
+    "circuits": {
+      "player": "./circuit/player",
+      "state_commitment": "./circuit/pedersen"
+    },
+    "libraries": {
+      "tikan": "./circuit/lib"
+    }
   },
   "scripts": {
     "bb:term": "bun run --cwd tooling/bb_term do",

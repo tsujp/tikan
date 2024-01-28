@@ -1,24 +1,19 @@
 import { join } from 'path'
 import { checkTestEnvironment } from './utility/precheck'
-// import wallah55 from '@tikan/tests'
 
-import { getCircuitDefinitions } from './utility/get_circuits'
+import { getNoirArtifactDefinitions } from './utility/get_circuits'
 
 import { resolveProjectRootDir } from './utility/misc'
 
-// console.log(Bun.env)
-// const abc = await resolveProjectRoot().then(r => console.log('result:', r))
-const abc = await resolveProjectRootDir()
-console.log('root is', abc)
+const root_dir = await resolveProjectRootDir()
+const noir_defs = await getNoirArtifactDefinitions(root_dir)
 
-
-console.log('circuit defs', await getCircuitDefinitions(join(abc, 'package.json'), abc))
-// console.log(wallah55)
+console.log(noir_defs)
 
 // const wd = process.cwd()
 // await checkTestEnvironment(wd, '.')
 const daPath = join(process.cwd(), 'circuit/lib')
-// console.log(daPath)
+console.log('da path', daPath)
 
 // const proc = Bun.spawnSync(['echo', 'hello'], {
 //     cwd: daPath,
@@ -27,6 +22,7 @@ const daPath = join(process.cwd(), 'circuit/lib')
 // console.log(proc)
 
 
+// Doing `nargo test` from the javascript file.
 
 // console.log(Bun.version)
 
