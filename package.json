@@ -12,17 +12,15 @@
   "noir": {
     "circuits": {
       "player": "./circuit/player",
-      "state_commitment": "./circuit/pedersen"
-    },
-    "libraries": {
+      "state_commitment": "./circuit/pedersen",
       "tikan": "./circuit/lib"
     }
   },
   "scripts": {
     "bb:term": "bun run --cwd tooling/bb_term do",
     "bb:web": "bun run --cwd tooling/bb_web do",
-    "bingbong": "bun run --cwd test bingbong ",
-    "test:watch": "bun run --cwd circuit test:watch",
+    "do:test": "bun run --cwd test test",
+    "do:test:watch": "bun run --cwd test test:watch",
     "fmt": "dprint fmt"
   },
   "repository": {

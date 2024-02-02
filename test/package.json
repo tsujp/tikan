@@ -1,5 +1,5 @@
 {
-  "name": "@tikan/tests",
+  "name": "@tikan/test",
   "version": "0.1.0",
   "description": "Test harness for Tikan circuits.",
   "author": "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
@@ -8,9 +8,8 @@
   "scripts": {
     "dev": "bun --watch compile && bun test:watch",
     "compile": "bun run build.ts",
-    "test": "bun test --timeout 60000 foo.test.ts",
-    "test:watch": "bun test --watch --timeout 60000 foo.test.ts",
-    "test22": "bun --watch ./test/utility/runner.ts --compile",
+    "test": "bun ./utility/runner.ts",
+    "test:watch": "bun --watch ./utility/runner.ts",
     "bingbong": "bun index.ts"
   },
   "dependencies": {

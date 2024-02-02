@@ -1,5 +1,5 @@
 {
-  "name": "bb_web",
+  "name": "@tikan/bb_web",
   "version": "1.0.0",
   "description": "Web-based viewer for Tikan bitboard states.",
   "author": "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
