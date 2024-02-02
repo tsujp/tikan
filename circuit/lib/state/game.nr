@@ -78,6 +78,10 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
 
     let mut fog: Bitboard = 0;
 
+    // URG_TODO: I believe compute_fog should only compute for our own pieces
+    //           unless we happen to illuminate an enemy's (how to tell that
+    //           in the first place _beforehand_).
+
     // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
     // for i in 0..all_bits.len() {
     for i in 0..64 {

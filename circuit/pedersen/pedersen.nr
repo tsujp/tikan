@@ -12,6 +12,66 @@ fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
     computed_commitment
 }
 
+
+// OPT: Doing this per piece and requiring `game` must be slow eh? Speedup and/or protocol change
+//      later after lights work.
+// XXX: Regarding above OPT; only have to do the commitment for the moved piece no if we pre-generate
+//      what the starting board scenarios look like for players ahead of time?
+// XXX: `game` here has to be the _public_ gamestate otherwise when the opponent tries to
+//      verify the commitment it will fail unless white reveals more private state which defeats
+//      the point.
+// fn commit_piece(game: Game, piece: u3, idx: u6) -> pub Field {
+
+// }
+
+// #[test]
+// fn  test_commit_piece {
+//     // When white moves they commit against this public state.
+//     let w_public = Game {
+//         // Public start of the game, no move yet, from white's perspective.
+//         bbs: [
+//             0, // White isn't revealed at all.
+//             0, // Neither is black.
+//             0, // .'. no pieces are revealed.
+//             0, // "
+//             0, // "
+//             0, // "
+//             0, // "
+//             0, // "
+//             // fog is like 'anti fog' so 64-1s is all squares illuminated.
+//             0xffffffffffffffff
+//         ],
+//         army: 0,
+//         castle_rights: 15, // TODO: Would need to blind this too...
+//         en_passant: 0, // TODO: And this...
+//         halfmove: 0,
+//         fullmove: 1,
+//         has_fog: true
+//     };
+
+//     let w_private = Game {
+//         // Private start of the game for white.
+//         bbs: [
+//             0xffff, // White knows where they are.
+//             0, // They do not know where black is since this is also 0 in the public game.
+//             0x42, // All the pieces here would .'. only be whites.
+//             0x24, // "
+//             0x81, // "
+//             0x10, // "
+//             0x8, // "
+//             0xff00, // "
+//             // fog is like 'anti fog' so 64-1s is all squares illuminated.
+//             0xffffffffffffffff
+//         ],
+//         army: 0,
+//         castle_rights: 15, // TODO: Would need to blind this too...
+//         en_passant: 0, // TODO: And this...
+//         halfmove: 0,
+//         fullmove: 1,
+//         has_fog: true
+//     }
+// }
+
 #[test]
 fn example_move_commitment() {
     let w1 = Game {
@@ -24,7 +84,7 @@ fn example_move_commitment() {
             0x0800000000000008,
             0x1000000000000010,
             0xef00180000f700,
-            0xFFFFFFFFFFFFFFFF
+            0xeeffff6f0000
         ],
         army: 0,
         castle_rights: 15,
@@ -48,4 +108,11 @@ fn example_move_commitment() {
 //     let move_salt = 0;
 //     let mc = pedersen_commitment([0, 0, 0]);
 //     println(mc);
+// }
+
+// struct PieceCommitment {
+//     // TODO: Ye olde constrain on 0 - 5 as is required elsewhere for types.nr::Piece.
+//     piece: u3,
+//     // TODO: From u6 to BitboardIndex (which is a u6 so same thing).
+//     idx: u6
 // }
