@@ -4,6 +4,9 @@ use dep::std::hash::pedersen_commitment;
 
 use dep::lib::{Game, Turn, Piece};
 
+// TODO: Both players compute fog, if they verify the others' proof then the fog must be
+//       good and so we can then say "where you fog overlaps, your piece is revealed."
+
 fn main(
     // [GAME] Current before-turn gamestate.
     game: pub Game,
@@ -30,12 +33,26 @@ fn main(
     new_gamestate
 }
 
+// TODO: Another bitboard `lights` tracking which pieces have their
+//       lights turned on.
+// TODO: White array and black array with state commitments for square indices
+//       if those pieces are hidden, so for X piece its on this square and its lights are on/off.
+// TODO: This means game starts with bitboards functionally empty and all
+//       pieces as state commitments.
+// TODO: When a player plays a move (e.g. white first move) they can provide their secret input to
+//       the circuit which is their pieces and their lights, this may the move validation logic can
+//       check for a valid move. They do have to provide the commitments still because those need to
+//       be sent to black with the circuit output for them to verify. 
+// TOOD: Where an opponents light area intersects (i.e. overlaps) the square a piece
+//       of yours is on you must open your commitment, revealing the piece. This opening can be
+//       checked against your prior commitments to see if you're lying or not.
+
 #[test]
 fn valid_turn_advances_game() {
     // println(f"");
 
     // Precomputed commitment for these values:
-    // 0x069efdc4c6fb2aa94f6febdf5e8839df2ec8834270792c150698bc039fa50899
+    // 0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
 
     let w1 = Game {
         bbs: [
@@ -46,13 +63,15 @@ fn valid_turn_advances_game() {
             0x8100000000000081,
             0x0800000000000008,
             0x1000000000000010,
-            0xef00180000f700
+            0xef00180000f700,
+            0xeeffff6f0000
         ],
         army: 0,
         castle_rights: 15,
         en_passant: 44, // e6
         halfmove: 0,
-        fullmove: 1
+        fullmove: 1,
+        has_fog: true
     };
 
     let turn = Turn { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
@@ -63,7 +82,7 @@ fn valid_turn_advances_game() {
         w1,
         turn,
         turn_salt,
-        0x069efdc4c6fb2aa94f6febdf5e8839df2ec8834270792c150698bc039fa50899
+        0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
     );
 }
 
