@@ -1,17 +1,16 @@
 import { type AllCircuits } from '../types'
 import { behaviour as args } from './parse_args'
-
 import { logCommand, logHeading, COMMAND_DESC } from './misc'
 
 // Block while printing chosen Nargo information; this is extremely important
 //   being that Nargo comprises the system under test and having to guess
 //   what version (e.g. multiple installs) is being used sucks, so print it.
-export async function checkTestEnvironmentV2(wd: string, circuits: AllCircuits) {
+export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
     logHeading('Check test environment & build circuits')
 
     console.log(COMMAND_DESC('project root', wd))
 
-    // ------------------------------ Actual checks like command availability.
+    // ------------------------------ Command availability, versions.
 
     const env_cmds = [
         logCommand(
@@ -32,17 +31,7 @@ export async function checkTestEnvironmentV2(wd: string, circuits: AllCircuits) 
         return false
     }
 
-    // ------------------------------ Compile circuits.
-
-    // TODO XXX
-    // For now we rebuild every time tests are run because `bun test` cannot
-    //   receive cli arguments? augment `runner.ts` to workaround this.
-    // Spoke to Jared on Bun's Discord and he confirmed `bun test` does not pass
-    //   arguments to test scripts but they may implement `--` to then allow
-    //   this. If I have time, and this isn't implemented by then, have a crack
-    //   at a PR for this.
-
-    const buildStub = ['nargo', 'compile', '--include-keys']
+    // ------------------------------ Compile binary circuits, check library circuits.
 
     const lib_checks = circuits.lib.map(({ name, root }) =>
         // Check constraint system (as we cannot compile a library circuit).
@@ -77,7 +66,8 @@ export async function checkTestEnvironmentV2(wd: string, circuits: AllCircuits) 
         })
     })
 
-    console.log(chalk.yellow(roseChar.repeat(80)))
+    // Order is orchestrated within relevant promises (only relevant for bin).
+    const circuit_checks = await Promise.all([...lib_checks, ...bin_checks])
 
-    return envSuccess && circuitSuccess
+    return { checks: circuit_checks.every((res) => res === true), args }
 }

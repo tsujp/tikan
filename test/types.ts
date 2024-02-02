@@ -1,6 +1,14 @@
 // import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
 import { type CompiledCircuit } from '@noir-lang/types'
 
+export class NonZeroReturnError extends Error {
+    constructor(message: string, cause: string) {
+        super(message)
+        this.name = 'NonZeroReturnError'
+        this.cause = cause
+    }
+}
+
 type RequiredCircuits = 'player' // TODO: 'aggregate' circuit.
 
 type EachCircuit<ValueStructure> = { [CircuitName in RequiredCircuits]: ValueStructure }
@@ -17,6 +25,11 @@ export type NoirArtifactDefinitions = {
     libraries: {
         [key: string]: { path: string }
     },
+}
+
+export type AllCircuits = {
+    bin: { name: string, root: string, artifact: string }[]
+    lib: { name: string, root: string }[]
 }
 
 
@@ -106,6 +119,7 @@ export const Piece = {
 // Tikan library game.nr struct.
 export type Game = {
     bbs: [HexInt, 8]
+    // bbs: [HexIntLiteral<string>, 8]
     army: boolean
     castle_rights: number
     en_passant: number
