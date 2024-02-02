@@ -3,6 +3,8 @@
 Zero knowledge fog of war chess implemented using Aztec's zk circuit language
 Noir.
 
+If you're after [THE RULES, CLICK HERE]
+
 
 # Project structure
 
@@ -416,9 +418,43 @@ Purely 'normal' piece captures.
   - [x] Same anti-diagonal and NOT same diagonal.
 
 
+# Game Rules
+
+[Fog of War Chess](https://en.wikipedia.org/wiki/Dark_chess) has a standard definition
+but also numerous variations; Tikan is a variation.
+
+In this version there is fog which is removed when pieces are nearby; or thought
+another way pieces have an illuminating area akin to a lighthouse and both
+players can only see in this illuminated area regardless of which player is
+illuminating it.
+
+The presence of this fog means:
+
+- You can see _all_ illuminated squares (even those illuminated by your opponent).
+- You can only see which piece your opponent has _if your own piece illuminates
+  the square their piece is on_. **(TODO: Diagram for this so it's clear for others).**
+- When moving a piece it must only move along illuminated squares, except for
+  knights which can jump over the fog.
+
+Penultimately there is also the ability for a player to toggle their pieces
+lighthouse:
+
+- A piece with its lights off does not clear fog around it.
+- A piece with its lights off is not revealed even if in the direct illumination
+  of the opponent. **(TODO: Diagram for this so it's clear for others).**
+- A piece with its lights off can still move subject to the normal rules.
+- Toggling lights counts as a turn.
+
+The rest of the game is like normal chess, except:
+
+- There is no such thing as check or checkmate, the win condition is capturing
+  the opponents king.
+
+
 # TODOs
 
 ## Documentation
+
 
 - [] Repo structure.
 - [] test.sh script.
