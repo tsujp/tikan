@@ -72,7 +72,8 @@ pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
 // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
 // Creates a fog bitboard.
 pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
-    let all_pieces: Bitboard = w | b;
+    // let all_pieces: Bitboard = w | b;
+    let all_pieces: Bitboard = w; // Only white (TODO: Make it take the army bb single arg if this approach works).
 
     let all_bits = (all_pieces as Field).to_le_bits(64);
 

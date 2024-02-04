@@ -21,18 +21,24 @@ import { join } from 'path'
 const wd = join(root_dir, 'test')
 // ---/
 
-const precheck_proc = Bun.spawn(['bun', 'test'], {
+// TODO: Add a listener up here such that if the circuit files change then
+//       we re-run checkTestEnvironment. THen add a flag so we can control that.
+
+// TODO: This works and re-runs tests!
+const precheck_proc = Bun.spawn(['bun', '--watch', 'test', 'e2e.test.ts'], {
     cwd: wd,
-    stderr: 'inherit',
-    stdout: 'inherit',
+    stdout: 'inherit'
 })
 
+// precheck_proc.stdin.write('HELLO THERE!')
+// precheck_proc.stdin.flush()
+
 const precheck_success = await precheck_proc.exited.then((code) => code)
-console.log('exit code!', precheck_success)
+console.log('[RUNNER] exit code:', precheck_success)
 
 // ------ build
 
-console.log('adsadsaads', Bun.argv)
+// console.log('adsadsaads', Bun.argv)
 
 // * * * * * * * * * * * * * * * * * * * * * * * TEST SUITE EXECUTION
 // * * * * * * * * * * * * *
