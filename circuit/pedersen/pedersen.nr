@@ -24,6 +24,50 @@ fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
 
 // }
 
+fn commit_piece(game: Game, piece: u3, idx: u6) -> pub Field {
+    let game_hash = pedersen_commitment(game.decompose()).x;
+
+    // Commitment that player (who calls this) has a piece with given properties.
+    let piece_state_hash = pedersen_commitment([piece as Field, idx as Field, /* TODO: lights value too */]).x;
+
+    let computed_commitment = pedersen_commitment([game_hash, piece_state_hash]).x;
+
+    computed_commitment
+}
+
+// TODO: Need to precompute the board with pieces in positions such that it is now whites move.
+//       So a `Game` with the state commitments for pieces from black.
+
+#[test]
+fn test_commit_piece() {
+    // Starting board.
+    let g_public = Game {
+        // Public start of the game, no move yet, from white's perspective.
+        bbs: [
+            0, // White isn't revealed at all.
+            0, // Neither is black.
+            0, // .'. no pieces are revealed.
+            0, // "
+            0, // "
+            0, // "
+            0, // "
+            0, // "
+            // fog is like 'anti fog' so 64-1s is all squares illuminated.
+            0xffffffffffffffff
+        ],
+        army: 0,
+        castle_rights: 15, // TODO: Would need to blind this too...
+        en_passant: 0, // TODO: And this...
+        halfmove: 0,
+        fullmove: 1,
+        has_fog: true,
+        lamp: 0xffff00000000ffff
+    };
+
+    let mah_commit = commit_piece(g_public, Piece::PAWN, 8);
+    println(mah_commit);
+}
+
 // #[test]
 // fn  test_commit_piece {
 //     // When white moves they commit against this public state.
@@ -72,36 +116,37 @@ fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
 //     }
 // }
 
-#[test]
-fn example_move_commitment() {
-    let w1 = Game {
-        bbs: [
-            0x080000f7ff,
-            0xffef001000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xef00180000f700,
-            0xeeffff6f0000
-        ],
-        army: 0,
-        castle_rights: 15,
-        en_passant: 44, // e6
-        halfmove: 0,
-        fullmove: 1,
-        has_fog: true
-    };
+// #[test]
+// fn example_move_commitment() {
+//     let w1 = Game {
+//         bbs: [
+//             0x080000f7ff,
+//             0xffef001000000000,
+//             0x4200000000000042,
+//             0x2400000000000024,
+//             0x8100000000000081,
+//             0x0800000000000008,
+//             0x1000000000000010,
+//             0xef00180000f700,
+//             0xeeffff6f0000
+//         ],
+//         army: 0,
+//         castle_rights: 15,
+//         en_passant: 44, // e6
+//         halfmove: 0,
+//         fullmove: 1,
+//         has_fog: true,
+//         lamp: 0
+//     };
 
-    // From white performs en passant capture ep1 w1
-    let move = Turn { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
+//     // From white performs en passant capture ep1 w1
+//     let move = Turn { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
 
-    let move_salt = 1337;
+//     let move_salt = 1337;
 
-    let mc = main(w1, move, move_salt);
-    println(mc);
-}
+//     let mc = main(w1, move, move_salt);
+//     println(mc);
+// }
 
 // #[test]
 // fn black_initiate_commitment() {

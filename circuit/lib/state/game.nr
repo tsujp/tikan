@@ -66,7 +66,7 @@ pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
         0xFFFFFFFFFFFFFFFF // u64 max.
     };
 
-    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog }
+    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog, lamp: 0 }
 }
 
 // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
@@ -103,7 +103,7 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
 impl Game {
     // Returns an array of struct members as Fields, for use in hashing
     //   functions (e.g. Pedersen).
-    fn decompose(self) -> [Field; 14] {
+    fn decompose(self) -> [Field; 15] {
         [
             self.bbs[BitboardOf::WHITE] as Field,
             self.bbs[BitboardOf::BLACK] as Field,
@@ -118,8 +118,43 @@ impl Game {
             self.castle_rights as Field,
             self.en_passant as Field,
             self.halfmove,
-            self.fullmove
+            self.fullmove,
+            // TODO: self.lit
+            self.lamp as Field
         ]
+    }
+
+    pub fn compute_fog(self) -> Bitboard {
+        let army_bits = (self.bbs[self.army] as Field).to_le_bits(64);
+        let lamp_bits = (self.lamp as Field).to_le_bits(64);
+
+        let mut fog: Bitboard = 0;
+
+        // RESP TO BELOW: Compute only our fog, opponent needs to acknolwdge our
+        //                proof and return whether we've revealed any of their pieces.
+        // URG_TODO: I believe compute_fog should only compute for our own pieces
+        //           unless we happen to illuminate an enemy's (how to tell that
+        //           in the first place _beforehand_).
+
+        // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
+        // for i in 0..all_bits.len() {
+        for i in 0..64 {
+            // let bit = army_bits[i];
+            // let lamp = lamp_bits[i];
+
+            // Piece only clears fog if it's a lamp (lights are on).
+            let bit = army_bits[i] & lamp_bits[i];
+
+            let bit_fog = if bit == 1 {
+                bl::taxi_mask((2 as Field).pow_32(i) as u64)
+            } else {
+                0
+            };
+
+            fog |= bit_fog;
+        }
+
+        fog
     }
 
     pub fn apply(self, move: Turn) -> Game {
@@ -176,11 +211,17 @@ impl Game {
         let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
 
         // Update fog.
+        // if self.has_fog {
+        //     new_bbs[BitboardOf::FOG] = compute_fog(new_bbs[BitboardOf::WHITE], new_bbs[BitboardOf::BLACK]);
+        // }
+
         if self.has_fog {
-            new_bbs[BitboardOf::FOG] = compute_fog(new_bbs[BitboardOf::WHITE], new_bbs[BitboardOf::BLACK]);
+            new_bbs[BitboardOf::FOG] = self.compute_fog();
         }
 
         // TODO: Update castle rights.
+
+        // TODO: Update lamp.
 
         let mut new_board = Game {
             bbs: new_bbs,
@@ -189,7 +230,9 @@ impl Game {
             en_passant: move_result.en_passant.unwrap_or(0),
             halfmove: self.halfmove,
             fullmove: fullmove,
-            has_fog: self.has_fog
+            has_fog: self.has_fog,
+            // TODO: Proper.
+            lamp: 0
         };
 
         new_board

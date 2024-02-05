@@ -92,7 +92,10 @@ struct Game {
     // Realistically this will always be true however current bitboard-based
     //   fog computation is very slow, this field exists purely to speed up
     //   tests. I hate it but yadda yadda rewrite into arrays.
-    has_fog: bool
+    has_fog: bool,
+    // TODO: Add the fog bitboard here but call it `lit` instead.
+    lit: [Bitboard; 2],
+    lamp: Bitboard
 }
 
 // TOOD: Put SHIFTED_ANTI_DIAGONAL and other such constants here.

@@ -1,5 +1,6 @@
 import { join } from 'path'
 import chalk from 'chalk'
+import { readableStreamToText } from 'bun'
 import { NonZeroReturnError, type AllCircuits } from '../types'
 
 // TODO: waste time typing this (TypeScript) later.
@@ -108,7 +109,9 @@ export async function logCommand(
     err: string
 ) {
     try {
-        const { exitCode, stdout, stderr } = Bun.spawnSync(...cmd)
+        // const { exitCode, stdout, stderr } = Bun.spawn(...cmd)
+        const { exited, stdout, stderr } = Bun.spawn(...cmd)
+        const exitCode = await exited
         console.write(COMMAND_DESC(desc))
         // TODO: PR for standard help messages from Nargo. `nargo help test` and
         //       `nargo test --help` both print in the same format, but
@@ -124,7 +127,8 @@ export async function logCommand(
         if (exitCode !== 0) {
             throw new NonZeroReturnError(err, new TextDecoder().decode(stderr).trim())
         } else {
-            const cmdStdout = new TextDecoder().decode(stdout).trim()
+            // const cmdStdout = new TextDecoder().decode(stdout).trim()
+            const cmdStdout = (await readableStreamToText(stdout)).trim();
 
             console.log(COMMAND_SUCCESS(cmdStdout.length === 0 ? EMPTY_FILLER('empty') : cmdStdout))
         }

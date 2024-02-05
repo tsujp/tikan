@@ -42,36 +42,84 @@ fn main(
 // TODO: When a player plays a move (e.g. white first move) they can provide their secret input to
 //       the circuit which is their pieces and their lights, this may the move validation logic can
 //       check for a valid move. They do have to provide the commitments still because those need to
-//       be sent to black with the circuit output for them to verify. 
+//       be sent to black with the circuit output for them to verify.
 // TOOD: Where an opponents light area intersects (i.e. overlaps) the square a piece
 //       of yours is on you must open your commitment, revealing the piece. This opening can be
 //       checked against your prior commitments to see if you're lying or not.
 
+// #[test]
+// fn valid_turn_advances_game() {
+//     // println(f"");
+
+//     // Precomputed commitment for these values:
+//     // 0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
+
+//     let w1 = Game {
+//         bbs: [
+//             0x080000f7ff,
+//             0xffef001000000000,
+//             0x4200000000000042,
+//             0x2400000000000024,
+//             0x8100000000000081,
+//             0x0800000000000008,
+//             0x1000000000000010,
+//             0xef00180000f700,
+//             0xeeffff6f0000
+//         ],
+//         army: 0,
+//         castle_rights: 15,
+//         en_passant: 44, // e6
+//         halfmove: 0,
+//         fullmove: 1,
+//         has_fog: true
+//     };
+
+//     let turn = Turn { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
+//     let turn_salt = 1337;
+
+//     // An invalid turn would cause `main` to fail assertion.
+//     let _ = main(
+//         w1,
+//         turn,
+//         turn_salt,
+//         0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
+//     );
+// }
+
+// TODO:
+// #[test(should_fail)]
+// fn invalid_turn_fails_proving() {
+
+// }
+
+
 #[test]
 fn valid_turn_advances_game() {
-    // println(f"");
-
     // Precomputed commitment for these values:
     // 0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
 
-    let w1 = Game {
+     // Starting board.
+    let g_public = Game {
+        // Public start of the game, no move yet, from white's perspective.
         bbs: [
-            0x080000f7ff,
-            0xffef001000000000,
-            0x4200000000000042,
-            0x2400000000000024,
-            0x8100000000000081,
-            0x0800000000000008,
-            0x1000000000000010,
-            0xef00180000f700,
-            0xeeffff6f0000
+            0, // White isn't revealed at all.
+            0, // Neither is black.
+            0, // .'. no pieces are revealed.
+            0, // "
+            0, // "
+            0, // "
+            0, // "
+            0, // "
+            // fog is like 'anti fog' so 64-1s is all squares illuminated.
+            0xffffffffffffffff
         ],
         army: 0,
-        castle_rights: 15,
-        en_passant: 44, // e6
+        castle_rights: 15, // TODO: Would need to blind this too...
+        en_passant: 0, // TODO: And this...
         halfmove: 0,
         fullmove: 1,
-        has_fog: true
+        has_fog: true,
+        lamp: 0xffff00000000ffff
     };
 
     let turn = Turn { piece: Piece::PAWN, from: 35, to: 44, promotion_piece: 0 };
@@ -79,15 +127,9 @@ fn valid_turn_advances_game() {
 
     // An invalid turn would cause `main` to fail assertion.
     let _ = main(
-        w1,
+        g_public,
         turn,
         turn_salt,
         0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0
     );
 }
-
-// TODO:
-// #[test(should_fail)]
-// fn invalid_turn_fails_proving() {
-
-// }

@@ -275,7 +275,8 @@ mod SeedGame {
             let (post_seed, bbs) = compute_seeded(seed, bb_defs, with_fog);
 
             Self {
-                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant, halfmove: 0, fullmove: 1, has_fog: with_fog },
+                // TODO: Proper value for lamp.
+                game: Game { bbs, army: turn, castle_rights: 0x0000, en_passant, halfmove: 0, fullmove: 1, has_fog: with_fog, lamp: 0 },
                 seed: post_seed, // Saving the seed effectively saves pre-move bitboards per player.
                 has_fog: with_fog,
             }
