@@ -155,7 +155,9 @@ impl RankifiedTurn {
 fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
     let us = d.game.bbs[d.game.army];
     let them = d.game.bbs[!d.game.army];
-    let fog = d.game.bbs[BitboardOf::FOG];
+    // let fog = d.game.bbs[BitboardOf::FOG];
+    // let fog = d.game.lit[d.game.army] | d.game.lit[!d.game.army];
+    let fog = d.game.fog();
 
     // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
     // let mut turn_data: (u3, RankifiedTurn) = (7, RankifiedTurn::init());
@@ -223,7 +225,9 @@ fn knight_legal(d: Data) {
 
     // TODO: When rewritten to arrays this part can become a simpler index
     //       check without having to use bit-logic.
-    assert(bl::is_bit_set(d.game.bbs[BitboardOf::FOG], d.turn.to as u64), "KNIGHT move FOG");
+    // assert(bl::is_bit_set(d.game.bbs[BitboardOf::FOG], d.turn.to as u64), "KNIGHT move FOG");
+    // TODO: Put the `fog` into `Data` so we only compute it once.
+    assert(bl::is_bit_set(d.game.fog(), d.turn.to as u64), "KNIGHT move FOG");
 
     // As well as not landing on a friendly piece.
     let friendlies = d.game.bbs[d.game.army];
@@ -475,7 +479,8 @@ impl Move {
         assert(
             // See `XXX [420]` for magic number 2.
             bl::is_bit_set(
-                game.bbs[game.army] & game.bbs[turn.piece + 2],
+                // game.bbs[game.army] & game.bbs[turn.piece + 2],
+                turn.bbs[turn.piece],
                 turn.from as Bitboard
             ),
            "Piece in army does NOT EXIST at given index"
@@ -486,6 +491,11 @@ impl Move {
 
         // Helper-deduplication / convenient data-container.
         let in_data = Data::init(game, turn);
+
+        // Is the piece going into opponents lit area (and so must be revealed?)
+        if ((in_data.to_bb & game.lit[!game.army]) > 0) {
+            println("IN OPPONENTS LIT AREA!!");
+        }
 
         let mut move_result = MoveResult {
             en_passant: Option::none(),

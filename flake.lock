@@ -226,6 +226,7 @@
       "original": {
         "owner": "noir-lang",
         "repo": "noir",
+        "rev": "b3ddf10a2cbb80e88821baf7d76c478c3b98b3ea",
         "type": "github"
       }
     },

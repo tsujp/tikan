@@ -3,7 +3,7 @@ use dep::std::hash::pedersen_commitment;
 
 use dep::lib::{Turn, Game, Piece};
 
-fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
+fn main(game: pub Game, turn: Turn, turn_salt: Field) -> pub Field {
     let game_hash = pedersen_commitment(game.decompose()).x;
     let turn_hash = pedersen_commitment(turn.decompose()).x;
 
@@ -24,49 +24,49 @@ fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
 
 // }
 
-fn commit_piece(game: Game, piece: u3, idx: u6) -> pub Field {
-    let game_hash = pedersen_commitment(game.decompose()).x;
+// fn commit_piece(game: Game, piece: u3, idx: u6) -> pub Field {
+//     let game_hash = pedersen_commitment(game.decompose()).x;
 
-    // Commitment that player (who calls this) has a piece with given properties.
-    let piece_state_hash = pedersen_commitment([piece as Field, idx as Field, /* TODO: lights value too */]).x;
+//     // Commitment that player (who calls this) has a piece with given properties.
+//     let piece_state_hash = pedersen_commitment([piece as Field, idx as Field, /* TODO: lights value too */]).x;
 
-    let computed_commitment = pedersen_commitment([game_hash, piece_state_hash]).x;
+//     let computed_commitment = pedersen_commitment([game_hash, piece_state_hash]).x;
 
-    computed_commitment
-}
+//     computed_commitment
+// }
 
 // TODO: Need to precompute the board with pieces in positions such that it is now whites move.
 //       So a `Game` with the state commitments for pieces from black.
 
-#[test]
-fn test_commit_piece() {
-    // Starting board.
-    let g_public = Game {
-        // Public start of the game, no move yet, from white's perspective.
-        bbs: [
-            0, // White isn't revealed at all.
-            0, // Neither is black.
-            0, // .'. no pieces are revealed.
-            0, // "
-            0, // "
-            0, // "
-            0, // "
-            0, // "
-            // fog is like 'anti fog' so 64-1s is all squares illuminated.
-            0xffffffffffffffff
-        ],
-        army: 0,
-        castle_rights: 15, // TODO: Would need to blind this too...
-        en_passant: 0, // TODO: And this...
-        halfmove: 0,
-        fullmove: 1,
-        has_fog: true,
-        lamp: 0xffff00000000ffff
-    };
+// #[test]
+// fn test_commit_piece() {
+//     // Starting board.
+//     let g_public = Game {
+//         // Public start of the game, no move yet, from white's perspective.
+//         bbs: [
+//             0, // White isn't revealed at all.
+//             0, // Neither is black.
+//             0, // .'. no pieces are revealed.
+//             0, // "
+//             0, // "
+//             0, // "
+//             0, // "
+//             0, // "
+//             // fog is like 'anti fog' so 64-1s is all squares illuminated.
+//             0xffffffffffffffff
+//         ],
+//         army: 0,
+//         castle_rights: 15, // TODO: Would need to blind this too...
+//         en_passant: 0, // TODO: And this...
+//         halfmove: 0,
+//         fullmove: 1,
+//         has_fog: true,
+//         lamp: 0xffff00000000ffff
+//     };
 
-    let mah_commit = commit_piece(g_public, Piece::PAWN, 8);
-    println(mah_commit);
-}
+//     let mah_commit = commit_piece(g_public, Piece::PAWN, 8);
+//     println(mah_commit);
+// }
 
 // #[test]
 // fn  test_commit_piece {

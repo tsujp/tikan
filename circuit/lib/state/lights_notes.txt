@@ -1,0 +1,22 @@
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+[[ATTEMPT 1]]:
+
+- Make `Game` public state only.
+- Add `bbs` to `Turn` which is private player state.
+    - Previously this checked `Game.bbs` to make sure a piece exists where a player
+      says it does, how to make sure a player does not lie on the input now? As in,
+      a player could just arbitrarily change their `Turn.bbs`.
+- Add checks that pieces only move along the lit areas.
+
+[[PROTOCOL]]:
+
+1. White state commits to the start board, as does black (this can be done automatically by the frontend).
+    - OR the start of the game is all public state so we have a known base to go off of and then
+      subsequent moves can be blinded.
+    - 5 Feb @ 17:47, now thinking have the public state but each player goes "ok" and that ok is them
+      removing their _stuff_ from it and committing against that board so from then on
+      each player can be sure the initial bitboards are correct.
+2. Each turn includes current state commitment, as well as previous to prevent lying
+  about their bbs this turn.

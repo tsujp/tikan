@@ -60,25 +60,25 @@ pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
     }
 
     // Last bitboard is fog. If the bitboard is all 1s it means to compute fog for the board.
-    bbs[BitboardOf::FOG] = if with_fog {
-        compute_fog(bbs[BitboardOf::WHITE], bbs[BitboardOf::BLACK])
-    } else {
-        0xFFFFFFFFFFFFFFFF // u64 max.
-    };
+    // bbs[BitboardOf::FOG] = if with_fog {
+    //     compute_fog(bbs[BitboardOf::WHITE], bbs[BitboardOf::BLACK])
+    // } else {
+    //     0xFFFFFFFFFFFFFFFF // u64 max.
+    // };
 
-    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog, lamp: 0 }
+    Game { bbs, army: 0, castle_rights: 0x0000, en_passant: 0, halfmove: 0, fullmove: 1, has_fog: with_fog, lit: [0, 0], lamp: 0 }
 }
 
 // XXX: ADDED AS PART OF FOG, DOCS ETC PL0X.
 // Creates a fog bitboard.
-pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
-    // let all_pieces: Bitboard = w | b;
-    let all_pieces: Bitboard = w; // Only white (TODO: Make it take the army bb single arg if this approach works).
-
-    let all_bits = (all_pieces as Field).to_le_bits(64);
+pub fn compute_fog(army_bb: Bitboard, lamp_bb: Bitboard) -> Bitboard {
+    let army_bits = (army_bb as Field).to_le_bits(64);
+    let lamp_bits = (lamp_bb as Field).to_le_bits(64);
 
     let mut fog: Bitboard = 0;
 
+    // RESP TO BELOW: Compute only our fog, opponent needs to acknolwdge our
+    //                proof and return whether we've revealed any of their pieces.
     // URG_TODO: I believe compute_fog should only compute for our own pieces
     //           unless we happen to illuminate an enemy's (how to tell that
     //           in the first place _beforehand_).
@@ -86,7 +86,8 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
     // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
     // for i in 0..all_bits.len() {
     for i in 0..64 {
-        let bit = all_bits[i];
+        // Piece only clears fog if it's a lamp (lights are on).
+        let bit = army_bits[i] & lamp_bits[i];
 
         let bit_fog = if bit == 1 {
             bl::taxi_mask((2 as Field).pow_32(i) as u64)
@@ -103,7 +104,7 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
 impl Game {
     // Returns an array of struct members as Fields, for use in hashing
     //   functions (e.g. Pedersen).
-    fn decompose(self) -> [Field; 15] {
+    fn decompose(self) -> [Field; 16] {
         [
             self.bbs[BitboardOf::WHITE] as Field,
             self.bbs[BitboardOf::BLACK] as Field,
@@ -113,48 +114,20 @@ impl Game {
             self.bbs[BitboardOf::QUEEN] as Field,
             self.bbs[BitboardOf::KING] as Field,
             self.bbs[BitboardOf::PAWN] as Field,
-            self.bbs[BitboardOf::FOG] as Field,
             self.army as Field,
             self.castle_rights as Field,
             self.en_passant as Field,
             self.halfmove,
             self.fullmove,
-            // TODO: self.lit
+            self.lit[0] as Field,
+            self.lit[1] as Field,
             self.lamp as Field
         ]
     }
 
-    pub fn compute_fog(self) -> Bitboard {
-        let army_bits = (self.bbs[self.army] as Field).to_le_bits(64);
-        let lamp_bits = (self.lamp as Field).to_le_bits(64);
-
-        let mut fog: Bitboard = 0;
-
-        // RESP TO BELOW: Compute only our fog, opponent needs to acknolwdge our
-        //                proof and return whether we've revealed any of their pieces.
-        // URG_TODO: I believe compute_fog should only compute for our own pieces
-        //           unless we happen to illuminate an enemy's (how to tell that
-        //           in the first place _beforehand_).
-
-        // FIXME: Compiler `cannot determine loop bound at compile-time` for some reason.
-        // for i in 0..all_bits.len() {
-        for i in 0..64 {
-            // let bit = army_bits[i];
-            // let lamp = lamp_bits[i];
-
-            // Piece only clears fog if it's a lamp (lights are on).
-            let bit = army_bits[i] & lamp_bits[i];
-
-            let bit_fog = if bit == 1 {
-                bl::taxi_mask((2 as Field).pow_32(i) as u64)
-            } else {
-                0
-            };
-
-            fog |= bit_fog;
-        }
-
-        fog
+    pub fn fog(self) -> Bitboard {
+        // Fog (1 = in-fog, 0 = not) is inverse union of both players' lit area.
+        self.lit[0] | self.lit[1]
     }
 
     pub fn apply(self, move: Turn) -> Game {
@@ -169,7 +142,7 @@ impl Game {
         let move_result = Move::check_legal(self, move);
 
         // ----------
-        let mut new_bbs = self.bbs;
+        let mut old_bbs = self.bbs;
 
         // TODO: Rename `update_piece_bb` -> `us_update_bb`.
         let update_piece_bb = from_bb ^ to_bb ^ move_result.special_bbs.remove;
@@ -187,25 +160,55 @@ impl Game {
         // Since we don't take an input of the type of piece captured we need to
         //   execute this for every piece bitboard.
         let mut is_capture = false;
-        for bb_idx in BitboardOf::KNIGHT..BitboardOf::PAWN + 1 {
+        // TODO: Nargo PR for this error, see nargo_prs.txt.
+        let loop_to: u4 = (BitboardOf::PAWN as u4 + 1);
+        for bb_idx in (BitboardOf::KNIGHT as u4)..loop_to {
             // let current_bb = new_bbs[bb_idx];
             // dep::std::println(f"current bb: {current_bb}");
 
             // if ((bb_idx != piece as u4) & (new_bbs[bb_idx] & to_bb) > 0) {
-            if ((new_bbs[bb_idx] & to_bb) > 0) {
+            if ((old_bbs[bb_idx] & to_bb) > 0) {
                 // Captured piece.
-                new_bbs[bb_idx] ^= to_bb;
+                old_bbs[bb_idx] ^= to_bb;
                 // dep::std::println(f"wat: {to_bb}");
                 is_capture = true;
             }
         }
 
+        // TODO: Bring back the workaround to the dynamic array rubbish.
+        // CANNOT FLATTEN DYNAMIC ARRAY SHIT AGAIN: START.
         // Piece that did the moving.
-        new_bbs[piece] ^= update_piece_bb ^ ep_capture_bb;
+        // new_bbs[piece] ^= update_piece_bb ^ ep_capture_bb;
 
-        new_bbs[summon_piece + PIECE_OFFSET] |= summon_bb;
-        new_bbs[army] ^= (update_piece_bb | summon_bb);
-        new_bbs[!army] ^= ep_capture_bb | if is_capture { to_bb } else { 0 };
+        // new_bbs[summon_piece + PIECE_OFFSET] |= summon_bb;
+        // new_bbs[army] ^= (update_piece_bb | summon_bb);
+        // new_bbs[!army] ^= ep_capture_bb | if is_capture { to_bb } else { 0 };
+        // END DYNAMIC ARRAY SHIT.
+
+        // START: Workaround for the panic.
+        let mut new_bbs = [0 as Bitboard; REQUIRED_BITBOARDS];
+        for i in 0 .. REQUIRED_BITBOARDS {
+            let idx3 = i as u3;
+            new_bbs[i] = old_bbs[i];
+
+            if (idx3 == piece) {
+                // new_bbs[piece] ^= update_piece_bb ^ ep_capture_bb;
+                new_bbs[i] ^= update_piece_bb ^ ep_capture_bb;
+                //
+            } else if (idx3 == (summon_piece + PIECE_OFFSET)) {
+                // new_bbs[summon_piece + PIECE_OFFSET] |= summon_bb;
+                new_bbs[i] |= summon_bb;
+                //
+            } else if (idx3 == (army as u3)) {
+                // new_bbs[army] ^= (update_piece_bb | summon_bb);
+                new_bbs[i] ^= (update_piece_bb | summon_bb);
+                //
+            } else if (idx3 == (!army as u3)) {
+                // new_bbs[!army] ^= ep_capture_bb | if is_capture { to_bb } else { 0 };
+                new_bbs[i] ^= ep_capture_bb | if is_capture { to_bb } else { 0 };
+            }
+        }
+        // END: Ugly workaround.
 
         // `fullmove` is incremented after black's turn.
         let fullmove = self.fullmove + if army == Player::BLACK { 1 } else { 0 };
@@ -215,24 +218,35 @@ impl Game {
         //     new_bbs[BitboardOf::FOG] = compute_fog(new_bbs[BitboardOf::WHITE], new_bbs[BitboardOf::BLACK]);
         // }
 
-        if self.has_fog {
-            new_bbs[BitboardOf::FOG] = self.compute_fog();
-        }
+        let mut new_lit = self.lit;
 
         // TODO: Update castle rights.
 
-        // TODO: Update lamp.
+        // Update lamp (from given `move`) for the piece in-play.
+        // TODO: Test this I think it requires condition checking for captures etc.
+        let new_lamp = self.lamp ^ if move.lights {
+            update_piece_bb
+        } else {
+            from_bb
+        };
+
+        // TODO: Make it always have fog.
+        // TODO: Need to use the turn input private bitboards for this.
+        if self.has_fog {
+            new_lit[self.army] = compute_fog(new_bbs[self.army], new_lamp);
+        }
 
         let mut new_board = Game {
             bbs: new_bbs,
             army: !army,
             castle_rights: self.castle_rights,
             en_passant: move_result.en_passant.unwrap_or(0),
-            halfmove: self.halfmove,
+            // XXX: Do we want to implement the 50-move rule for draw or simply track halfmoves?
+            halfmove: self.halfmove + 1,
             fullmove: fullmove,
             has_fog: self.has_fog,
-            // TODO: Proper.
-            lamp: 0
+            lit: new_lit,
+            lamp: new_lamp
         };
 
         new_board

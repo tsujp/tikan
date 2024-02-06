@@ -3,7 +3,7 @@ name = 'tikan_lib'
 authors = [
   "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
 ]
-compiler_version = '0.23.0+5e3c0f1dffb72961eb897ba90475eb9975e35cf3'
+compiler_version = '0.23.0+b3ddf10a2cbb80e88821baf7d76c478c3b98b3ea'
 type = 'lib'
 entry = 'lib.nr'
 

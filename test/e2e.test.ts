@@ -26,14 +26,14 @@ const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
             const deserial = deserialize(chunkText)
             switch (deserial.kind) {
                 case 'CIRCUITS':
-                    console.log('received this', deserial)
+                    // console.log('received this', deserial)
                     c_resolve(deserial.msg)
                     break
             }
         }
     })()
 
-console.log('argies', Bun.argv)
+// console.log('argies', Bun.argv)
 
 // process.send("Hello from child bing bong!!!!")
 // // process.send({ message: "Hello from child as object" });
@@ -110,14 +110,19 @@ describe('two players (non-recursive)', async () => {
         describe('black accepts white pawn', async () => {
             Object.entries(white_valid_pawns).forEach(([scenario, data]) => {
                 test(scenario, async () => {
-                    exchangeSalts(players)
+                    exchangeSalts(players) // TODO: Why again?
 
-                    const white_turn_data = await players.white.playTurn(
+                    const post_white = await players.white.protoAttemptOne(
                         data.public_state,
-                        data.white_move,
+                        data.white_move
                     )
 
-                    console.log(white_turn_data)
+                    // const white_turn_data = await players.white.playTurn(
+                    //     data.public_state,
+                    //     data.white_move,
+                    // )
+
+                    // console.log(post_white)
 
                     // Black verifies white's proof.
                     // const black_accepts_white = await players.black.acceptTurn(

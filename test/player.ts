@@ -122,6 +122,67 @@ export async function player(
         return valid_move
     }
 
+
+    async function protoAttemptOne(
+        game: Game,
+        turn: Turn
+    ) {
+        // COMMITMENT
+        // Playing a turn involves comitting your move against the public board state, do that
+        //   first.
+        const turn_salt = salt.ours?.value
+        if (turn_salt == null) {
+            throw new Error(`salt for player '${name}' not defined`)
+        }
+        console.log('[commit] salt:', turn_salt)
+        // console.log('[commit] commit to:', game, turn, turn_salt)
+        const fake_turn = structuredClone(turn)
+        fake_turn.bbs[0] = '0x42'
+        const { returnValue: turn_commitment } = await state_commitment.execute({
+            game,
+            // turn,
+            turn: fake_turn,
+            turn_salt,
+        })
+        console.log('[commit] commitment:', turn_commitment)
+
+        
+        // EXECUTION / GAME
+        process.stdout.write(`[game] executing move... `)
+        const { witness, returnValue: new_board } = await game_noir.execute({
+            game,
+            turn,
+            turn_salt,
+            turn_commitment,
+        }, (name, inputs) => new Promise((resolve, reject) => {
+            switch (name) {
+                case 'assert_message': {
+                    const payload = JSON.parse(String.fromCharCode(...inputs[1]))
+                    switch (payload.kind) {
+                        case 'string': {
+                            const msg = String.fromCharCode(...inputs[0])
+                            console.error('ASSERT FAIL:', msg)
+                            resolve([]) // No return value for assertion messages (they stdout to us).
+                        }
+                    }
+                }
+            }
+
+            reject('NAH MATE I CANNAE DO IT')
+        }))
+        console.log('done')
+        console.log('[game] new public state:', new_board)
+
+        return
+
+        // TEMP: Just have the circuit execute for now, while we figure out the protocol then
+        //       try it with proofs too.
+        // console.log('CIRCUIT EXECUTE', new_board)
+        // return
+    }
+
+    
+
     return {
         name,
         // backend,
@@ -131,6 +192,7 @@ export async function player(
         commitTurn,
         playTurn,
         acceptTurn,
+        protoAttemptOne
     }
 }
 

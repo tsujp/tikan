@@ -499,6 +499,10 @@ The rest of the game is like normal chess, except:
 	  - Computing a proof will block so having another thread is key (hence 3).
 - [] "Proper" build system for WASM (not just simple shell script currently).
 
+## Other
+
+- [] Looks like some file history got borked e.g. `game.nr` in commit aabff1fd86accf3de6d99e8b6ab2974c1f27325a -- fix that history later on. Git didnt figure out that the file was relocated and not deleted and remade, as such the history for new `game.nr` only goes back to that commit which is misleading.
+
 
 #### Etymology
 
