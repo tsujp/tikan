@@ -7,7 +7,7 @@
         nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
         flake-parts.url = "github:hercules-ci/flake-parts";
         devshell.url = "github:numtide/devshell";
-        noir.url = "github:noir-lang/noir/b3ddf10a2cbb80e88821baf7d76c478c3b98b3ea";
+        noir.url = "github:noir-lang/noir/5be9f9d7e2f39ca228df10e5a530474af0331704";
     };
 
     outputs = inputs@{ self, nixpkgs, devshell, flake-parts, noir }:

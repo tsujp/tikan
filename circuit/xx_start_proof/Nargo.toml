@@ -1,10 +1,11 @@
 [package]
-name = 'tikan_lib_util'
+name = 'xx_start_proof'
 authors = [
   "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
 ]
 compiler_version = '0.23.0+5be9f9d7e2f39ca228df10e5a530474af0331704'
-type = 'lib'
-entry = 'util.nr'
+type = 'bin'
+entry = 'xx_start_proof.nr'
 
 [dependencies]
+lib = { path = '../xx_lib' }

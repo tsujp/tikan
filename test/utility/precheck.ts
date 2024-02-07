@@ -47,7 +47,9 @@ export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
             // Build circuit.
             const chk_build = await logCommand(
                 // XXX: Upstream `--include-keys` to `nargo compile` was removed.
-                [['nargo', 'compile', args.s.do ? args.s.payload : ''], { cwd: root }],
+                [['nargo', 'compile', args.s.do ? args.s.payload : ''], {
+                    cwd: root
+                }],
                 `[bin] compile '${name}'`,
                 `COULD NOT COMPILE circuit '${name}' at ${root}`,
             )
