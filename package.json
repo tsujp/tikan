@@ -13,8 +13,8 @@
     "circuits": {
       "xx_lib": "./circuit/xx_lib",
       "xx_start_commit": "./circuit/xx_start_commit",
-      "xx_start_proof": "./circuit/xx_start_proof",
-      "xx_player": "./circuit/xx_player"
+      "xx_player": "./circuit/xx_player",
+      "xx_commitment": "./circuit/xx_commitment"
     }
   },
   "scripts": {

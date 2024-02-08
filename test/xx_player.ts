@@ -19,10 +19,7 @@ export async function player(
     player_name: string,
     game_circuit: Circuit,
     backend_threads: number,
-    // state_commitment: Noir,
-    start_circuit: Circuit,
-    start_commitment: InputValue, // Field.
-    start_salt: string,
+    commitment: Noir,
 ): Promise<Player> {
     const name = player_name
     // [GAME] Intermediate proofs, proof artifacts.
@@ -31,12 +28,11 @@ export async function player(
     })
 
     // [GAME] Circuit execution.
-    // const game_noir = new Noir(game_circuit, game_backend)
-    const game_noir = new Noir(game_circuit)
+    const game_noir = new Noir(game_circuit, game_backend)
+    // const game_noir = new Noir(game_circuit)
 
     // [STATE COMMITMENT] Circuit execution and witness solving.
-    // const commit = state_commitment
-    const commit = undefined
+    const commit = commitment
 
     let salt: { ours: HexInt | null; theirs: HexInt | null } = {
         ours: null,
@@ -44,18 +40,7 @@ export async function player(
     }
 
     // [START PROOF] Create start proof for seed of the remaining recursive proofs.
-    console.log(player_name, 'start_commitment:', start_commitment)
-    const start_backend = new BarretenbergBackend(start_circuit, { threads: backend_threads })
-    const start_nr = new Noir(start_circuit, start_backend)
-    const { witness: start_witness } = await start_nr.execute({
-        player: player_name === 'white' ? 0 : 1,
-        start_commitment,
-        salt: start_salt,
-    })
-    const start_intmd_proof = await start_backend.generateIntermediateProof(start_witness)
-    // These artifacts are given to the xx_player circuit.
-    const what = await start_backend.generateIntermediateProofArtifacts(start_intmd_proof, start_intmd_proof.publicInputs.length)
-    // console.log('for player', player_name, what) // UNCOMMENT TO SHOW START AGGREGATION OBJECT
+    // console.log(player_name, 'start_commitment:', start_commitment)
 
     function getSalt() {
         const value = new BigUint64Array(1)
@@ -76,7 +61,7 @@ export async function player(
             throw new Error(`salt for player '${name}' not defined`)
         }
 
-        const { returnValue: commitment } = await state_commitment.execute({
+        const { returnValue: commitment } = await commit.execute({
             // TODO: Try and infer JSON structure even though it's not a string literal.
             game,
             turn,
@@ -102,26 +87,62 @@ export async function player(
         // console.log(`${name}'s move commitment: ${turn_commitment}`)
 
         // ------------------ Get witness and new board with our move applied.
-        process.stdout.write(`executing ${name}'s move... `)
-        const fucked_pub = start_intmd_proof.publicInputs
-        fucked_pub[3] = 5
-        const the_fuck = await game_noir.execute({
-            verification_key: what.vkAsFields,
-            proof: what.proofAsFields,
-            public_inputs: fucked_pub,
-            key_hash: what.vkHash,
+        process.stdout.write(`[${player_name}] executing game circuit with move... `)
+
+        const { returnValue: rv_commit } = await commit.execute({
+            input: {
+                state: {
+                    _is_some: true,
+                    _value: {
+                        board,
+                        move,
+                    }
+                }
+            }
+        }, (name, inputs) => new Promise((resolve, reject) => {
+            switch (name) {
+                case 'assert_message': {
+                    const payload = JSON.parse(String.fromCharCode(...inputs[1]))
+                    switch (payload.kind) {
+                        case 'string': {
+                            const msg = String.fromCharCode(...inputs[0])
+                            console.error('ASSERT FAIL:', msg)
+                            resolve([]) // No return value for assertion messages (they stdout to us).
+                        }
+                    }
+                }
+                case 'print': {
+                    // console.log('inputs', inputs)
+                    // console.log('inputs', String.fromCharCode(...inputs[1]))
+                    const payload = JSON.parse(String.fromCharCode(...inputs[2]))
+                    switch (payload.kind) {
+                        case 'array': {
+                            if (inputs[1].length !== payload.length) {
+                                console.error('MISMATCH PAYLOAD LENGTH')
+                            }
+                            switch (payload.type.kind) {
+                                case 'field': {
+                                    console.log(inputs[1])
+                                    resolve([]) // No return value for assertion messages (they stdout to us).
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            reject('NAH MATE I CANNAE DO IT')
+        }))
+
+        console.log('commitment:', rv_commit.state_commitment._value)
+
+        const data = await game_noir.generateFinalProof({
             board,
             move,
+            state_commitment: rv_commit.state_commitment._value
         })
-        console.log('the fuck', the_fuck)
-
-        const da_int_proof_wit = await game_backend.generateIntermediateProof(the_fuck.witness)
-        console.log('int proof witness', da_int_proof_wit)
-        const da_int_proof_arti = await game_backend.generateIntermediateProofArtifacts(
-            da_int_proof_wit, da_int_proof_wit.publicInputs.length
-        )
-        console.log('da int proof artifacts', da_int_proof_arti)
-        return da_int_proof_arti
+        console.log('done')
+        console.log('data:', data)
 
 
         // const verified = await bootstrap_backend.verifyIntermediateProof({

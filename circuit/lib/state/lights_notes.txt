@@ -1,3 +1,11 @@
+2024/02/07:
+  - No recursion until Q3 2024 since the interface is not completely updated yet and no aarch64
+    version is available for local macOS testing meaning it's very, very slow to incrementally
+    test and try things out.
+  - It looks like (to me, as only a mildly educated guess) the semi-new recursive proof API
+    function `std::verify_proof` automatically puts the aggregation into the solved witness?
+    If that's true how does that work...? For learning and curiosity.
+
 /// ------------------------------------------------------------------
 /// ------------------------------------------------------------------
 

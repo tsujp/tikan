@@ -6,7 +6,6 @@
 use dep::std::hash::pedersen_commitment;
 use dep::lib::{Piece, Board, PlayerPieces};
 
-#[recursive]
 fn main(board: pub Board, player: pub u1, pieces: pub PlayerPieces, salt: Field) -> pub Field {
   // Or `pedersen_hash` these pre-cursors and only `pedersen_commitment` the final?
   let board_hash = pedersen_commitment(board.decompose()).x;

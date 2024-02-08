@@ -30,8 +30,8 @@ const wd = process.cwd()
 //   to come in and be resolved.
 const CIRCUITS = await c_promise
 
-const start_proof_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_start_proof').artifact)
 const start_commit_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_start_commit').artifact)
+const commitment = await import(CIRCUITS.bin.find((c) => c.name === 'xx_commitment').artifact)
 const player_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_player').artifact)
 
 const white_start = [{ file: 1, rank: 0, lit: true }, { file: 3, rank: 0, lit: true }]
@@ -39,6 +39,10 @@ const black_start = [{ file: 1, rank: 4, lit: true }, { file: 3, rank: 4, lit: t
 const board_start = {
     halfmove: 0,
     turn: 0,
+    commits: [
+        { x: '0x0', y: '0x0' },
+        { x: '0x0', y: '0x0' },
+    ],
     players: [
         white_start,
         black_start,
@@ -52,34 +56,32 @@ function gimmeSalt() {
     return `0x${getRandomValues(value)[0].toString(16)}`
 }
 
-describe('recursive', async () => {
+describe('non-recursive', async () => {
     let players: Players
+    const commit_nr = new Noir(commitment)
 
     // Instantiate required backends and create start position proofs.
     beforeAll(async () => {
-        const commit = new Noir(start_commit_circ)
 
-        const white_salt = gimmeSalt()
-        const { returnValue: white_commit } = await commit.execute({
-            board: board_start,
-            player: 0,
-            pieces: white_start,
-            salt: white_salt,
-        })
-        const w = await player('white', player_circ, BACKEND_THREADS, start_proof_circ, white_commit, white_salt)
+        // const { returnValue: white_commit } = await commit.execute({
+        //     board: board_start,
+        //     player: 0,
+        //     pieces: white_start,
+        //     salt: 0,
+        // })
+        const w = await player('white', player_circ, BACKEND_THREADS, commit_nr)
 
-        const black_salt = gimmeSalt()
-        const { returnValue: black_commit } = await commit.execute({
-            board: board_start,
-            player: 1,
-            pieces: black_start,
-            salt: black_salt
-        })
-        const b = await player('black', player_circ, BACKEND_THREADS, start_proof_circ, black_commit, black_salt)
+        // const { returnValue: black_commit } = await commit.execute({
+        //     board: board_start,
+        //     player: 1,
+        //     pieces: black_start,
+        //     salt: 0
+        // })
+        // const b = await player('black', player_circ, BACKEND_THREADS, black_commit, '0x0')
 
         players = {
             white: w,
-            black: b,
+            // black: b,
         }
     })
 
