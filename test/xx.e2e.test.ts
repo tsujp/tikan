@@ -1,8 +1,9 @@
-import { beforeAll, describe, test } from 'bun:test'
+import { beforeAll, describe, test, expect } from 'bun:test'
 import { exchangeSalts, player, type Players } from './xx_player'
 import { Noir } from '@noir-lang/noir_js'
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
 import { deserialize } from 'bun:jsc'
+import { legal__white_moves } from './fixtures/xx_lit';
 
 const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
 
@@ -85,18 +86,80 @@ describe('non-recursive', async () => {
         }
     })
 
-    describe('valid moves', async () => {
+    describe('legal', async () => {
         describe('white', async () => {
-            test('move {1,0} to {1,1}', async () => {
-                await players.white.playMove(board_start, {
-                    from_file: 1,
-                    from_rank: 0,
-                    to_file: 1,
-                    to_rank: 1
-                })
-            }, 90000)
+            Object.entries(legal__white_moves).forEach(([scenario, data]) => {
+                test(scenario, async () => {
+                    const post_white = await players.white.playMove(
+                        data.cur_board,
+                        data.move
+                    )
+
+                    // const white_turn_data = await players.white.playTurn(
+                    //     data.public_state,
+                    //     data.white_move,
+                    // )
+
+                    // console.log(post_white)
+
+                    // Black verifies white's proof.
+                    // const black_accepts_white = await players.black.acceptTurn(
+                    //     white_turn_data,
+                    // )
+                    // console.log(white_turn_data.publicInputs)
+                    // expect(black_accepts_white).toBeTrue()
+                }, 30000)
+            })
+            // test('move {1,0} to {1,1}', async () => {
+            //     // TODO: Add expect .objectContaining()
+            //     const white_proof = await players.white.playMove(board_start, {
+            //         from_file: 1,
+            //         from_rank: 0,
+            //         to_file: 1,
+            //         to_rank: 1
+            //     })
+            //     console.log('white proof', white_proof)
+            // }, 10000)
         })
     })
+
+    // describe('illegal', async () => {
+    //     describe('white', async () => {
+    //         test('move {1,0} to {1,4} (move pattern)', async () => {
+    //             // Illegal piece move pattern.
+    //             expect(players.white.playMove(board_start, {
+    //                 from_file: 1,
+    //                 from_rank: 0,
+    //                 to_file: 1,
+    //                 to_rank: 4
+    //             })).rejects.toThrow(new Error('Circuit execution failed: Error: Assertion failed: Illegal move pattern'))
+    //         }, 5000)
+
+    //         test('starting position', async () => {
+    //             const white_start_2 = [{ file: 2, rank: 1, lit: true }, { file: 3, rank: 0, lit: true }]
+    //             const black_start_2 = [{ file: 1, rank: 4, lit: true }, { file: 3, rank: 4, lit: true }]
+    //             const board_start_2 = {
+    //                 halfmove: 0,
+    //                 turn: 0,
+    //                 commits: [
+    //                     { x: '0x0', y: '0x0' },
+    //                     { x: '0x0', y: '0x0' },
+    //                 ],
+    //                 players: [
+    //                     white_start_2,
+    //                     black_start_2,
+    //                 ],
+    //             }
+
+    //             expect(players.white.playMove(board_start_2, {
+    //                 from_file: 2,
+    //                 from_rank: 1,
+    //                 to_file: 2,
+    //                 to_rank: 2
+    //             })).rejects.toThrow(new Error('Circuit execution failed: Error: Assertion failed: Illegal move pattern'))
+    //         }, 5000)
+    //     })
+    // })
 
     // describe('valid moves', async () => {
     //     describe('black accepts white pawn', async () => {

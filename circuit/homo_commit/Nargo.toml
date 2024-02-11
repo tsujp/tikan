@@ -1,0 +1,10 @@
+[package]
+name = 'homo_commit'
+authors = [
+  "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
+]
+compiler_version = '0.23.0+5be9f9d7e2f39ca228df10e5a530474af0331704'
+type = 'bin'
+entry = 'homo_commit.nr'
+
+[dependencies]

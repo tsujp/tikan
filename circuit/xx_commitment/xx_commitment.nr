@@ -7,7 +7,7 @@ use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
 use dep::lib::{Piece, Board, Move};
 
 struct State {
-  board: Board,
+  cur_board: Board,
   move: Move,
 }
 
@@ -16,18 +16,19 @@ struct Input {
 }
 
 struct Output {
-  state_commitment: Option<PedersenPoint>
+  state_commitment: Option<(PedersenPoint, Board)>
 }
 
-// Commitment for post-move board state.
-fn state_commitment(state: State) -> PedersenPoint {
-  // TODO: Should these hashes also be `commitment` or is only the final one
-  //       being a `commitment` enough?
-  // let current_board_hash = pedersen_hash(state.board.decompose());
-  let move_hash = pedersen_hash(state.move.decompose());
-  let new_board_hash = pedersen_hash(state.board.apply_move(state.move).decompose());
+// Commitment that `move` produces post-move board state `pst_board`.
+fn state_commitment(state: State) -> (PedersenPoint, Board) {
+  let pst_board = state.cur_board.apply_move(state.move);
 
-  pedersen_commitment([move_hash, new_board_hash])
+  // TODO: Should these hashes also be `commitment` or is only the final one
+  //       being a `commitment` enough? Here and elsewhere.
+  let move_hash = pedersen_hash(state.move.decompose());
+  let pst_board_hash = pedersen_hash(pst_board.decompose());
+
+  (pedersen_commitment([move_hash, pst_board_hash]), pst_board)
 }
 
 // TODO: Add salt later.

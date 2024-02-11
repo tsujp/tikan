@@ -1,4 +1,4 @@
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
+import { BarretenbergBackend, ProofData } from '@noir-lang/backend_barretenberg'
 import { Noir } from '@noir-lang/noir_js'
 import { type InputValue } from '@noir-lang/noirc_abi'
 import { getRandomValues } from 'crypto'
@@ -9,7 +9,7 @@ export type Player = {
     getSalt(): HexInt
     setOpponentSalt(salt: HexInt): void
     commitTurn(turn: object): Promise<InputValue>
-    playMove(board: any, move: any, commitment?: Promise<InputValue> | string): void
+    playMove(board: any, move: any, commitment?: Promise<InputValue> | string): Promise<ProofData>
 }
 
 export type Players = { white: Player; black: Player;[key: string]: Player }
@@ -87,14 +87,17 @@ export async function player(
         // console.log(`${name}'s move commitment: ${turn_commitment}`)
 
         // ------------------ Get witness and new board with our move applied.
-        process.stdout.write(`[${player_name}] executing game circuit with move... `)
+        console.log(`[${player_name}] executing game circuit with move...`)
+
+        console.log('board', board)
+        console.log('move', move)
 
         const { returnValue: rv_commit } = await commit.execute({
             input: {
                 state: {
                     _is_some: true,
                     _value: {
-                        board,
+                        cur_board: board,
                         move,
                     }
                 }
@@ -108,12 +111,13 @@ export async function player(
                             const msg = String.fromCharCode(...inputs[0])
                             console.error('ASSERT FAIL:', msg)
                             resolve([]) // No return value for assertion messages (they stdout to us).
+                            break
                         }
                     }
                 }
                 case 'print': {
                     // console.log('inputs', inputs)
-                    // console.log('inputs', String.fromCharCode(...inputs[1]))
+                    // console.log('inputs', String.fromCharCode(...inputs[2]))
                     const payload = JSON.parse(String.fromCharCode(...inputs[2]))
                     switch (payload.kind) {
                         case 'array': {
@@ -124,8 +128,14 @@ export async function player(
                                 case 'field': {
                                     console.log(inputs[1])
                                     resolve([]) // No return value for assertion messages (they stdout to us).
+                                    break
                                 }
                             }
+                        }
+                        case 'unsignedinteger': {
+                            console.log(inputs[1])
+                            resolve([]) // No return value for assertion messages (they stdout to us).
+                            break
                         }
                     }
                 }
@@ -137,12 +147,16 @@ export async function player(
         console.log('commitment:', rv_commit.state_commitment._value)
 
         const data = await game_noir.generateFinalProof({
-            board,
+            cur_board: board,
+            pst_board: rv_commit.state_commitment._value[1],
             move,
-            state_commitment: rv_commit.state_commitment._value
+            state_commitment: rv_commit.state_commitment._value[0]
         })
-        console.log('done')
-        console.log('data:', data)
+
+        const valid_move = await game_noir.verifyFinalProof(data)
+        console.log('valid?', valid_move)
+        // console.log('done')
+        // console.log('data:', data)
 
 
         // const verified = await bootstrap_backend.verifyIntermediateProof({
@@ -162,7 +176,7 @@ export async function player(
         // console.log('done')
 
         // return proof
-        return
+        return data
     }
 
     async function acceptTurn(enemy_turn_data: object) {

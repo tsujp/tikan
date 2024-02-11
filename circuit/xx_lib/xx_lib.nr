@@ -1,26 +1,32 @@
 use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
 
 // OPT: Can use field comparison instead? See: https://github.com/noir-lang/noir/pull/4042
+
 struct Piece {
-  file: u8,
-  rank: u8,
-  lit: bool,
+  lights: bool,
+  idx: u8,
+  // file: u8,
+  // rank: u8,
 }
 
 impl Piece {
-  fn starting(file: u8, rank: u8) -> Self {
+  // fn starting(file: u8, rank: u8) -> Self {
+  fn starting(idx: u8) -> Self {
     Self {
-      file,
-      rank,
-      lit: true,
+      // file,
+      // rank,
+      idx,
+      lights: true,
     }
   }
 
-  fn decompose(self) -> [Field; 3] {
+  // fn decompose(self) -> [Field; 3] {
+  fn decompose(self) -> [Field; 2] {
     [
-      self.file as Field,
-      self.rank as Field,
-      self.lit as Field,
+      // self.file as Field,
+      // self.rank as Field,
+      self.idx as Field,
+      self.lights as Field,
     ]
   }
 }
@@ -41,6 +47,8 @@ struct Board {
 }
 
 impl Board {
+  // Could use this to bring the starting board into the circuit but they're public
+  //   input anyway so I think _not_ doing that for now is fine.
   // fn starting() -> Self {
   //   Self {
   //     players: [
@@ -53,16 +61,42 @@ impl Board {
   // }
 
   fn apply_move(self, move: Move) -> Self {
+      let from: u8 = move.from;
+      let to: u8 = move.to;
+
+      assert((0 <= from) & (from <= 24), "No such from index");
+      assert((0 <= to) & (to <= 24), "No such to index");
+      assert(from != to, "Cannot move in-place");
+
+      // TODO: Check destination `move.to` while we're here for captures or
+      //       not capturing friendlies.
+      let mut piece_idx: Option<u8> = Option::none();
+      for i in 0..move.pieces.len() {
+        if move.pieces[i].idx == from {
+          piece_idx = Option::some(i as u8);
+        }
+      }
+      assert(piece_idx.is_some(), "No piece on square");
+
       // The only piece in this game (all pieces are the same type) can move omnidirectionally
       //   one square only.
-      // Compute absolute difference movement of file and rank.
-      let file_diff = if move.from_file > move.to_file { move.from_file - move.to_file } else { move.to_file - move.from_file };
-      let rank_diff = if move.from_rank > move.to_rank { move.from_rank - move.to_rank } else { move.to_rank - move.from_rank };
+      // Not an efficient but this is for prototyping so who cares.
+      let move_delta = if to > from {
+        to - from
+      } else {
+        from - to
+      };
 
-      // TODO: Check player has that piece at that position to even move.
+      let valid_move = (move_delta == 6) | (move_delta == 5)| (move_delta == 4) | (move_delta == 1);
+
+      assert(valid_move, "Invalid move pattern");
+
+      // TODO: It's ugly but constrain if halfmove == 0 (whites first turn) that white
+      //       has correct starting pieces. And if halfmove == 1 (blacks first turn) that
+      //       black has correct starting pieces.
 
       // Move is valid if at most 1 chebyshev-distance in all axes is traversed.
-      assert((file_diff <= 1) & (rank_diff <= 1), "Illegal move pattern");
+      // assert((file_diff <= 1) & (rank_diff <= 1), "Illegal move pattern");
 
       // TODO: Update players' piece state.
 
@@ -78,8 +112,8 @@ impl Board {
   // - 2 members in `PedersenPoint`, array of 2 = 2 * 2 = 4.
   // - Other `Board` members = 2.
   // = 12 + 4 + 2 = 18.
-  fn decompose(self) -> [Field; 18] {
-    let mut decomp = [0; 18];
+  fn decompose(self) -> [Field; 14] {
+    let mut decomp = [0; 14];
 
     decomp[0] = self.turn as Field;
     decomp[1] = self.halfmove as Field;
@@ -102,87 +136,51 @@ impl Board {
       idx_offset += 2;
     }
 
-    dep::std::println(decomp);
-
-    // [
-    //   self.turn as Field,
-    //   self.halfmove as Field,
-    //   //
-    //   self.players[0][0].file as Field,
-    //   self.players[0][0].rank as Field,
-    //   self.players[0][0].lit as Field,
-    //   //
-    //   self.players[0][1].file as Field,
-    //   self.players[0][1].rank as Field,
-    //   self.players[0][1].lit as Field,
-    //   //
-    //   self.players[1][0].file as Field,
-    //   self.players[1][0].rank as Field,
-    //   self.players[1][0].lit as Field,
-    //   //
-    //   self.players[1][1].file as Field,
-    //   self.players[1][1].rank as Field,
-    //   self.players[1][1].lit as Field,
-    // ]
+    // dep::std::println(decomp);
 
     decomp
   }
 }
 
 struct Move {
-  from_file: u8,
-  from_rank: u8,
-  to_file: u8,
-  to_rank: u8
+  // Players private record of their pieces.
+  pieces: PlayerPieces,
+  from: u8,
+  to: u8,
+  // from_file: u8,
+  // from_rank: u8,
+  // to_file: u8,
+  // to_rank: u8
 }
 
 impl Move {
-  fn decompose(self) -> [Field; 4] {
-    [
-      self.from_file as Field,
-      self.from_rank as Field,
-      self.to_file as Field,
-      self.to_rank as Field,
-    ]
+  // - 3 members in `Piece`, 1 array of 2 `Pieces` = 3 * 1 * 2 = 6.
+  // - 4 fields in `Move` struct.
+  // = 6 + 4 = 10.
+  fn decompose(self) -> [Field; 6] {
+    let mut decomp = [0; 6];
+
+    decomp[0] = self.from as Field;
+    decomp[1] = self.to as Field;
+
+    // decomp[0] = self.from_file as Field;
+    // decomp[1] = self.from_rank as Field;
+    // decomp[2] = self.to_file as Field;
+    // decomp[3] = self.to_rank as Field;
+
+    let mut idx_offset = 2;
+
+    // Pieces.
+    for i in 0..self.pieces.len() {
+      let pce_decomp = self.pieces[i].decompose();
+      for j in 0..pce_decomp.len() {
+        decomp[idx_offset] = pce_decomp[j];
+        idx_offset += 1;
+      }
+    }
+
+    // dep::std::println(decomp);
+
+    decomp
   }
 }
-
-
-
-
-
-
-
-
-
-
-// fn main(
-//     verification_key : [Field; 114],
-//     proof : [Field; 94],
-//     public_inputs : [Field; 1],
-//     key_hash : Field,
-//     input_aggregation_object : [Field; 16],
-//     proof_b : [Field; 94],
-// ) -> pub [Field; 16] {
-//     let output_aggregation_object_a = std::verify_proof(
-//         verification_key.as_slice(),
-//         proof.as_slice(),
-//         public_inputs.as_slice(),
-//         key_hash,
-//         input_aggregation_object
-//     );
-
-//     let output_aggregation_object = std::verify_proof(
-//         verification_key.as_slice(),
-//         proof_b.as_slice(),
-//         public_inputs.as_slice(),
-//         key_hash,
-//         output_aggregation_object_a
-//     );
-
-//     let mut output = [0; 16];
-//     for i in 0..16 {
-//         output[i] = output_aggregation_object[i];
-//     }
-//     output
-// }
