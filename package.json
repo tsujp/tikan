@@ -21,11 +21,14 @@
     "bb:term": "bun run --cwd tooling/bb_term do",
     "bb:web": "bun run --cwd tooling/bb_web do",
     "do:test": "bun run --cwd test test",
-    "do:test:watch": "bun run --cwd test test:watch",
+    "do:test:watch": "ROARR_LOG=true ROARR_STREAM=STDERR bun run --cwd test test:watch",
     "fmt": "dprint fmt"
   },
   "repository": {
     "type": "git"
   },
-  "keywords": []
+  "keywords": [],
+  "dependencies": {
+    "roarr": "^7.21.0"
+  }
 }

@@ -42,7 +42,7 @@ export async function resolveProjectRootDir(): Promise<string> {
 }
 
 // TODO: Docs; Types maybe.
-function template(strs, ...expressions) {
+export function template(strs, ...expressions) {
     return (...values) => {
         const dict = values[values.length - 1] || {}
         let result = strs[0]

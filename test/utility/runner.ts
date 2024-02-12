@@ -33,52 +33,54 @@ const wd = join(root_dir, 'test')
 //        check fails (as we then exit with failure).
 import { watch } from 'fs/promises'
 import { spawnTest } from './spawn_test'
-import { serialize } from 'bun:jsc'
-const bufmsg = serialize({ kind: 'CIRCUITS', msg: circuits })
-// let test_proc = Bun.spawn(['bun', 'test', 'fooe2e.test.ts'], {
-//     cwd: wd,
-//     stdin: 'pipe',
-//     stdout: 'inherit',
-//     // Wanted to use IPC but it doesn't work with this pattern of sending
-//     //   messages after the first re-run for some reason.
-// })
+
 const test_file = 'xx.e2e.test.ts'
-let test_proc = spawnTest(wd, test_file)
-test_proc.stdin.write(bufmsg)
-test_proc.stdin.flush()
+const CIRCUITS_MSG = { kind: 'CIRCUITS', msg: circuits }
+
+let test_proc = spawnTest(wd, test_file, CIRCUITS_MSG)
 
 const ac = new AbortController();
 const { signal } = ac;
+const CLOSE_WATCHER_MSG = 'close watcher'
 
-const watcher = watch(join(root_dir, 'test'), { recursive: true, signal });
-(async () => {
-    for await (const event of watcher) {
-        // console.log(`Detected ${event.eventType} in ${event.filename}`);
+const watcher = watch(join(root_dir, 'test'), { recursive: true, signal })
+    ; (async () => {
+        try {
+            for await (const event of watcher) {
+                // console.log(`Detected ${event.eventType} in ${event.filename}`);
 
-        if (event.filename?.endsWith('.test.ts')) {
-            // console.log('found test file', event.filename)
-            test_proc.kill()
-            await test_proc.exited
+                if (event.filename?.endsWith('.test.ts')) {
+                    // console.log('found test file', event.filename)
+                    test_proc.kill()
+                    await test_proc.exited
 
-            // console.log('previous test process exited, restarting tests')
-            refresh_run++
-            logHeading(`Refresh run: ${refresh_run}`)
-            test_proc = spawnTest(wd, test_file)
-            test_proc.stdin.write(bufmsg)
-            test_proc.stdin.flush()
+                    refresh_run++
+                    test_proc = spawnTest(wd, test_file, CIRCUITS_MSG)
+                    logHeading(`[${process.pid}->${test_proc.pid}] watch run: ${refresh_run}`)
+                }
+            }
+        } catch (e) {
+            if (e === CLOSE_WATCHER_MSG) {
+                console.log('File watcher closed')
+            } else {
+                console.log(e)
+            }
         }
-    }
-})()
+    })()
 
 // Trap cleanup.
-process.on('SIGINT', () => {
-    // Does this clean up the watcher correctly?
-    process.stdout.write('Closing watcher... ')
-    ac.abort()
-    console.log('done')
+process.on('SIGINT', async () => {
+    console.log('Cleaning up...')
 
-    console.log('Closing runner')
+    // File watcher.
+    ac.abort(CLOSE_WATCHER_MSG)
 
+    // Child processes.
+    test_proc.kill()
+    await test_proc.exited
+    console.log('Child processes killed')
+
+    console.log('Done')
     process.exit(0)
 })
 

@@ -1,3 +1,5 @@
+import { template } from '../utility/misc'
+
 const VALID_WHITE_START = [{ idx: 1, lights: true }, { idx: 3, lights: true }] as const
 
 const VALID_BLACK_START = [{ idx: 21, lights: true }, { idx: 23, lights: true }] as const
@@ -16,10 +18,48 @@ const VALID_START_BOARD = {
 } as const
 
 export const legal__white_moves = {
-    'move {1,0} to {1,1}': {
+    // Compass rose from starting position.
+    'start board': (function* () {
+        const from_idx = 1
+        const to_indices = [0, 5, 6, 7, 2] // Compass rose about `from_idx`.
+
+        yield template`move ${0} to ${1}`
+        
+        for (const to_idx in to_indices) {
+            yield {
+                cur_board: VALID_START_BOARD,
+                move: {
+                    pieces: VALID_WHITE_START,
+                    from: from_idx,
+                    to: to_idx,
+                }
+            }
+        }
+    })(),
+    'start board, move 0 to 1': {
         cur_board: VALID_START_BOARD,
         move: {
-            // pieces: VALID_WHITE_START,
+            pieces: VALID_WHITE_START,
+            from: 1,
+            to: 2
+        },
+    },
+    // 'start board, move {1} to {2}': {
+    //     cur_board: VALID_START_BOARD,
+    //     move: {
+    //         pieces: VALID_WHITE_START,
+    //         from: 1,
+    //         to: 2
+    //     },
+    // },
+} as const
+
+export const illegal__white_moves = {
+    // Legal move pattern however white does NOT have a piece at the claimed
+    //   starting index.
+    'legal move pattern, but no piece at `from` index': {
+        cur_board: VALID_START_BOARD,
+        move: {
             pieces: [{ idx: 2, lights: true }, { idx: 3, lights: true }],
             from: 2,
             to: 1

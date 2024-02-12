@@ -28,3 +28,9 @@
       each player can be sure the initial bitboards are correct.
 2. Each turn includes current state commitment, as well as previous to prevent lying
   about their bbs this turn.
+ 
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+// Q: Bun, can I get dependency tree of a file? So in xx.e2e.test.ts can I go "show me all
+//    files this file imports" but get that at runtime to add to the watched file list?

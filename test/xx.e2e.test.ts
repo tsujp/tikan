@@ -3,22 +3,96 @@ import { exchangeSalts, player, type Players } from './xx_player'
 import { Noir } from '@noir-lang/noir_js'
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
 import { deserialize } from 'bun:jsc'
-import { legal__white_moves } from './fixtures/xx_lit';
+import { legal__white_moves, illegal__white_moves } from './fixtures/xx_lit';
+
+const org_stderr_write = process.stderr.write.bind(process.stderr)
+
+function w(data) {
+    console.log('the data is:', data)
+}
+process.stderr.write = (data, callback) => {
+    const wat = (new Error().stack).split('\n')
+    console.log('it is:', wat)
+    w(data)
+
+    return org_stderr_write(data, callback)
+}
+
+import { Roarr as log } from 'roarr'
+log({ hi: 'the fuck' }, 'bing bong')
+process.stderr.write('foobar')
+console.error('blah blah')
+
+process.send("FROM CHILD TO PARENT!!")
+
+process.on("beforeExit", (code) => {
+    log('beforeExit')
+});
+
+process.on("exit", (code) => {
+    log('exit')
+});
+
+process.on("disconnect", (code) => {
+    log('disconnect')
+});
+
+process.on("SIGINT", (code) => {
+    log('sigint')
+});
 
 const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
 
-    ; (async () => {
-        for await (const chunk of Bun.stdin.stream()) {
-            const chunkText = Buffer.from(chunk)
-            const deserial = deserialize(chunkText)
+process.on("message", (message) => {
+    switch (message.kind) {
+        case 'CIRCUITS':
+            c_resolve(message.msg)
+            break
+    }
+})
 
-            switch (deserial.kind) {
-                case 'CIRCUITS':
-                    c_resolve(deserial.msg)
-                    break
-            }
+
+// ; (async () => {
+//     for await (const chunk of Bun.stdin.stream()) {
+//         const chunkText = Buffer.from(chunk)
+//         const deserial = deserialize(chunkText)
+
+//         switch (deserial.kind) {
+//             case 'CIRCUITS':
+//                 c_resolve(deserial.msg)
+//                 break
+//         }
+//     }
+// })()
+
+//
+function iterateScenarios(scenario_object: {}, test_fn) {
+    Object.entries(scenario_object).forEach(([scenario, data]) => {
+        // console.log('top level loop ->', scenario)
+
+        if (data[Symbol.toStringTag] === 'Generator') {
+            describe(scenario, async () => {
+
+                const name_template = data.next().value
+                let iter_idx = 0
+
+                console.log('  is generator')
+                for (const gen_data of data) {
+                    iter_idx += 1
+                    // console.log('    generator test', gen_data.move.to)
+                    test(`[${iter_idx}] ${name_template(gen_data.move.from, gen_data.move.to)}`, async () => {
+                        test_fn(gen_data)
+                    })
+                }
+            })
+        } else {
+            // console.log('  is literal scenario')
+            test(scenario, async () => {
+                test_fn(data)
+            })
         }
-    })()
+    })
+}
 
 //
 // * * * * * * * * * * * * * * * * * * * * * * * BOILERPLATE
@@ -31,24 +105,8 @@ const wd = process.cwd()
 //   to come in and be resolved.
 const CIRCUITS = await c_promise
 
-const start_commit_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_start_commit').artifact)
 const commitment = await import(CIRCUITS.bin.find((c) => c.name === 'xx_commitment').artifact)
 const player_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_player').artifact)
-
-const white_start = [{ file: 1, rank: 0, lit: true }, { file: 3, rank: 0, lit: true }]
-const black_start = [{ file: 1, rank: 4, lit: true }, { file: 3, rank: 4, lit: true }]
-const board_start = {
-    halfmove: 0,
-    turn: 0,
-    commits: [
-        { x: '0x0', y: '0x0' },
-        { x: '0x0', y: '0x0' },
-    ],
-    players: [
-        white_start,
-        black_start,
-    ],
-}
 
 import { getRandomValues } from 'crypto'
 function gimmeSalt() {
@@ -57,7 +115,7 @@ function gimmeSalt() {
     return `0x${getRandomValues(value)[0].toString(16)}`
 }
 
-describe('non-recursive', async () => {
+describe('(execute) non-recursive', async () => {
     let players: Players
     const commit_nr = new Noir(commitment)
 
@@ -88,40 +146,53 @@ describe('non-recursive', async () => {
 
     describe('legal', async () => {
         describe('white', async () => {
-            Object.entries(legal__white_moves).forEach(([scenario, data]) => {
-                test(scenario, async () => {
-                    const post_white = await players.white.playMove(
-                        data.cur_board,
-                        data.move
-                    )
-
-                    // const white_turn_data = await players.white.playTurn(
-                    //     data.public_state,
-                    //     data.white_move,
-                    // )
-
-                    // console.log(post_white)
-
-                    // Black verifies white's proof.
-                    // const black_accepts_white = await players.black.acceptTurn(
-                    //     white_turn_data,
-                    // )
-                    // console.log(white_turn_data.publicInputs)
-                    // expect(black_accepts_white).toBeTrue()
-                }, 30000)
+            iterateScenarios(legal__white_moves, async (data) => {
+                // log({ hi: 'the fuck' }, 'bing bong')
+                process.send('hi parent', data.move, log({ hi: 'the fuck' }, 'bing bong'))
+                const post_white = await players.white.executeMove(
+                    data.cur_board,
+                    data.move
+                )
             })
-            // test('move {1,0} to {1,1}', async () => {
-            //     // TODO: Add expect .objectContaining()
-            //     const white_proof = await players.white.playMove(board_start, {
-            //         from_file: 1,
-            //         from_rank: 0,
-            //         to_file: 1,
-            //         to_rank: 1
-            //     })
-            //     console.log('white proof', white_proof)
-            // }, 10000)
+            // Object.entries(legal__white_moves).forEach(([scenario, data]) => {
+            //     console.log('OBJECT MAP')
+            //     console.log(scenario)
+            //     console.log(typeof data)
+            //     console.log(typeof data[Symbol.iterator])
+            //     console.log(data[Symbol.iterator] === data)
+            //     console.log(data.constructor)
+
+            //     // Haven't tested if you construct a generator manually, since any function
+            //     //   can return a generator by manually constructing an object that implements
+            //     //   the iterable protocol.
+            //     // OPT: Make this detection generic if there's a good reason to.
+            //     console.log('IS ', data[Symbol.toStringTag] === 'Generator')
+
+            //     for (const what of data) {
+            //         console.log('GENERATOR')
+            //     }
+            //     // test(scenario, async () => {
+            //     //     const post_white = await players.white.executeMove(
+            //     //         data.cur_board,
+            //     //         data.move
+            //     //     )
+            //     // }, 30000)
+            // })
         })
     })
+
+    // describe('illegal', async () => {
+    //     describe('white', async () => {
+    //         Object.entries(illegal__white_moves).forEach(([scenario, data]) => {
+    //             test(scenario, async () => {
+    //                 const post_white = await players.white.executeMove(
+    //                     data.cur_board,
+    //                     data.move
+    //                 )
+    //             }, 30000)
+    //         })
+    //     })
+    // })
 
     // describe('illegal', async () => {
     //     describe('white', async () => {
