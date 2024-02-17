@@ -55,6 +55,7 @@
                     # Packages present in the default shell.
                     packages = with pkgs; [
                       bun
+                      lnav
                     ] ++ [ noir.packages.${system}.nargo ];
 
                     # Commands present in the default shell.

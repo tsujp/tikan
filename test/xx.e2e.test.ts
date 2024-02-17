@@ -7,63 +7,50 @@ import { legal__white_moves, illegal__white_moves } from './fixtures/xx_lit';
 
 const org_stderr_write = process.stderr.write.bind(process.stderr)
 
-function w(data) {
-    console.log('the data is:', data)
-}
-process.stderr.write = (data, callback) => {
-    const wat = (new Error().stack).split('\n')
-    console.log('it is:', wat)
-    w(data)
+// Docs: https://bun.sh/docs/api/file-io#incremental-writing-with-filesink
+// TODO: We call `.kill()` (and await it) from the test runner on _this_ process, does
+//   that clean up the FileSink correctly?
 
+const log_file = Bun.file('loggies.txt')
+
+// If file is empty or does not exist it's size is 0 (really it's an object
+//   of `[Blob detatched]` but I am not sure how to handle that currently). If
+//   said size 0 use the file as-is, else get a slice at it's length to
+//   effectively append.
+const log_file_view = log_file.size > 0 ? log_file.slice(log_file.size * 2) : log_file
+console.log('at', log_file_view)
+
+const log_w = log_file_view.writer()
+
+// Checks if stderr output is a Roarr log line and if it is writes it to log file
+//   and prevents it from being sent to stderr.
+process.stderr.write = (data, callback) => {
+    // Crude way of detecting if we're logging via Roarr but it'll do for now.
+    // OPT: If this becomes a problem, i.e. we start logging 1-line JSON objects ourselves
+    //      then simply add a prefix to Roarr which is a magic string to match on
+    //      `startsWith` -- also ugly but fine for our purposes.
+    if (data.startsWith('{"')) {
+        // In-process logging, yucky. Probably fine for now.
+        log_w.write(data)
+        log_w.flush() // Want to see our logs immediately.
+        return
+    }
+
+    // Pass through to real `process.stderr.write`.
     return org_stderr_write(data, callback)
 }
 
 import { Roarr as log } from 'roarr'
-log({ hi: 'the fuck' }, 'bing bong')
-process.stderr.write('foobar')
-console.error('blah blah')
-
-process.send("FROM CHILD TO PARENT!!")
-
-process.on("beforeExit", (code) => {
-    log('beforeExit')
-});
-
-process.on("exit", (code) => {
-    log('exit')
-});
-
-process.on("disconnect", (code) => {
-    log('disconnect')
-});
-
-process.on("SIGINT", (code) => {
-    log('sigint')
-});
 
 const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
 
-process.on("message", (message) => {
+process.on('message', (message) => {
     switch (message.kind) {
         case 'CIRCUITS':
             c_resolve(message.msg)
             break
     }
 })
-
-
-// ; (async () => {
-//     for await (const chunk of Bun.stdin.stream()) {
-//         const chunkText = Buffer.from(chunk)
-//         const deserial = deserialize(chunkText)
-
-//         switch (deserial.kind) {
-//             case 'CIRCUITS':
-//                 c_resolve(deserial.msg)
-//                 break
-//         }
-//     }
-// })()
 
 //
 function iterateScenarios(scenario_object: {}, test_fn) {
@@ -147,8 +134,7 @@ describe('(execute) non-recursive', async () => {
     describe('legal', async () => {
         describe('white', async () => {
             iterateScenarios(legal__white_moves, async (data) => {
-                // log({ hi: 'the fuck' }, 'bing bong')
-                process.send('hi parent', data.move, log({ hi: 'the fuck' }, 'bing bong'))
+                log.debug('received')
                 const post_white = await players.white.executeMove(
                     data.cur_board,
                     data.move

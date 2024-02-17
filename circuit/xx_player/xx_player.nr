@@ -39,45 +39,107 @@ fn main (
   assert(computed_commitment.y == state_commitment.y, "Bad commitment y");
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
+//
+// TESTS
+//
+use dep::std::println;
+use dep::std::print as pn;
+use dep::lib::{State, state_commitment};
 
+global T__VALID_WHITE_START = [ Piece { idx: 1, lights: true }, Piece { idx: 3, lights: true } ];
+global T__VALID_BLACK_START = [ Piece { idx: 21, lights: true }, Piece { idx: 23, lights: true } ];
 
+global T__VALID_START_BOARD = Board {
+  turn: 0,
+  halfmove: 0,
+  commits: [
+    PedersenPoint { x: 0, y: 0 }, // White commitment.
+    PedersenPoint { x: 0, y: 0 }, // Black commitment.
+  ],
+  players: [T__VALID_WHITE_START, T__VALID_BLACK_START]
+};
 
-
-
-
-
-
-
-
-
-// fn main(
-//     verification_key : [Field; 114],
-//     proof : [Field; 94],
-//     public_inputs : [Field; 1],
-//     key_hash : Field,
-//     input_aggregation_object : [Field; 16],
-//     proof_b : [Field; 94],
-// ) -> pub [Field; 16] {
-//     let output_aggregation_object_a = std::verify_proof(
-//         verification_key.as_slice(),
-//         proof.as_slice(),
-//         public_inputs.as_slice(),
-//         key_hash,
-//         input_aggregation_object
-//     );
-
-//     let output_aggregation_object = std::verify_proof(
-//         verification_key.as_slice(),
-//         proof_b.as_slice(),
-//         public_inputs.as_slice(),
-//         key_hash,
-//         output_aggregation_object_a
-//     );
-
-//     let mut output = [0; 16];
-//     for i in 0..16 {
-//         output[i] = output_aggregation_object[i];
-//     }
-//     output
+// fn __move_commit(board: Board, move: Move) -> {
+//   commit_to(Input::move_commit(
+//     T__VALID_START_BOARD,
+//     Move { pieces: T__VALID_WHITE_START, from: 1, to: 0 }
+//   ));
 // }
+
+fn __move_commit(cur_board: Board, move: Move) -> (PedersenPoint, Board) {
+  let commit = state_commitment(State { cur_board, move });
+  commit
+}
+
+fn __print_commit(data: (PedersenPoint, Board)) {
+  data.1.print(); // Board.
+
+  // let x = data.0.x;
+  // let y = data.0.y;
+  // dep::std::print(f" [{x}, {y}]");
+}
+
+fn test<Env, N, T>(name: fmtstr<N, T>, f: fn[Env]() -> ()) {
+  // Start: Syslog protocol header.
+  // For now hardcoded facility 16 (local use 0), severity 7 (debug), version 1.
+  //   See: https://datatracker.ietf.org/doc/html/rfc5424#section-6.2.1
+  // pn("<135>1 ");
+
+  // NILVALUE since we cannot get timestamp here without an oracle which I cbf doing.
+  // pn("2001-01-01T00:00:00.000 ");
+  // pn("- "); // Hostname not important; ditto oracle too.
+  // pn("xx_player "); // App-name.
+  // pn("- "); // Proc-id. TODO: Spec says we could use this for grouping later on (e.g. context).
+  // pn("- "); // Msg-id. Should identify type of message.
+  // End: syslog header.
+
+
+  dep::std::print(name); // Cannot do as `f"{name}: "` (nested format strings)...
+  dep::std::print(f" -> "); // ...hence this.
+  f();
+  dep::std::println(f"");
+}
+
+#[test]
+fn compass_moves__white__1() {
+  let from = 1;
+  let to_indices = [0, 5, 6, 7, 2]; // Compass rose about `from_idx`.
+
+  // Don't want to use `.all()` because it requires another closure wrap on our
+  //   custom `test` function.
+  for i in 0..to_indices.len() {
+    let to = to_indices[i];
+
+    test(f"white compass-rose moves {from} to {to}", || {
+      let white_commit = __move_commit(
+        T__VALID_START_BOARD,
+        Move { pieces: T__VALID_WHITE_START, from, to }
+      );
+      __print_commit(white_commit);
+      // dep::std::print(white_commit.0);
+      // white_commit.1.print();
+
+      // TODO: Some assert pass so we can log shit.
+    });
+  }
+
+  // test("white compass-rose moves", || {
+  //   let white_commit = __move_commit(
+  //     T__VALID_START_BOARD,
+  //     Move { pieces: T__VALID_WHITE_START, from: 1, to: 0 }
+  //   );
+  //   white_commit.1.print();
+  // });
+
+  // white_commit.1.print();
+  // dep::std::println(white_commit.1);
+}
