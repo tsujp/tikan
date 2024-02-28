@@ -68,49 +68,74 @@ global T__VALID_START_BOARD = Board {
   players: [T__VALID_WHITE_START, T__VALID_BLACK_START]
 };
 
-// fn __move_commit(board: Board, move: Move) -> {
-//   commit_to(Input::move_commit(
-//     T__VALID_START_BOARD,
-//     Move { pieces: T__VALID_WHITE_START, from: 1, to: 0 }
-//   ));
-// }
-
 fn __move_commit(cur_board: Board, move: Move) -> (PedersenPoint, Board) {
+  Log::step(f"commit to move");
   let commit = state_commitment(State { cur_board, move });
+  Log::commit(commit);
   commit
 }
+
+use dep::std::println as puts;
+use dep::std::print as put;
 
 fn __print_commit(data: (PedersenPoint, Board)) {
   data.1.print(); // Board.
 
-  // let x = data.0.x;
-  // let y = data.0.y;
-  // dep::std::print(f" [{x}, {y}]");
+  let x = data.0.x;
+  let y = data.0.y;
+  // dep::std::print(f"  [{x}, {y}]");
+}
+
+struct Log {}
+
+impl Log {
+  pub fn test_name<N, T>(name: fmtstr<N, T>) {
+    put("T_NAME:"); // Test name format string.
+    puts(name); // Cannot do as `f"0001 {name}"` hence this.
+  }
+
+  pub fn step<N, T>(step: fmtstr<N, T>) {
+    put("T_STEP:");
+    puts(step);
+  }
+
+  pub fn commit(payload: (PedersenPoint, Board)) {
+    put("T_COMT:");
+    puts(payload.0);
+  }
 }
 
 fn test<Env, N, T>(name: fmtstr<N, T>, f: fn[Env]() -> ()) {
-  // Start: Syslog protocol header.
-  // For now hardcoded facility 16 (local use 0), severity 7 (debug), version 1.
-  //   See: https://datatracker.ietf.org/doc/html/rfc5424#section-6.2.1
-  // pn("<135>1 ");
+  Log::test_name(name);
+  // Compact-ish one-line.
+  // dep::std::println(f""); // Clear newline after test ellipses.
+  // dep::std::print("[*] ");
+  // dep::std::print(name); // Cannot do as `f"{name}: "` (nested format strings)...
+  // dep::std::print(f"  ->  "); // ...hence this.
+  // f();
+  // dep::std::println(f""); // Final newline.
 
-  // NILVALUE since we cannot get timestamp here without an oracle which I cbf doing.
-  // pn("2001-01-01T00:00:00.000 ");
-  // pn("- "); // Hostname not important; ditto oracle too.
-  // pn("xx_player "); // App-name.
-  // pn("- "); // Proc-id. TODO: Spec says we could use this for grouping later on (e.g. context).
-  // pn("- "); // Msg-id. Should identify type of message.
-  // End: syslog header.
+  // dep::std::println(f""); // Clear newline after test ellipses.
 
+  // dep::std::println(f"0001 ");
+  // dep::std::println(f"0010 ");
+  // dep::std::println(f"0100 ");
+  // dep::std::println(f"0101 ");
 
-  dep::std::print(name); // Cannot do as `f"{name}: "` (nested format strings)...
-  dep::std::print(f" -> "); // ...hence this.
+  // dep::std::print(f"0001 ");
+  // dep::std::println(name); // Cannot do as `f"{name}: "` (nested format strings)...
+
+  // dep::std::print(f".   IN  <-  ");
+
+  // dep::std::print(f".  OUT  ->  ");
   f();
-  dep::std::println(f"");
+  // dep::std::println(f""); // Final newline.
 }
 
 #[test]
 fn compass_moves__white__1() {
+  puts("");
+
   let from = 1;
   let to_indices = [0, 5, 6, 7, 2]; // Compass rose about `from_idx`.
 
@@ -125,21 +150,8 @@ fn compass_moves__white__1() {
         Move { pieces: T__VALID_WHITE_START, from, to }
       );
       __print_commit(white_commit);
-      // dep::std::print(white_commit.0);
-      // white_commit.1.print();
 
       // TODO: Some assert pass so we can log shit.
     });
   }
-
-  // test("white compass-rose moves", || {
-  //   let white_commit = __move_commit(
-  //     T__VALID_START_BOARD,
-  //     Move { pieces: T__VALID_WHITE_START, from: 1, to: 0 }
-  //   );
-  //   white_commit.1.print();
-  // });
-
-  // white_commit.1.print();
-  // dep::std::println(white_commit.1);
 }

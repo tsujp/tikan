@@ -78,7 +78,9 @@ export async function player(
         move: any,
         commitment?: Promise<InputValue> | string,
     ) {
-        console.log(`[${player_name}] executing game circuit with move...`)
+        // console.log(`[${player_name}] commits to move...`)
+        // console.log('bing bong')
+        process.send({ tag: 'MSG', msg: `${player_name} commits to move...`, data: null })
 
         const { returnValue: rv_commit } = await commit.execute({
             input: {
@@ -90,47 +92,10 @@ export async function player(
                     }
                 }
             }
-        }, (name, inputs) => new Promise((resolve, reject) => {
-            switch (name) {
-                case 'assert_message': {
-                    const payload = JSON.parse(String.fromCharCode(...inputs[1]))
-                    switch (payload.kind) {
-                        case 'string': {
-                            const msg = String.fromCharCode(...inputs[0])
-                            console.error('ASSERT FAIL:', msg)
-                            resolve([]) // No return value for assertion messages (they stdout to us).
-                            break
-                        }
-                    }
-                }
-                case 'print': {
-                    // console.log('inputs', inputs)
-                    // console.log('inputs', String.fromCharCode(...inputs[2]))
-                    const payload = JSON.parse(String.fromCharCode(...inputs[2]))
-                    switch (payload.kind) {
-                        case 'array': {
-                            if (inputs[1].length !== payload.length) {
-                                console.error('MISMATCH PAYLOAD LENGTH')
-                            }
-                            switch (payload.type.kind) {
-                                case 'field': {
-                                    console.log(inputs[1])
-                                    resolve([]) // No return value for assertion messages (they stdout to us).
-                                    break
-                                }
-                            }
-                        }
-                        case 'unsignedinteger': {
-                            console.log(inputs[1])
-                            resolve([]) // No return value for assertion messages (they stdout to us).
-                            break
-                        }
-                    }
-                }
-            }
+        })
 
-            reject('NAH MATE I CANNAE DO IT')
-        }))
+        // console.log('commit result is', rv_commit)
+        return rv_commit.state_commitment._value
     }
 
 

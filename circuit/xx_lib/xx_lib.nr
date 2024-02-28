@@ -70,41 +70,7 @@ impl Board {
   // Nargo appears to crash if I try and print the `.players` member; so an array
   //   of an array of structs. Decompose it ourselves I guess.
   unconstrained fn print(self) {
-    // let fields = [
-    //   "trn",
-    //   "hlf",
-    //   "w_x",
-    //   "w_y",
-    //   "b_x",
-    //   "b_y"
-    // ];
-
-    // let piece_fields = [
-    //   "idx",
-    //   "lit"
-    // ];
-
     let decomposed = self.decompose();
-
-    // Magic number `6` from count of non-piece fields on `Board` struct. See
-    //   `decompose` method comments.
-    // for _i in 0..decomposed.len() {
-    //   let i = _i as u8;
-
-    //   let k = if i >= 6 {
-    //     if i % 2 == 0 { dep::std::print(f"  "); } // Pad between pieces.
-    //     piece_fields[i % 2]
-    //   } else {
-    //     fields[i]
-    //   };
-
-    //   // dep::std::print(f"key is: {k} /  ");
-
-    //   let v = decomposed[i];
-
-    //   dep::std::print(f"{k}=u-{v} ");
-    // }
-
 
     // Nah, just do it the mostly old-fashioned way.
     let tn = decomposed[0];
@@ -114,14 +80,14 @@ impl Board {
     let b_x = decomposed[4];
     let b_y = decomposed[5];
 
-    dep::std::print(f"t=u-{tn} ");
-    dep::std::print(f"h=u-{hlf}  "); // 2 pad on end.
+    // dep::std::print(f"t=u-{tn} ");
+    // dep::std::print(f"h=u-{hlf}  "); // 2 pad on end.
 
     for _i in 6..decomposed.len() {
       let i = _i as u8;
 
       let k = if i % 2 == 0 {
-        dep::std::print(f"  "); // Pad between pieces.
+        // dep::std::print(f"  "); // Pad between pieces.
         "idx"
       } else {
         "lit"
@@ -129,12 +95,11 @@ impl Board {
 
       let v = decomposed[i];
 
-      dep::std::print(f"{k}=u-{v} ");
+      // dep::std::print(f"{k}=u-{v} ");
     }
 
-    dep::std::print(f"   wht={ x={w_x}, y={w_y} }   ");
-    dep::std::print(f"blk={ x={b_x}, y={b_y} }");
-
+    // dep::std::print(f"   wht={ x={w_x}, y={w_y} }   ");
+    // dep::std::print(f"blk={ x={b_x}, y={b_y} }");
 
     // Or if quick and dirty:
     // dep::std::print(self.decompose());
@@ -144,8 +109,8 @@ impl Board {
       let from: u8 = move.from;
       let to: u8 = move.to;
 
-      assert((0 <= from) & (from <= 24), "No such from index");
-      assert((0 <= to) & (to <= 24), "No such to index");
+      assert((0 <= from) & (from <= 24), "No such 'from' square");
+      assert((0 <= to) & (to <= 24), "No such 'to' square");
       assert(from != to, "Cannot move in-place");
 
       // TODO: Check destination `move.to` while we're here for captures or

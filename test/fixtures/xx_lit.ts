@@ -5,8 +5,8 @@ const VALID_WHITE_START = [{ idx: 1, lights: true }, { idx: 3, lights: true }] a
 const VALID_BLACK_START = [{ idx: 21, lights: true }, { idx: 23, lights: true }] as const
 
 const VALID_START_BOARD = {
-    halfmove: 0,
     turn: 0,
+    halfmove: 0,
     commits: [
         { x: '0x0', y: '0x0' },
         { x: '0x0', y: '0x0' },
@@ -25,7 +25,7 @@ export const legal__white_moves = {
 
         yield template`move ${0} to ${1}`
         
-        for (const to_idx in to_indices) {
+        for (const to_idx of to_indices) {
             yield {
                 cur_board: VALID_START_BOARD,
                 move: {
@@ -36,14 +36,16 @@ export const legal__white_moves = {
             }
         }
     })(),
-    'start board, move 0 to 1': {
-        cur_board: VALID_START_BOARD,
-        move: {
-            pieces: VALID_WHITE_START,
-            from: 1,
-            to: 2
-        },
-    },
+    // GOOD literal scenario add back later (TODO)
+    // 'start board, move 0 to 1': {
+    //     cur_board: VALID_START_BOARD,
+    //     move: {
+    //         pieces: VALID_WHITE_START,
+    //         from: 1,
+    //         to: 2
+    //     },
+    // },
+    // OLD...
     // 'start board, move {1} to {2}': {
     //     cur_board: VALID_START_BOARD,
     //     move: {
@@ -54,16 +56,59 @@ export const legal__white_moves = {
     // },
 } as const
 
+export const illegal__white__general = {
+    // `from` square out of bounds (not on board).
+    "no such 'from' square": {
+        cur_board: VALID_START_BOARD,
+        move: {
+            pieces: VALID_WHITE_START,
+            from: 50,
+            to: 6,
+        },
+        rejects_with: `Circuit execution failed: Error: Assertion failed: No such 'from' square`,
+    },
+    // `to` square out of bounds (not on board).
+    "no such 'to' square": {
+        cur_board: VALID_START_BOARD,
+        move: {
+            pieces: VALID_WHITE_START,
+            from: 1,
+            to: 30,
+        },
+        rejects_with: `Circuit execution failed: Error: Assertion failed: No such 'to' square`,
+    },
+    // Cannot move onto same square within the same turn.
+    "in-place move": {
+        cur_board: VALID_START_BOARD,
+        move: {
+            pieces: VALID_WHITE_START,
+            from: 1,
+            to: 1,
+        },
+        rejects_with: `Circuit execution failed: Error: Assertion failed: Cannot move in-place`,
+    }
+} as const
+
 export const illegal__white_moves = {
     // Legal move pattern however white does NOT have a piece at the claimed
     //   starting index.
     'legal move pattern, but no piece at `from` index': {
         cur_board: VALID_START_BOARD,
         move: {
-            pieces: [{ idx: 2, lights: true }, { idx: 3, lights: true }],
+            pieces: VALID_WHITE_START,
             from: 2,
             to: 1
         },
+        rejects_with: 'Circuit execution failed: Error: Assertion failed: No piece on square',
+    },
+    'piece at `from` index, but illegal move pattern': {
+        cur_board: VALID_START_BOARD,
+        move: {
+            pieces: VALID_WHITE_START,
+            from: 3,
+            to: 24
+        },
+        rejects_with: 'Circuit execution failed: Error: Assertion failed: Invalid move pattern',
     },
 } as const
 

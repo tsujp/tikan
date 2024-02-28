@@ -3,44 +3,7 @@ import { exchangeSalts, player, type Players } from './xx_player'
 import { Noir } from '@noir-lang/noir_js'
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
 import { deserialize } from 'bun:jsc'
-import { legal__white_moves, illegal__white_moves } from './fixtures/xx_lit';
-
-const org_stderr_write = process.stderr.write.bind(process.stderr)
-
-// Docs: https://bun.sh/docs/api/file-io#incremental-writing-with-filesink
-// TODO: We call `.kill()` (and await it) from the test runner on _this_ process, does
-//   that clean up the FileSink correctly?
-
-const log_file = Bun.file('loggies.txt')
-
-// If file is empty or does not exist it's size is 0 (really it's an object
-//   of `[Blob detatched]` but I am not sure how to handle that currently). If
-//   said size 0 use the file as-is, else get a slice at it's length to
-//   effectively append.
-const log_file_view = log_file.size > 0 ? log_file.slice(log_file.size * 2) : log_file
-console.log('at', log_file_view)
-
-const log_w = log_file_view.writer()
-
-// Checks if stderr output is a Roarr log line and if it is writes it to log file
-//   and prevents it from being sent to stderr.
-process.stderr.write = (data, callback) => {
-    // Crude way of detecting if we're logging via Roarr but it'll do for now.
-    // OPT: If this becomes a problem, i.e. we start logging 1-line JSON objects ourselves
-    //      then simply add a prefix to Roarr which is a magic string to match on
-    //      `startsWith` -- also ugly but fine for our purposes.
-    if (data.startsWith('{"')) {
-        // In-process logging, yucky. Probably fine for now.
-        log_w.write(data)
-        log_w.flush() // Want to see our logs immediately.
-        return
-    }
-
-    // Pass through to real `process.stderr.write`.
-    return org_stderr_write(data, callback)
-}
-
-import { Roarr as log } from 'roarr'
+import { legal__white_moves, illegal__white_moves, illegal__white__general } from './fixtures/xx_lit'
 
 const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
 
@@ -51,6 +14,17 @@ process.on('message', (message) => {
             break
     }
 })
+
+function debugLogTestStart(test_name: string) {
+    // TODO: Header format etc.
+    console.log(`  logs for: ${test_name}`)
+    // console.log('cur_board', data)
+    // console.log(`    IN  <-  t=${data.cur_board.turn} h=${data.cur_board.halfmove}`)
+}
+
+function debugLogTestEnd() {
+
+}
 
 //
 function iterateScenarios(scenario_object: {}, test_fn) {
@@ -63,19 +37,28 @@ function iterateScenarios(scenario_object: {}, test_fn) {
                 const name_template = data.next().value
                 let iter_idx = 0
 
-                console.log('  is generator')
+                // console.log('  is generator')
                 for (const gen_data of data) {
                     iter_idx += 1
                     // console.log('    generator test', gen_data.move.to)
                     test(`[${iter_idx}] ${name_template(gen_data.move.from, gen_data.move.to)}`, async () => {
-                        test_fn(gen_data)
+                        console.log('FOOOOOOOO', expect.getState())
+                        // debugLogTestStart(`${iter_idx} ${name_template(gen_data.move.from, gen_data.move.to)}`)
+                        process.send({ tag: 'MSG', msg: `${iter_idx} ${name_template(gen_data.move.from, gen_data.move.to)}`, data: null })
+                        // process.send({ msg: '', data: gen_data })
+                        await test_fn(gen_data)
+                        // console.log('test return:', wat)
+                        debugLogTestEnd()
+                        // console.log('done')
                     })
                 }
             })
         } else {
             // console.log('  is literal scenario')
             test(scenario, async () => {
-                test_fn(data)
+                debugLogTestStart(scenario)
+                await test_fn(data)
+                // debugLogTestEnd()
             })
         }
     })
@@ -134,11 +117,16 @@ describe('(execute) non-recursive', async () => {
     describe('legal', async () => {
         describe('white', async () => {
             iterateScenarios(legal__white_moves, async (data) => {
-                log.debug('received')
+                process.send({ tag: 'DATA_IN', msg: '', data: data })
                 const post_white = await players.white.executeMove(
                     data.cur_board,
                     data.move
                 )
+                process.send({ tag: 'DATA_OUT', msg: '', data: post_white[0] })
+                process.send({ tag: 'DATA_OUT', msg: '', data: post_white[1] })
+                // return 42069
+                // console.log('baraaa')
+                // console.log('blah', post_white)
             })
             // Object.entries(legal__white_moves).forEach(([scenario, data]) => {
             //     console.log('OBJECT MAP')
@@ -164,6 +152,37 @@ describe('(execute) non-recursive', async () => {
             //     //     )
             //     // }, 30000)
             // })
+        })
+    })
+
+    describe('illegal', async () => {
+        describe('white', async () => {
+            iterateScenarios(illegal__white_moves, async (data) => {
+                process.send({ tag: 'DATA_IN', msg: '', data: data })
+                // expect(players.white.executeMove(
+                //     data.cur_board,
+                //     data.move
+                // )).rejects.toThrow(new Error('Circuit execution failed: Error: Assertion failed: Invalid move pattern'))
+                
+                expect(players.white.executeMove(
+                    data.cur_board,
+                    data.move
+                )).rejects.toThrow(new Error(data.rejects_with))
+            })
+        })
+    })
+
+    describe('illegal', async () => {
+        describe('white', async () => {
+            describe('general', async () => {
+                iterateScenarios(illegal__white__general, async (data) => {
+                    process.send({ tag: 'DATA_IN', msg: '', data: data })
+                    expect(players.white.executeMove(
+                        data.cur_board,
+                        data.move
+                    )).rejects.toThrow(new Error(data.rejects_with))
+                })
+            })
         })
     })
 

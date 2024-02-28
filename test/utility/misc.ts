@@ -41,6 +41,10 @@ export async function resolveProjectRootDir(): Promise<string> {
     return iter(process.cwd())
 }
 
+// TODO: Count literal values in here as well as provided template values so-as-to get
+//       the length of the string? Since we only use ANSI escape sequences for colours
+//       we can afford to do this.
+
 // TODO: Docs; Types maybe.
 export function template(strs, ...expressions) {
     return (...values) => {
