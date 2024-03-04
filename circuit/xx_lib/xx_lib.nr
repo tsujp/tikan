@@ -9,26 +9,18 @@ use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
 struct Piece {
   idx: u8,
   lights: bool,
-  // file: u8,
-  // rank: u8,
 }
 
 impl Piece {
-  // fn starting(file: u8, rank: u8) -> Self {
   fn starting(idx: u8) -> Self {
     Self {
-      // file,
-      // rank,
       idx,
       lights: true,
     }
   }
 
-  // fn decompose(self) -> [Field; 3] {
   fn decompose(self) -> [Field; 2] {
     [
-      // self.file as Field,
-      // self.rank as Field,
       self.idx as Field,
       self.lights as Field,
     ]
@@ -36,13 +28,17 @@ impl Piece {
 }
 
 // Players are distinguished as: 0 = white; 1 = black.
-global PLAYER_COUNT: Field = 2;
+global PLAYER_COUNT: u64 = 2;
 
-type PlayerPieces = [Piece; 2];
+// BUG: Type `PlayerPieces` is parsed as a slice instead of an array and so
+//      breaks `main()` circuit methods with error:
+// `---- Slices, references, or any type containing them may not be used in main or a contract function`
+//
+// type PlayerPieces = [Piece; 2];
 
 struct Board {
   // Pieces for each player.
-  players: [PlayerPieces; PLAYER_COUNT],
+  players: [[Piece; 2]; PLAYER_COUNT],
   // State commitments.
   commits: [PedersenPoint; PLAYER_COUNT],
   // Player's turn.
@@ -54,19 +50,6 @@ struct Board {
 // ---------------------------------------------- BOARD
 
 impl Board {
-  // Could use this to bring the starting board into the circuit but they're public
-  //   input anyway so I think _not_ doing that for now is fine.
-  // fn starting() -> Self {
-  //   Self {
-  //     players: [
-  //       [Piece::starting(1, 0), Piece::starting(3, 0)],
-  //       [Piece::starting(1, 4), Piece::starting(3, 4)],
-  //     ],
-  //     turn: 0,
-  //     halfmove: 0,
-  //   }
-  // }
-
   // Nargo appears to crash if I try and print the `.players` member; so an array
   //   of an array of structs. Decompose it ourselves I guess.
   unconstrained fn print(self) {
@@ -106,6 +89,9 @@ impl Board {
   }
 
   fn apply_move(self, move: Move) -> Self {
+      let mut new_players = self.players;
+      let mut new_commits = self.commits;
+
       let from: u8 = move.from;
       let to: u8 = move.to;
 
@@ -143,17 +129,11 @@ impl Board {
       // Move is valid if at most 1 chebyshev-distance in all axes is traversed.
       // assert((file_diff <= 1) & (rank_diff <= 1), "Illegal move pattern");
 
-      // TODO: Update players' piece state.
-
-      // Self {
-      //   players: self.players,
-      //   commits: self.commits, // TODO: Update.
-      //   turn: !self.turn,
-      //   halfmove: self.halfmove + 1,
-      // }
+      // Update players' piece state.
+      new_players[self.turn][piece_idx.unwrap_unchecked()].idx = to;
 
       let new_board = Self {
-        players: self.players,
+        players: new_players,
         commits: self.commits, // TODO: Update.
         turn: !self.turn,
         halfmove: self.halfmove + 1,
@@ -161,6 +141,8 @@ impl Board {
       // dep::std::println(new_board);
       new_board
     }
+
+
 
   // - 3 members in `Piece`, 2 arrays of 2 `Pieces` = 3 * 2 * 2 = 12.
   // - 2 members in `PedersenPoint`, array of 2 = 2 * 2 = 4.
@@ -191,8 +173,6 @@ impl Board {
       }
     }
 
-    // dep::std::println(decomp);
-
     decomp
   }
 }
@@ -202,13 +182,9 @@ impl Board {
 
 struct Move {
   // Players private record of their pieces.
-  pieces: PlayerPieces,
+  pieces: [Piece; 2],
   from: u8,
   to: u8,
-  // from_file: u8,
-  // from_rank: u8,
-  // to_file: u8,
-  // to_rank: u8
 }
 
 impl Move {
@@ -220,11 +196,6 @@ impl Move {
 
     decomp[0] = self.from as Field;
     decomp[1] = self.to as Field;
-
-    // decomp[0] = self.from_file as Field;
-    // decomp[1] = self.from_rank as Field;
-    // decomp[2] = self.to_file as Field;
-    // decomp[3] = self.to_rank as Field;
 
     let mut idx_offset = 2;
 
@@ -238,7 +209,6 @@ impl Move {
     }
 
     // dep::std::println(decomp);
-
     decomp
   }
 }

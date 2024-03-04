@@ -3,7 +3,7 @@ name = 'xx_lib'
 authors = [
   "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
 ]
-compiler_version = '0.23.0+5be9f9d7e2f39ca228df10e5a530474af0331704'
+compiler_version = '0.24.0+cb4c1c5264b95d01f69d99f916ced71ad9cdc9d1'
 type = 'lib'
 entry = 'xx_lib.nr'
 

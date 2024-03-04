@@ -5,9 +5,10 @@ fn main (
   // Player turn inputs.
   cur_board: pub Board, // As claimed by player.
   pst_board: pub Board, // As claimed by player.
+  // move: Move,
   move: Move,
   state_commitment: pub PedersenPoint
-) {
+) -> pub Board {
   let move_hash = pedersen_hash(move.decompose());
   let pst_board_hash = pedersen_hash(pst_board.decompose());
 
@@ -22,7 +23,7 @@ fn main (
   //      only one way to transition between two game-states (nodes) in the rules of
   //      Chess when you can only do so along one edge. There's probably a name for this
   //      type of graph.
-  let real_pst_board = cur_board.apply_move(move);
+  let mut real_pst_board = cur_board.apply_move(move);
 
   // Real and claimed post-move board match. Since `pst_board` is public input to this
   //   circuit if this verifies we can trust that public input `pst_board` is now
@@ -37,6 +38,10 @@ fn main (
 
   assert(computed_commitment.x == state_commitment.x, "Bad commitment x");
   assert(computed_commitment.y == state_commitment.y, "Bad commitment y");
+
+  real_pst_board.commits[!real_pst_board.turn] = state_commitment;
+
+  real_pst_board
 }
 
 // ---------------------------------------------------------------------------
@@ -51,8 +56,6 @@ fn main (
 //
 // TESTS
 //
-use dep::std::println;
-use dep::std::print as pn;
 use dep::lib::{State, state_commitment};
 
 global T__VALID_WHITE_START = [ Piece { idx: 1, lights: true }, Piece { idx: 3, lights: true } ];
@@ -71,87 +74,104 @@ global T__VALID_START_BOARD = Board {
 fn __move_commit(cur_board: Board, move: Move) -> (PedersenPoint, Board) {
   Log::step(f"commit to move");
   let commit = state_commitment(State { cur_board, move });
-  Log::commit(commit);
+  Log::input(move);
+  // Log::input(cur_board.commits);
+  Log::output(commit.0);
   commit
 }
 
 use dep::std::println as puts;
 use dep::std::print as put;
 
-fn __print_commit(data: (PedersenPoint, Board)) {
-  data.1.print(); // Board.
+// fn __print_commit(data: (PedersenPoint, Board)) {
+//   data.1.print(); // Board.
 
-  let x = data.0.x;
-  let y = data.0.y;
-  // dep::std::print(f"  [{x}, {y}]");
-}
+//   let x = data.0.x;
+//   let y = data.0.y;
+// }
 
 struct Log {}
 
 impl Log {
+  fn kind<N>(log_kind: str<N>) {
+    put(f"{log_kind}:")
+  }
+
   pub fn test_name<N, T>(name: fmtstr<N, T>) {
-    put("T_NAME:"); // Test name format string.
+    Log::kind("T_NAME"); // Test name format string.
     puts(name); // Cannot do as `f"0001 {name}"` hence this.
   }
 
   pub fn step<N, T>(step: fmtstr<N, T>) {
-    put("T_STEP:");
+    Log::kind("T_STEP");
     puts(step);
   }
 
   pub fn commit(payload: (PedersenPoint, Board)) {
-    put("T_COMT:");
-    puts(payload.0);
+    Log::kind("T_COMT");
+    put(payload.0);
+    puts(payload.1);
+  }
+
+  pub fn input<T>(data: T) {
+    // put("T___IN:");
+    Log::kind("T___IN");
+    puts(data);
+  }
+
+  pub fn output<T>(data: T) {
+    Log::kind("T__OUT");
+    puts(data);
   }
 }
 
 fn test<Env, N, T>(name: fmtstr<N, T>, f: fn[Env]() -> ()) {
   Log::test_name(name);
-  // Compact-ish one-line.
-  // dep::std::println(f""); // Clear newline after test ellipses.
-  // dep::std::print("[*] ");
-  // dep::std::print(name); // Cannot do as `f"{name}: "` (nested format strings)...
-  // dep::std::print(f"  ->  "); // ...hence this.
-  // f();
-  // dep::std::println(f""); // Final newline.
-
-  // dep::std::println(f""); // Clear newline after test ellipses.
-
-  // dep::std::println(f"0001 ");
-  // dep::std::println(f"0010 ");
-  // dep::std::println(f"0100 ");
-  // dep::std::println(f"0101 ");
-
-  // dep::std::print(f"0001 ");
-  // dep::std::println(name); // Cannot do as `f"{name}: "` (nested format strings)...
-
-  // dep::std::print(f".   IN  <-  ");
-
-  // dep::std::print(f".  OUT  ->  ");
   f();
-  // dep::std::println(f""); // Final newline.
 }
 
+// #[test]
+// fn execute__compass_moves__white__1() {
+//   puts("");
+
+//   let from = 1;
+//   let to_indices = [0, 5, 6, 7, 2]; // Compass rose about `from_idx`.
+
+//   // Don't want to use `.all()` because it requires another closure wrap on our
+//   //   custom `test` function.
+//   for i in 0..to_indices.len() {
+//     let to = to_indices[i];
+
+//     test(f"white compass-rose moves {from} to {to}", || {
+//       let white_move = Move { pieces: T__VALID_WHITE_START, from, to };
+
+//       let white_commit = __move_commit(
+//         T__VALID_START_BOARD,
+//         white_move
+//       );
+//     });
+//   }
+// }
+
 #[test]
-fn compass_moves__white__1() {
+fn white_legit_move() {
   puts("");
 
-  let from = 1;
-  let to_indices = [0, 5, 6, 7, 2]; // Compass rose about `from_idx`.
+  test(f"white legit move", || {
+    let white_move = Move { pieces: T__VALID_WHITE_START, from: 1, to: 5 };
 
-  // Don't want to use `.all()` because it requires another closure wrap on our
-  //   custom `test` function.
-  for i in 0..to_indices.len() {
-    let to = to_indices[i];
+    let white_commit = __move_commit(
+      T__VALID_START_BOARD,
+      white_move
+    );
 
-    test(f"white compass-rose moves {from} to {to}", || {
-      let white_commit = __move_commit(
-        T__VALID_START_BOARD,
-        Move { pieces: T__VALID_WHITE_START, from, to }
-      );
-      __print_commit(white_commit);
+    let white_pst = main(
+      T__VALID_START_BOARD,
+      white_commit.1,
+      white_move,
+      white_commit.0
+    );
 
-      // TODO: Some assert pass so we can log shit.
-    });
-  }
+    Log::output(white_pst)
+  });
 }

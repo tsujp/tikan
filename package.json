@@ -11,24 +11,22 @@
   ],
   "noir": {
     "circuits": {
-      "xx_lib": "./circuit/xx_lib",
-      "xx_start_commit": "./circuit/xx_start_commit",
-      "xx_player": "./circuit/xx_player",
-      "xx_commitment": "./circuit/xx_commitment"
+      "yy_recur": "./circuit/yy_recur",
+      "yy_start": "./circuit/yy_start",
+      "xx_commitment": "./circuit/xx_commitment",
+      "xx_player": "./circuit/xx_player"
     }
   },
   "scripts": {
     "bb:term": "bun run --cwd tooling/bb_term do",
     "bb:web": "bun run --cwd tooling/bb_web do",
     "do:test": "bun run --cwd test test",
-    "do:test:watch": "ROARR_LOG=true ROARR_STREAM=STDERR bun run --cwd test test:watch",
+    "do:test:watch": "bun run --cwd test test:watch",
     "fmt": "dprint fmt"
   },
   "repository": {
     "type": "git"
   },
   "keywords": [],
-  "dependencies": {
-    "roarr": "^7.21.0"
-  }
+  "dependencies": {}
 }

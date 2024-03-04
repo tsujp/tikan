@@ -13,8 +13,8 @@
     "bingbong": "bun index.ts"
   },
   "dependencies": {
-    "@noir-lang/backend_barretenberg": "0.23.0",
-    "@noir-lang/noir_js": "0.23.0",
+    "@noir-lang/backend_barretenberg": "0.24.0-cb4c1c5.nightly",
+    "@noir-lang/noir_js": "0.24.0-cb4c1c5.nightly",
     "chalk": "^5.3.0",
     "ethers": "^5.7.2",
     "fflate": "^0.8.0"
