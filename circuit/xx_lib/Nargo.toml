@@ -1,0 +1,10 @@
+[package]
+name = 'xx_lib'
+authors = [
+  "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
+]
+compiler_version = '0.25.0+3f676051a6073d6eabdc7fee68e4b522334344f6'
+type = 'lib'
+entry = 'xx_lib.nr'
+
+[dependencies]
