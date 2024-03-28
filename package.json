@@ -11,9 +11,12 @@
   ],
   "noir": {
     "circuits": {
-      "player": "./circuit/player",
-      "state_commitment": "./circuit/pedersen",
-      "tikan": "./circuit/lib"
+      "yy_recur": "./circuit/yy_recur",
+      "yy_start": "./circuit/yy_start",
+      "xx_commitment": "./circuit/xx_commitment",
+      "xx_player": "./circuit/xx_player",
+      "linear_player": "./circuit/1_linear/linear_player",
+      "linear_commitment": "./circuit/1_linear/linear_commitment"
     }
   },
   "scripts": {
@@ -26,5 +29,6 @@
   "repository": {
     "type": "git"
   },
-  "keywords": []
+  "keywords": [],
+  "dependencies": {}
 }
