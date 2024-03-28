@@ -12,8 +12,8 @@ if (checks === false) process.exit(1)
 const BACKEND_THREADS = 8 as const
 const wd = process.cwd()
 
-const yy_start = await import(CIRCUITS.bin.find((c) => c.name === 'yy_start').artifact)
-const yy_recur = await import(CIRCUITS.bin.find((c) => c.name === 'yy_recur').artifact)
+const xx_commitment = await import(CIRCUITS.bin.find((c) => c.name === 'xx_commitment').artifact)
+const xx_player = await import(CIRCUITS.bin.find((c) => c.name === 'xx_player').artifact)
 
 // Recursion backend and noir
 const recur_backend = new BarretenbergBackend(yy_recur, {
@@ -43,19 +43,17 @@ console.log('start proof artifacts:', start_proof_artifacts)
 // })
 // console.log('recur execute:', recur_execute)
 
-console.time('generate final proof')
 const final_proof = await recur_noir.generateProof({
     verification_key: start_proof_artifacts.vkAsFields,
     proof: start_proof_artifacts.proofAsFields,
     public_inputs: [],
     key_hash: start_proof_artifacts.vkHash,
 })
-console.timeEnd('generate final proof')
 console.log('final proof:', final_proof)
 
 
-// const verify_final_proof = await recur_noir.verifyProof(final_proof)
-// console.log('verify final proof:', verify_final_proof)
+const verify_final_proof = await recur_noir.verifyProof(final_proof)
+console.log('verify final proof:', verify_final_proof)
 
 
 // const start_proof = await start_noir.generateProof({

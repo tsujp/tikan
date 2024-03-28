@@ -1,0 +1,11 @@
+[package]
+name = 'linear_commitment'
+authors = [
+  "Jordan Ellis 'tsujp' Coppard <$(printf 'amMrZ2l0QHd6Lmh0Cg==' | base64 -d)>",
+]
+compiler_version = '0.24.0+cb4c1c5264b95d01f69d99f916ced71ad9cdc9d1'
+type = 'bin'
+entry = 'linear_commitment.nr'
+
+[dependencies]
+lib = { path = '../linear_lib' }

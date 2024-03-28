@@ -1,5 +1,5 @@
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
-import { Noir } from '@noir-lang/noir_js'
+import { blake2s256, Noir } from '@noir-lang/noir_js'
 import { type InputValue } from '@noir-lang/noirc_abi'
 
 import { checkTestEnvironment } from '../../test/utility/precheck'
@@ -33,7 +33,24 @@ const start_proof = await start_noir.generateProof({
 })
 // console.log('start proof:', start_proof)
 const start_proof_artifacts = await start_backend.generateRecursiveProofArtifacts(start_proof, start_proof.publicInputs.length)
-console.log('start proof artifacts:', start_proof_artifacts)
+// console.log('start proof artifacts:', start_proof_artifacts)
+// Another proof.
+const start_proof_2 = await start_noir.generateProof({
+    some_num: 420
+})
+console.log('start proof 2', start_proof_2)
+console.log('proof', Buffer.from(start_proof_2.proof).toString("hex"))
+const blakey = blake2s256(start_proof_2.proof)
+console.log('blake2s256', Buffer.from(blakey).toString("hex"))
+
+// let rezzy
+// // for (let idx = 0; idx < blakey.length; idx++) {
+// for (let idx = 0; idx < 32; idx++) {
+//     rezzy |= (blakey[idx] << ((32 - idx) * 8))
+// }
+// console.log('bytes32 blake2s256 hash:', rezzy)
+const start_proof_artifacts_2 = await start_backend.generateRecursiveProofArtifacts(start_proof_2, start_proof_2.publicInputs.length)
+console.log('start proof artifacts 2:', start_proof_artifacts_2)
 
 // const recur_execute = await recur_noir.execute({
 //     verification_key: start_proof_artifacts.vkAsFields,
@@ -46,7 +63,8 @@ console.log('start proof artifacts:', start_proof_artifacts)
 console.time('generate final proof')
 const final_proof = await recur_noir.generateProof({
     verification_key: start_proof_artifacts.vkAsFields,
-    proof: start_proof_artifacts.proofAsFields,
+    // proof: start_proof_artifacts.proofAsFields,
+    proof: start_proof_2.proof,
     public_inputs: [],
     key_hash: start_proof_artifacts.vkHash,
 })

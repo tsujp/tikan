@@ -47,7 +47,8 @@ export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
             // Build circuit.
             const chk_build = await logCommand(
                 // XXX: Upstream `--include-keys` to `nargo compile` was removed.
-                [['nargo', 'compile', args.s.do ? args.s.payload : ''], {
+                // TODO: Put `--silence-warnings` under a flag.
+                [['nargo', 'compile', args.s.do ? args.s.payload : '', '--silence-warnings'], {
                     cwd: root
                 }],
                 `[bin] compile '${name}'`,
