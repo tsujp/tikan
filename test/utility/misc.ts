@@ -1,5 +1,6 @@
 import { join } from 'path'
 import chalk from 'chalk'
+import { readableStreamToText } from 'bun'
 import { NonZeroReturnError, type AllCircuits } from '../types'
 
 // TODO: waste time typing this (TypeScript) later.
@@ -40,8 +41,12 @@ export async function resolveProjectRootDir(): Promise<string> {
     return iter(process.cwd())
 }
 
+// TODO: Count literal values in here as well as provided template values so-as-to get
+//       the length of the string? Since we only use ANSI escape sequences for colours
+//       we can afford to do this.
+
 // TODO: Docs; Types maybe.
-function template(strs, ...expressions) {
+export function template(strs, ...expressions) {
     return (...values) => {
         const dict = values[values.length - 1] || {}
         let result = strs[0]
@@ -108,7 +113,9 @@ export async function logCommand(
     err: string
 ) {
     try {
-        const { exitCode, stdout, stderr } = Bun.spawnSync(...cmd)
+        // const { exitCode, stdout, stderr } = Bun.spawn(...cmd)
+        const { exited, stdout, stderr } = Bun.spawn(...cmd)
+        const exitCode = await exited
         console.write(COMMAND_DESC(desc))
         // TODO: PR for standard help messages from Nargo. `nargo help test` and
         //       `nargo test --help` both print in the same format, but
@@ -124,7 +131,8 @@ export async function logCommand(
         if (exitCode !== 0) {
             throw new NonZeroReturnError(err, new TextDecoder().decode(stderr).trim())
         } else {
-            const cmdStdout = new TextDecoder().decode(stdout).trim()
+            // const cmdStdout = new TextDecoder().decode(stdout).trim()
+            const cmdStdout = (await readableStreamToText(stdout)).trim();
 
             console.log(COMMAND_SUCCESS(cmdStdout.length === 0 ? EMPTY_FILLER('empty') : cmdStdout))
         }
