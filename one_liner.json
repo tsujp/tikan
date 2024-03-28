@@ -1,0 +1,33 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "tikan_test": {
+        "title": "Tikan Tests",
+        "description": "TODO",
+        "url": "TODO",
+        "regex": {
+            "basic": {
+                "pattern": "^(?<message>.+) -> (?<board>[^,].+) (?<timestamp>\\d{10})$"
+            }
+        },
+        "timestamp-format": [
+            "%6"
+        ],
+        "timestamp-field": "timestamp",
+        "value": {
+            "message": {
+                "kind": "string"
+            },
+            "timestamp": {
+                "kind": "integer"
+            },
+            "board": {
+                "kind": "struct"
+            }
+        },
+        "sample": [
+            {
+                "line": "white compass-rose moves 1 to 0 -> 0x01,0x01,0x00,0x00,0x01,0x01,0x03,0x01,0x00,0x00,0x15,0x01,0x17,0x01 1708059036"
+            }
+        ]
+    }
+}

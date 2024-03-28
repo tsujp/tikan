@@ -62,3 +62,95 @@ If there isn't an open issue for this bug, consider opening one at https://githu
 
 //     }
 // }
+
+
+
+// TODO: PR for nargo seems to be showing line number after comments making it hard to see the actual line number, or the parsing is just omega borked.
+
+
+
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+This one is probably to do with the chosen error message.
+
+In game.nr:196 the loop:
+```
+for bb_idx in BitboardOf::KNIGHT..BitboardOf::PAWN + 1 { ...
+```
+
+Where BitboardOf::PAWN is (from types.nr:24):
+```
+    global PAWN: u3 = 7;
+```
+
+Fails with error message:
+
+```
+[tikan_player] Testing valid_turn_advances_game... error: Could not determine loop bound at compile-time
+    ┌─ /Users/tsujp/Desktop/tikan/circuit/lib/state/game.nr:195:44
+    │
+195 │         for bb_idx in BitboardOf::KNIGHT..(BitboardOf::PAWN + 1) {
+    │                                            --------------------
+    │
+    = Call stack:
+      1. /Users/tsujp/Desktop/tikan/circuit/player/player.nr:128:13
+      2. /Users/tsujp/Desktop/tikan/circuit/player/player.nr:21:25
+      3. /Users/tsujp/Desktop/tikan/circuit/lib/state/game.nr:195:44
+```
+
+This is because our PAWN value is the maximum value of a u3 (i.e. 7) and so attempting
+to +1 this value is an error which gets swallowed and reported as an inability to
+determine loop bound at compile-time. The latter error is correct but not the reason why.
+In this case the fix is:
+```
+for bb_idx in BitboardOf::KNIGHT..(BitboardOf::PAWN as u4 + 1) {
+```
+Which is ugly to manually do and the compiler should probably do itself since it
+doesn't complain about a loop between a u3 and u4 which is what is now happening.
+
+Found this out as I removed the fog bitboard which moved BitboardOf from u4 back to u3.
+
+Or add syntax from Rust (because an elipses is way too close to double full-stop) that includes
+the end index, i.e. 0..=2 loops 0, 1, 2 whereas 0..2 loops 0, 1. Elipses 0...2 is too close to 0..2.
+
+Update: the compiler does complain about looping within the range u3..u4 it just
+couldn't parse the BitboardOf stuff properly, when I did this:
+```
+let loop_to: u4 = (BitboardOf::PAWN as u4 + 1);
+for bb_idx in BitboardOf::KNIGHT..loop_to {
+```
+It now complains:
+```
+error: Expected type u3, found type u4
+    ┌─ /Users/tsujp/Desktop/tikan/circuit/lib/state/game.nr:197:23
+    │
+197 │         for bb_idx in BitboardOf::KNIGHT..loop_to {
+```
+Trying:
+```
+for bb_idx in (BitboardOf::KNIGHT as u4)..((BitboardOf::PAWN as u4) + 1); {
+```
+Still does not work however, it breaks parsing by the compiler.
+
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+Globals computed from other globals?
+
+So if I have:
+```
+global REQUIRED_BITBOARDS: Field = 8;
+```
+I want to be able to also do:
+```
+global PLAYER_STATE_BITBOARDS: Field = REQUIRED_BITBOARDS - 2;
+```
+Instead of having to hardcode it as:
+```
+global PLAYER_STATE_BITBOARDS: Field = 6;
+```
+As long as the expression ONLY involves other globals I think this should be fine.
+
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------

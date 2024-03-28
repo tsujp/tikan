@@ -3,7 +3,7 @@ use dep::std::option::Option;
 type Bitboard = u64;
 type BitboardIndex = u6; // 6-bits required to index 64-bit bitboard.
 
-global REQUIRED_BITBOARDS: Field = 9;
+global REQUIRED_BITBOARDS: Field = 8;
 
 global PIECE_OFFSET: u3 = 2;
 
@@ -13,16 +13,15 @@ global PIECE_OFFSET: u3 = 2;
 //   man's enum.
 mod BitboardOf {
     // XXX: MUST appear in same order as mod Player.
-    global WHITE: u4 = 0;
-    global BLACK: u4 = 1;
+    global WHITE: u3 = 0;
+    global BLACK: u3 = 1;
     // XXX: MUST appear in same order as mod Piece.
-    global KNIGHT: u4 = 2;
-    global BISHOP: u4 = 3;
-    global ROOK: u4 = 4;
-    global QUEEN: u4 = 5;
-    global KING: u4 = 6;
-    global PAWN: u4 = 7;
-    global FOG: u4 = 8;
+    global KNIGHT: u3 = 2;
+    global BISHOP: u3 = 3;
+    global ROOK: u3 = 4;
+    global QUEEN: u3 = 5;
+    global KING: u3 = 6;
+    global PAWN: u3 = 7;
 }
 
 mod Player {
@@ -74,13 +73,18 @@ struct MoveResult {
     special_bbs: SpecialBbs
 }
 
+// -2 because two players; only need the pieces.
+global PLAYER_STATE_BITBOARDS: Field = 6;
 struct Turn {
     piece: u3,
     from: BitboardIndex,
     to: BitboardIndex,
-    promotion_piece: u2
+    promotion_piece: u2,
+    lights: bool, // Whether the piece in-play should be lights on/off.
+    bbs: [Bitboard; PLAYER_STATE_BITBOARDS]
 }
 
+// TODO: Docs that this struct is now PUBLIC state only.
 struct Game {
     // Square positions accessed in LERLEF order.
     bbs: [Bitboard; REQUIRED_BITBOARDS],
@@ -92,7 +96,18 @@ struct Game {
     // Realistically this will always be true however current bitboard-based
     //   fog computation is very slow, this field exists purely to speed up
     //   tests. I hate it but yadda yadda rewrite into arrays.
-    has_fog: bool
+    has_fog: bool,
+    // TODO: Add the fog bitboard here but call it `lit` instead.
+    lit: [Bitboard; 2],
+    lamp: Bitboard
+}
+
+// XXX: Can this be on `Turn` instead?
+// Private player state since piece types, locations etc are not public information unless
+//   under certain scenarios.
+struct PlayerState {
+    // Square positions accessed in LERLEF order.
+    bbs: [Bitboard; REQUIRED_BITBOARDS]
 }
 
 // TOOD: Put SHIFTED_ANTI_DIAGONAL and other such constants here.

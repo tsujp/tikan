@@ -1,0 +1,64 @@
+{
+    "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+    "aa_roarr": {
+        "title": "Tikan log",
+        "url": "TODO",
+        "description": "TODO",
+        "json": true,
+        "file-pattern": ".*\\.log$",
+        "timestamp-field": "time",
+        "body-field": "message",
+        "level-field": "context/logLevel",
+        "level": {
+            "trace": 10,
+            "debug": 20,
+            "info": 30,
+            "warning": 40,
+            "error": 50,
+            "fatal": 60
+        },
+        "value": {
+            "context": {
+                "kind": "json"
+            },
+            "context/logLevel": {
+                "kind": "integer",
+                "identifier": true,
+                "foreign-key": true
+            },
+            "sequence": {
+                "kind": "string",
+                "identifier": true
+            },
+            "message": {
+                "kind": "string"
+            },
+            "version": {
+                "kind": "string",
+                "hidden": true
+            }
+        },
+        "line-format": [
+            {
+                "field": "time"
+            },
+            " ",
+            {
+                "field": "__level__",
+                "text-transform": "uppercase"
+            },
+            " [",
+            {
+                "field": "sequence"
+            },
+            "] ",
+            {
+                "field": "message"
+            },
+            " -> ",
+            {
+                "field": "context"
+            }
+        ]
+    }
+}

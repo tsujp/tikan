@@ -1,0 +1,71 @@
+2024/02/07:
+  - No recursion until Q3 2024 since the interface is not completely updated yet and no aarch64
+    version is available for local macOS testing meaning it's very, very slow to incrementally
+    test and try things out.
+  - It looks like (to me, as only a mildly educated guess) the semi-new recursive proof API
+    function `std::verify_proof` automatically puts the aggregation into the solved witness?
+    If that's true how does that work...? For learning and curiosity.
+
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+[[ATTEMPT 1]]:
+
+- Make `Game` public state only.
+- Add `bbs` to `Turn` which is private player state.
+    - Previously this checked `Game.bbs` to make sure a piece exists where a player
+      says it does, how to make sure a player does not lie on the input now? As in,
+      a player could just arbitrarily change their `Turn.bbs`.
+- Add checks that pieces only move along the lit areas.
+
+[[PROTOCOL]]:
+
+1. White state commits to the start board, as does black (this can be done automatically by the frontend).
+    - OR the start of the game is all public state so we have a known base to go off of and then
+      subsequent moves can be blinded.
+    - 5 Feb @ 17:47, now thinking have the public state but each player goes "ok" and that ok is them
+      removing their _stuff_ from it and committing against that board so from then on
+      each player can be sure the initial bitboards are correct.
+2. Each turn includes current state commitment, as well as previous to prevent lying
+  about their bbs this turn.
+ 
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+// Q: Bun, can I get dependency tree of a file? So in xx.e2e.test.ts can I go "show me all
+//    files this file imports" but get that at runtime to add to the watched file list?
+
+/// ------------------------------------------------------------------
+/// ------------------------------------------------------------------
+
+Trying to print:
+```
+global PLAYER_COUNT: Field = 2;
+type PlayerPieces = [Piece; 2];
+struct Board {
+  players: [PlayerPieces; PLAYER_COUNT],
+  commits: [PedersenPoint; PLAYER_COUNT],
+  turn: u1,
+  halfmove: u8,
+}
+struct Piece {
+  lights: bool,
+  idx: u8,
+  // file: u8,
+  // rank: u8,
+}
+dep::std::println(a_board);
+```
+
+Results in:
+
+```
+Message:  called `Option::unwrap()` on a `None` value
+Location: compiler/noirc_printable_type/src/lib.rs:305
+
+This is a bug. We may have already fixed this in newer versions of Nargo so try searching for similar issues at https://github.com/noir-lang/noir/issues/.
+If there isn't an open issue for this bug, consider opening one at https://github.com/noir-lang/noir/issues/new?labels=bug&template=bug_report.yml
+```
+
+Even though there is no option here, it appears to fail specifically with the `players` member. Try and do an MRE.
+`players` is an array of 2 elements, each element is itself an array of 2 Piece structs.
