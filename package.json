@@ -11,7 +11,8 @@
   ],
   "noir": {
     "circuits": {
-      "xx_commitment": "./circuit/xx_commitment",
+      "xx_util": "./circuit/xx_util",
+      "xx_aggregate": "./circuit/xx_aggregate",
       "xx_player": "./circuit/xx_player"
     }
   },

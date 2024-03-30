@@ -34,63 +34,32 @@ global PLAYER_COUNT: u64 = 2;
 //      breaks `main()` circuit methods with error:
 // `---- Slices, references, or any type containing them may not be used in main or a contract function`
 //
-// type PlayerPieces = [Piece; 2];
+type PlayerPieces = [Piece; 2];
 
 struct Board {
+  // OPT: Could have the board input only the pieces of the player whose turn it
+  //      is but this would require more orchestration to play, see gate difference
+  //      later on.
+  //
   // Pieces for each player.
-  players: [[Piece; 2]; PLAYER_COUNT],
-  // State commitments.
-  commits: [PedersenPoint; PLAYER_COUNT],
+  // players: [[Piece; 2]; PLAYER_COUNT],
+  players: [PlayerPieces; PLAYER_COUNT],
   // Player's turn.
   turn: u1,
   halfmove: u8,
 }
 
+// - 2 members in `Piece`, 2 arrays of 2 `Pieces` = 2 * 2 * 2 = 8.
+// - Other `Board` members = 2.
+// => 8 + 2 = 10.
+global BOARD_ORDINAL: Field = 10;
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- BOARD
 
 impl Board {
-  // Nargo appears to crash if I try and print the `.players` member; so an array
-  //   of an array of structs. Decompose it ourselves I guess.
-  unconstrained fn print(self) {
-    let decomposed = self.decompose();
-
-    // Nah, just do it the mostly old-fashioned way.
-    let tn = decomposed[0];
-    let hlf = decomposed[1];
-    let w_x = decomposed[2];
-    let w_y = decomposed[3];
-    let b_x = decomposed[4];
-    let b_y = decomposed[5];
-
-    // dep::std::print(f"t=u-{tn} ");
-    // dep::std::print(f"h=u-{hlf}  "); // 2 pad on end.
-
-    for _i in 6..decomposed.len() {
-      let i = _i as u8;
-
-      let k = if i % 2 == 0 {
-        // dep::std::print(f"  "); // Pad between pieces.
-        "idx"
-      } else {
-        "lit"
-      };
-
-      let v = decomposed[i];
-
-      // dep::std::print(f"{k}=u-{v} ");
-    }
-
-    // dep::std::print(f"   wht={ x={w_x}, y={w_y} }   ");
-    // dep::std::print(f"blk={ x={b_x}, y={b_y} }");
-
-    // Or if quick and dirty:
-    // dep::std::print(self.decompose());
-  }
-
   fn apply_move(self, move: Move) -> Self {
       let mut new_players = self.players;
-      let mut new_commits = self.commits;
 
       let from: u8 = move.from;
       let to: u8 = move.to;
@@ -109,9 +78,9 @@ impl Board {
       }
       assert(piece_idx.is_some(), "No piece on square");
 
-      // The only piece in this game (all pieces are the same type) can move omnidirectionally
-      //   one square only.
-      // Not an efficient but this is for prototyping so who cares.
+      // The only piece in this game (all pieces are the same type) can move
+      //   omnidirectionally one square only.
+      // Not efficient but this is for prototyping so who cares.
       let move_delta = if to > from {
         to - from
       } else {
@@ -134,22 +103,14 @@ impl Board {
 
       let new_board = Self {
         players: new_players,
-        commits: self.commits, // TODO: Update.
         turn: !self.turn,
         halfmove: self.halfmove + 1,
       };
-      // dep::std::println(new_board);
       new_board
     }
 
-
-
-  // - 3 members in `Piece`, 2 arrays of 2 `Pieces` = 3 * 2 * 2 = 12.
-  // - 2 members in `PedersenPoint`, array of 2 = 2 * 2 = 4.
-  // - Other `Board` members = 2.
-  // = 12 + 4 + 2 = 18.
-  fn decompose(self) -> [Field; 14] {
-    let mut decomp = [0; 14];
+  fn decompose(self) -> [Field; BOARD_ORDINAL] {
+    let mut decomp = [0; BOARD_ORDINAL];
 
     decomp[0] = self.turn as Field;
     decomp[1] = self.halfmove as Field;
@@ -158,11 +119,6 @@ impl Board {
 
     // Each player.
     for i in 0..PLAYER_COUNT {
-      // Commitments.
-      decomp[idx_offset] = self.commits[i].x;
-      decomp[idx_offset + 1] = self.commits[i].y;
-      idx_offset += 2;
-
       // Pieces.
       for j in 0..self.players[i].len() {
         let pce_decomp = self.players[i][j].decompose();
@@ -182,17 +138,20 @@ impl Board {
 
 struct Move {
   // Players private record of their pieces.
-  pieces: [Piece; 2],
+  // pieces: [Piece; 2],
+  pieces: PlayerPieces,
   from: u8,
   to: u8,
 }
 
+// - 2 members in `Piece`, 1 array of 2 `Pieces` =23 * 1 * 2 = 4.
+// - Other `Move` members = 2.
+// => 4 + 2 = 6.
+global MOVE_ORDINAL: Field = 6;
+
 impl Move {
-  // - 3 members in `Piece`, 1 array of 2 `Pieces` = 3 * 1 * 2 = 6.
-  // - 4 fields in `Move` struct.
-  // = 6 + 4 = 10.
-  fn decompose(self) -> [Field; 6] {
-    let mut decomp = [0; 6];
+  fn decompose(self) -> [Field; MOVE_ORDINAL] {
+    let mut decomp = [0; MOVE_ORDINAL];
 
     decomp[0] = self.from as Field;
     decomp[1] = self.to as Field;
@@ -208,7 +167,6 @@ impl Move {
       }
     }
 
-    // dep::std::println(decomp);
     decomp
   }
 }

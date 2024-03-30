@@ -1,20 +1,20 @@
 import { template } from '../utility/misc'
 
-const VALID_WHITE_START = [{ idx: 1, lights: true }, { idx: 3, lights: true }] as const
+export const VALID_WHITE_START = [{ idx: 1, lights: true }, {
+    idx: 3,
+    lights: true,
+}] as const
 
-const VALID_BLACK_START = [{ idx: 21, lights: true }, { idx: 23, lights: true }] as const
+export const VALID_BLACK_START = [{ idx: 21, lights: true }, {
+    idx: 23,
+    lights: true,
+}] as const
 
-const VALID_START_BOARD = {
+export const VALID_START_BOARD = {
     turn: 0,
     halfmove: 0,
-    commits: [
-        { x: '0x0', y: '0x0' },
-        { x: '0x0', y: '0x0' },
-    ],
-    players: [
-        VALID_WHITE_START,
-        VALID_BLACK_START,
-    ]
+    commits: [{ x: '0x0', y: '0x0' }, { x: '0x0', y: '0x0' }],
+    players: [VALID_WHITE_START, VALID_BLACK_START],
 } as const
 
 export const legal__white_moves = {
@@ -32,7 +32,7 @@ export const legal__white_moves = {
                     pieces: VALID_WHITE_START,
                     from: from_idx,
                     to: to_idx,
-                }
+                },
             }
         }
     })(),
@@ -65,7 +65,8 @@ export const illegal__white__general = {
             from: 50,
             to: 6,
         },
-        rejects_with: `Circuit execution failed: Error: Assertion failed: No such 'from' square`,
+        rejects_with:
+            `Circuit execution failed: Error: Assertion failed: No such 'from' square`,
     },
     // `to` square out of bounds (not on board).
     "no such 'to' square": {
@@ -75,18 +76,20 @@ export const illegal__white__general = {
             from: 1,
             to: 30,
         },
-        rejects_with: `Circuit execution failed: Error: Assertion failed: No such 'to' square`,
+        rejects_with:
+            `Circuit execution failed: Error: Assertion failed: No such 'to' square`,
     },
     // Cannot move onto same square within the same turn.
-    "in-place move": {
+    'in-place move': {
         cur_board: VALID_START_BOARD,
         move: {
             pieces: VALID_WHITE_START,
             from: 1,
             to: 1,
         },
-        rejects_with: `Circuit execution failed: Error: Assertion failed: Cannot move in-place`,
-    }
+        rejects_with:
+            `Circuit execution failed: Error: Assertion failed: Cannot move in-place`,
+    },
 } as const
 
 export const illegal__white_moves = {
@@ -97,18 +100,20 @@ export const illegal__white_moves = {
         move: {
             pieces: VALID_WHITE_START,
             from: 2,
-            to: 1
+            to: 1,
         },
-        rejects_with: 'Circuit execution failed: Error: Assertion failed: No piece on square',
+        rejects_with:
+            'Circuit execution failed: Error: Assertion failed: No piece on square',
     },
     'piece at `from` index, but illegal move pattern': {
         cur_board: VALID_START_BOARD,
         move: {
             pieces: VALID_WHITE_START,
             from: 3,
-            to: 24
+            to: 24,
         },
-        rejects_with: 'Circuit execution failed: Error: Assertion failed: Invalid move pattern',
+        rejects_with:
+            'Circuit execution failed: Error: Assertion failed: Invalid move pattern',
     },
 } as const
 

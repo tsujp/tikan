@@ -1,9 +1,9 @@
-import { beforeAll, describe, test, expect } from 'bun:test'
-import { exchangeSalts, player, type Players } from './xx_player'
-import { Noir } from '@noir-lang/noir_js'
 import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
+import { Noir } from '@noir-lang/noir_js'
 import { deserialize } from 'bun:jsc'
-import { legal__white_moves, illegal__white_moves, illegal__white__general } from './fixtures/xx_lit'
+import { beforeAll, describe, expect, test } from 'bun:test'
+import { VALID_START_BOARD, VALID_WHITE_START, illegal__white__general, illegal__white_moves, legal__white_moves } from './fixtures/xx_lit'
+import { type Players, exchangeSalts, player } from './xx_player'
 
 const { promise: c_promise, resolve: c_resolve } = Promise.withResolvers()
 
@@ -15,42 +15,67 @@ process.on('message', (message) => {
     }
 })
 
-function debugLogTestStart(test_name: string) {
+function debugLogTestStart (test_name: string) {
     // TODO: Header format etc.
     console.log(`  logs for: ${test_name}`)
     // console.log('cur_board', data)
     // console.log(`    IN  <-  t=${data.cur_board.turn} h=${data.cur_board.halfmove}`)
 }
 
-function debugLogTestEnd() {
-
+function debugLogTestEnd () {
+    console.log('test over ----------------')
 }
 
 //
-function iterateScenarios(scenario_object: {}, test_fn) {
+function iterateScenarios (scenario_object: {}, test_fn) {
     Object.entries(scenario_object).forEach(([scenario, data]) => {
         // console.log('top level loop ->', scenario)
 
         if (data[Symbol.toStringTag] === 'Generator') {
             describe(scenario, async () => {
-
                 const name_template = data.next().value
                 let iter_idx = 0
+
+                // TODO: Get test name for full path, right now we only have the scenario name
+                //       i.e. `start board > move 1 to 0`, want the prefixed of
+                //       `(execute) recursive > legal > white` as well. When
+                //       `expect.getState().currentTestName` is added to Bun.
+                // expect.getState().currentTestName
 
                 // console.log('  is generator')
                 for (const gen_data of data) {
                     iter_idx += 1
                     // console.log('    generator test', gen_data.move.to)
-                    test(`[${iter_idx}] ${name_template(gen_data.move.from, gen_data.move.to)}`, async () => {
-                        console.log('FOOOOOOOO', expect.getState())
-                        // debugLogTestStart(`${iter_idx} ${name_template(gen_data.move.from, gen_data.move.to)}`)
-                        process.send({ tag: 'MSG', msg: `${iter_idx} ${name_template(gen_data.move.from, gen_data.move.to)}`, data: null })
-                        // process.send({ msg: '', data: gen_data })
-                        await test_fn(gen_data)
-                        // console.log('test return:', wat)
-                        debugLogTestEnd()
-                        // console.log('done')
-                    })
+                    test(
+                        `[${iter_idx}] ${
+                            name_template(gen_data.move.from, gen_data.move.to)
+                        }`,
+                        async () => {
+                            // debugLogTestStart(
+                            //     `${iter_idx} ${
+                            //         name_template(gen_data.move.from, gen_data.move.to)
+                            //     }`,
+                            // )
+                            // process.send({
+                            //     tag: 'MSG',
+                            //     msg: `${iter_idx} ${
+                            //         name_template(gen_data.move.from, gen_data.move.to)
+                            //     }`,
+                            //     data: null,
+                            // })
+                            // process.send({ msg: '', data: gen_data })
+                            const wat = await test_fn(gen_data)
+                            console.log('test return:', wat)
+                            // debugLogTestEnd()
+                            // process.send({
+                            //     tag: 'MSG',
+                            //     msg: '----------------- test over',
+                            //     data: null,
+                            // })
+                            // console.log('done')
+                        },
+                        60000,
+                    ) // TODO: Timeout configurable.
                 }
             })
         } else {
@@ -75,30 +100,45 @@ const wd = process.cwd()
 //   to come in and be resolved.
 const CIRCUITS = await c_promise
 
-const commitment = await import(CIRCUITS.bin.find((c) => c.name === 'xx_commitment').artifact)
+const commitment = await import(CIRCUITS.bin.find((c) => c.name === 'xx_util').artifact)
 const player_circ = await import(CIRCUITS.bin.find((c) => c.name === 'xx_player').artifact)
+const aggregate_circ = await import(
+    CIRCUITS.bin.find((c) => c.name === 'xx_aggregate').artifact
+)
 
 import { getRandomValues } from 'crypto'
-function gimmeSalt() {
+function gimmeSalt () {
     const value = new BigUint64Array(1)
     // salt.ours = hexInt(getRandomValues(value)[0].toString(16))
     return `0x${getRandomValues(value)[0].toString(16)}`
 }
 
-describe('(execute) non-recursive', async () => {
+describe('(execute) recursive', async () => {
     let players: Players
     const commit_nr = new Noir(commitment)
 
     // Instantiate required backends and create start position proofs.
     beforeAll(async () => {
-
         // const { returnValue: white_commit } = await commit.execute({
         //     board: board_start,
         //     player: 0,
         //     pieces: white_start,
         //     salt: 0,
         // })
-        const w = await player('white', player_circ, BACKEND_THREADS, commit_nr)
+        const w = await player(
+            'white',
+            player_circ,
+            aggregate_circ,
+            BACKEND_THREADS,
+            commit_nr,
+        )
+        const b = await player(
+            'black',
+            player_circ,
+            aggregate_circ,
+            BACKEND_THREADS,
+            commit_nr,
+        )
 
         // const { returnValue: black_commit } = await commit.execute({
         //     board: board_start,
@@ -110,21 +150,34 @@ describe('(execute) non-recursive', async () => {
 
         players = {
             white: w,
-            // black: b,
+            black: b,
         }
     })
 
     describe('legal', async () => {
         describe('white', async () => {
             iterateScenarios(legal__white_moves, async (data) => {
-                process.send({ tag: 'DATA_IN', msg: '', data: data })
-                const post_white = await players.white.executeMove(
-                    data.cur_board,
-                    data.move
-                )
-                process.send({ tag: 'DATA_OUT', msg: '', data: post_white[0] })
-                process.send({ tag: 'DATA_OUT', msg: '', data: post_white[1] })
-                // return 42069
+                await players.white.executeMove(data.cur_board, data.move)
+
+                // ---- Execute.
+                // process.send({ tag: 'DATA_IN', msg: '', data: data })
+                // const post_white = await players.white.executeMove(
+                //     data.cur_board,
+                //     data.move,
+                // )
+                // process.send({ tag: 'DATA_OUT', msg: '', data: post_white[0] })
+                // process.send({ tag: 'DATA_OUT', msg: '', data: post_white[1] })
+                // ---- Prove.
+
+                // const da_proof = await players.white.proofStuff(data.cur_board, data.move)
+
+                // console.log('da proof:', da_proof)
+
+                // // XXX: Opponent receives `da_proof` and generates the proof artifacts for their
+                // //      own verification.
+                // // TODO: Change to `players.black`.
+                // const pf_a = await players.white.aggregateProof(da_proof)
+
                 // console.log('baraaa')
                 // console.log('blah', post_white)
             })
@@ -155,36 +208,88 @@ describe('(execute) non-recursive', async () => {
         })
     })
 
-    describe('illegal', async () => {
-        describe('white', async () => {
-            iterateScenarios(illegal__white_moves, async (data) => {
-                process.send({ tag: 'DATA_IN', msg: '', data: data })
-                // expect(players.white.executeMove(
-                //     data.cur_board,
-                //     data.move
-                // )).rejects.toThrow(new Error('Circuit execution failed: Error: Assertion failed: Invalid move pattern'))
-
-                expect(players.white.executeMove(
-                    data.cur_board,
-                    data.move
-                )).rejects.toThrow(new Error(data.rejects_with))
+    describe('sequence', async () => {
+        test('white proof, black verify', async () => {
+            console.write('[white] execute move... ')
+            const white_exec = await players.white.executeMove(VALID_START_BOARD, {
+                pieces: VALID_WHITE_START,
+                from: 1,
+                to: 5,
             })
+            console.write('ok / prove move... ')
+            const white_proof = await players.white.proveMove(white_exec.witness)
+            console.log('ok')
+            // FUTURE JORDAN: Do a few legal moves of back and forth white and black
+            //                verifying etc.
         })
+
+        test('white legal, black legal', async () => {
+            console.write('[white] execute move... ')
+            const white_exec = await players.white.executeMove(VALID_START_BOARD, {
+                pieces: VALID_WHITE_START,
+                from: 1,
+                to: 5,
+            })
+            console.write('ok / prove move... ')
+            const white_proof = await players.white.proveMove(white_exec.witness)
+            console.log('ok')
+
+            //
+            // White's proof gets sent over the wire to black.
+            //
+
+            // Black creates the proof artifacts locally, and uses those
+            //   to aggregate white's proof.
+            console.write('[black] aggregate white proof... ')
+            const white_aggregate = await players.black.aggregateProof(white_proof)
+            console.write('ok / verify aggregate proof... ')
+            const white_good = await players.black.verifyAggregateProof(white_aggregate)
+            console.log('ok')
+
+            // Success, now black can play their move.
+
+            // console.log('da proof:', da_proof)
+
+            // // XXX: Opponent receives `da_proof` and generates the proof artifacts for their
+            // //      own verification.
+            // // TODO: Change to `players.black`.
+            // const pf_a = await players.white.aggregateProof(da_proof)
+        }, 60000)
+
+        // TODO:
+        // test('white legal, black illegal', async () => {
+
+        // })
     })
 
-    describe('illegal', async () => {
-        describe('white', async () => {
-            describe('general', async () => {
-                iterateScenarios(illegal__white__general, async (data) => {
-                    process.send({ tag: 'DATA_IN', msg: '', data: data })
-                    expect(players.white.executeMove(
-                        data.cur_board,
-                        data.move
-                    )).rejects.toThrow(new Error(data.rejects_with))
-                })
-            })
-        })
-    })
+    // describe('illegal', async () => {
+    //     describe('white', async () => {
+    //         iterateScenarios(illegal__white_moves, async (data) => {
+    //             process.send({ tag: 'DATA_IN', msg: '', data: data })
+    //             // expect(players.white.executeMove(
+    //             //     data.cur_board,
+    //             //     data.move
+    //             // )).rejects.toThrow(new Error('Circuit execution failed: Error: Assertion failed: Invalid move pattern'))
+
+    //             expect(players.white.executeMove(data.cur_board, data.move))
+    //                 .rejects
+    //                 .toThrow(new Error(data.rejects_with))
+    //         })
+    //     })
+    // })
+
+    // describe('illegal', async () => {
+    //     describe('white', async () => {
+    //         describe('general', async () => {
+    //             iterateScenarios(illegal__white__general, async (data) => {
+    //                 process.send({ tag: 'DATA_IN', msg: '', data: data })
+    //                 expect(players.white.executeMove(data.cur_board, data.move))
+    //                     .rejects
+    //                     .toThrow(new Error(data.rejects_with))
+    //             })
+    //         })
+    //     })
+    // })
 
     // describe('illegal', async () => {
     //     describe('white', async () => {

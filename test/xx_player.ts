@@ -2,26 +2,35 @@ import { BarretenbergBackend, ProofData } from '@noir-lang/backend_barretenberg'
 import { Noir } from '@noir-lang/noir_js'
 import { type InputValue } from '@noir-lang/noirc_abi'
 import { getRandomValues } from 'crypto'
-import { type Game, type Circuit, type HexInt, type Turn, hexUint64 } from './types'
+import { type Circuit, type Game, type HexInt, type Turn, hexUint64 } from './types'
 
 export type Player = {
     name: string
     getSalt(): HexInt
     setOpponentSalt(salt: HexInt): void
     commitTurn(turn: object): Promise<InputValue>
-    executeMove(board: any, move: any, commitment?: Promise<InputValue> | string): Promise<ProofData>
-    playMove(board: any, move: any, commitment?: Promise<InputValue> | string): Promise<ProofData>
+    executeMove(
+        board: any,
+        move: any,
+        commitment?: Promise<InputValue> | string,
+    ): Promise<ProofData>
+    playMove(
+        board: any,
+        move: any,
+        commitment?: Promise<InputValue> | string,
+    ): Promise<ProofData>
 }
 
-export type Players = { white: Player; black: Player;[key: string]: Player }
+export type Players = { white: Player; black: Player; [key: string]: Player }
 
 // A simple player closure.
-export async function player(
+export async function player (
     player_name: string,
     game_circuit: Circuit,
+    aggregate_circuit: Circuit,
     backend_threads: number,
     commitment: Noir,
-): Promise<Player> {
+) {
     const name = player_name
     // [GAME] Intermediate proofs, proof artifacts.
     const game_backend = new BarretenbergBackend(game_circuit, {
@@ -31,6 +40,13 @@ export async function player(
     // [GAME] Circuit execution.
     const game_noir = new Noir(game_circuit, game_backend)
     // const game_noir = new Noir(game_circuit)
+
+    // FOO: .
+    const aggregate_backend = new BarretenbergBackend(aggregate_circuit, {
+        threads: backend_threads,
+    })
+    const aggregate_noir = new Noir(aggregate_circuit, aggregate_backend)
+    // ---/
 
     // [STATE COMMITMENT] Circuit execution and witness solving.
     const commit = commitment
@@ -43,19 +59,19 @@ export async function player(
     // [START PROOF] Create start proof for seed of the remaining recursive proofs.
     // console.log(player_name, 'start_commitment:', start_commitment)
 
-    function getSalt() {
+    function getSalt () {
         const value = new BigUint64Array(1)
         // salt.ours = hexInt(getRandomValues(value)[0].toString(16))
         salt.ours = hexUint64(getRandomValues(value)[0])
         return salt.ours
     }
 
-    function setOpponentSalt(s: HexInt) {
+    function setOpponentSalt (s: HexInt) {
         salt.theirs = s
     }
 
     // TODO: Types for this from circuit.
-    async function commitTurn(game: Game, turn: Turn): Promise<InputValue> {
+    async function commitTurn (game: Game, turn: Turn): Promise<InputValue> {
         const turn_salt = salt.ours?.value
 
         if (turn_salt == null) {
@@ -73,204 +89,100 @@ export async function player(
     }
 
     // TODO: Types from the circuit.
-    async function executeMove(
+    async function executeMove (
         board: any,
         move: any,
+        // So we can purposefully pass a garbage commitment to test that it SHOULD fail.
         commitment?: Promise<InputValue> | string,
     ) {
-        // console.log(`[${player_name}] commits to move...`)
-        // console.log('bing bong')
-        process.send({ tag: 'MSG', msg: `${player_name} commits to move...`, data: null })
+        // process.send({ tag: 'MSG', msg: `${player_name} commits to move...`, data: null })
 
-        const { returnValue: rv_commit } = await commit.execute({
+        // const { returnValue: rv_commit } = await commit.execute({
+        const move_commit = await commit.execute({
+            // TODO: Make these functions to abstract away Noir's `Option`.
             input: {
                 state: {
                     _is_some: true,
                     _value: {
                         cur_board: board,
                         move,
-                    }
-                }
-            }
+                    },
+                },
+            },
         })
 
-        // console.log('commit result is', rv_commit)
-        return rv_commit.state_commitment._value
-    }
-
-
-    // TODO: Types from the circuit.
-    async function playMove(
-        board: any,
-        move: any,
-        commitment?: Promise<InputValue> | string,
-    ) {
-        // let turn_commitment = commitment ?? await commitTurn(game, turn)
-
-        // if (turn_commitment == null) {
-        //     // TODO: Dump the details etc.
-        //     throw new Error(`could not generate move commitment for ${name}`)
-        // }
-
-        // console.log(`${name}'s move commitment: ${turn_commitment}`)
-
-        // ------------------ Get witness and new board with our move applied.
-        console.log(`[${player_name}] executing game circuit with move...`)
-
-        console.log('board', board)
-        console.log('move', move)
-
-        const { returnValue: rv_commit } = await commit.execute({
-            input: {
-                state: {
-                    _is_some: true,
-                    _value: {
-                        cur_board: board,
-                        move,
-                    }
-                }
-            }
-        }, (name, inputs) => new Promise((resolve, reject) => {
-            switch (name) {
-                case 'assert_message': {
-                    const payload = JSON.parse(String.fromCharCode(...inputs[1]))
-                    switch (payload.kind) {
-                        case 'string': {
-                            const msg = String.fromCharCode(...inputs[0])
-                            console.error('ASSERT FAIL:', msg)
-                            resolve([]) // No return value for assertion messages (they stdout to us).
-                            break
-                        }
-                    }
-                }
-                case 'print': {
-                    // console.log('inputs', inputs)
-                    // console.log('inputs', String.fromCharCode(...inputs[2]))
-                    const payload = JSON.parse(String.fromCharCode(...inputs[2]))
-                    switch (payload.kind) {
-                        case 'array': {
-                            if (inputs[1].length !== payload.length) {
-                                console.error('MISMATCH PAYLOAD LENGTH')
-                            }
-                            switch (payload.type.kind) {
-                                case 'field': {
-                                    console.log(inputs[1])
-                                    resolve([]) // No return value for assertion messages (they stdout to us).
-                                    break
-                                }
-                            }
-                        }
-                        case 'unsignedinteger': {
-                            console.log(inputs[1])
-                            resolve([]) // No return value for assertion messages (they stdout to us).
-                            break
-                        }
-                    }
-                }
-            }
-
-            reject('NAH MATE I CANNAE DO IT')
-        }))
-
-        console.log('commitment:', rv_commit.state_commitment._value)
-
-        const data = await game_noir.generateFinalProof({
+        const game_execd = await game_noir.execute({
             cur_board: board,
-            pst_board: rv_commit.state_commitment._value[1],
-            move,
-            state_commitment: rv_commit.state_commitment._value[0]
+            // TODO: Same for getting value return from a circuit execution that involves Noir `Option`.
+            pst_board: move_commit.returnValue.state_commitment._value[1], // XXX: Why is it 1 when tuple is at 0?
+            move: move,
+            state_commitment: move_commit.returnValue.state_commitment._value[0],
         })
 
-        const valid_move = await game_noir.verifyFinalProof(data)
-        console.log('valid?', valid_move)
-        // console.log('done')
-        // console.log('data:', data)
-
-
-        // const verified = await bootstrap_backend.verifyIntermediateProof({
-        //     proof,
-        //     publicInputs,
-        // })
-        // expect(verified).toBeTrue()
-
-        // process.stdout.write(`generating ${name}'s move proof... `)
-        // const proof = await game_backend.generateFinalProof(witness)
-        // const proof = await game.generateFinalProof({
-        //    board: board,
-        //    move,
-        //    move_salt: salt.ours?.value,
-        //    move_commitment,
-        // })
-        // console.log('done')
-
-        // return proof
-        return data
+        return game_execd
     }
 
-    async function acceptTurn(enemy_turn_data: object) {
-        // console.log(enemy_turn_data)
-        const valid_move = await game_backend.verifyFinalProof(enemy_turn_data)
-
-        return valid_move
+    // TODO: Types.
+    async function proveMove (witness: any) {
+        const proof = await game_backend.generateProof(witness)
+        return proof
     }
 
-
-    async function protoAttemptOne(
-        game: Game,
-        turn: Turn
-    ) {
-        // COMMITMENT
-        // Playing a turn involves comitting your move against the public board state, do that
-        //   first.
-        const turn_salt = salt.ours?.value
-        if (turn_salt == null) {
-            throw new Error(`salt for player '${name}' not defined`)
-        }
-        console.log('[commit] salt:', turn_salt)
-        // console.log('[commit] commit to:', game, turn, turn_salt)
-        const fake_turn = structuredClone(turn)
-        fake_turn.bbs[0] = '0x42'
-        const { returnValue: turn_commitment } = await state_commitment.execute({
-            game,
-            // turn,
-            turn: fake_turn,
-            turn_salt,
+    async function proofStuff (board: any, move: any) {
+        const pst_exec = await commit.execute({
+            input: {
+                state: {
+                    _is_some: true,
+                    _value: {
+                        cur_board: board,
+                        move,
+                    },
+                },
+            },
         })
-        console.log('[commit] commitment:', turn_commitment)
 
+        console.log(pst_exec.returnValue.state_commitment._value)
 
-        // EXECUTION / GAME
-        process.stdout.write(`[game] executing move... `)
-        const { witness, returnValue: new_board } = await game_noir.execute({
-            game,
-            turn,
-            turn_salt,
-            turn_commitment,
-        }, (name, inputs) => new Promise((resolve, reject) => {
-            switch (name) {
-                case 'assert_message': {
-                    const payload = JSON.parse(String.fromCharCode(...inputs[1]))
-                    switch (payload.kind) {
-                        case 'string': {
-                            const msg = String.fromCharCode(...inputs[0])
-                            console.error('ASSERT FAIL:', msg)
-                            resolve([]) // No return value for assertion messages (they stdout to us).
-                        }
-                    }
-                }
-            }
+        const blah = await game_noir.generateProof({
+            cur_board: board,
+            pst_board: pst_exec.returnValue.state_commitment._value[1],
+            move: move,
+            state_commitment: pst_exec.returnValue.state_commitment._value[0],
+            // public: ,
+            // proof: ,
+            // vk: ,
+            // vk_hash: ,
+        })
 
-            reject('NAH MATE I CANNAE DO IT')
-        }))
-        console.log('done')
-        console.log('[game] new public state:', new_board)
+        return blah
+    }
 
-        return
+    async function aggregateProof (proof: ProofData) {
+        // Do not trust artifacts sent by other player, generate them ourselves.
+        const artifacts = await game_backend.generateRecursiveProofArtifacts(
+            proof,
+            proof.publicInputs.length,
+        )
 
-        // TEMP: Just have the circuit execute for now, while we figure out the protocol then
-        //       try it with proofs too.
-        // console.log('CIRCUIT EXECUTE', new_board)
-        // return
+        // Attempt to aggregate their proof to the game state.
+        const aggregate_proof = await aggregate_noir.generateProof({
+            public: proof.publicInputs,
+            proof: artifacts.proofAsFields,
+            vk: artifacts.vkAsFields,
+            vk_hash: artifacts.vkHash,
+        })
+
+        return aggregate_proof
+
+        // console.log('aggregate proof:', aggregate_proof)
+
+        // const verify_aggregate = await aggregate_noir.verifyProof(aggregate_proof)
+        // console.log('verified?', verify_aggregate)
+    }
+
+    async function verifyAggregateProof (aggregate_proof: ProofData) {
+        const is_valid = await aggregate_noir.verifyProof(aggregate_proof)
+        return is_valid
     }
 
     return {
@@ -281,13 +193,14 @@ export async function player(
         setOpponentSalt,
         commitTurn,
         executeMove,
-        playMove,
-        acceptTurn,
-        protoAttemptOne
+        proveMove,
+        aggregateProof,
+        verifyAggregateProof,
+        proofStuff,
     }
 }
 
-export function exchangeSalts(players: Players) {
+export function exchangeSalts (players: Players) {
     const whiteSalt = players.white.getSalt()
     const blackSalt = players.black.getSalt()
 
