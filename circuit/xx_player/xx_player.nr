@@ -1,23 +1,36 @@
 use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
-use dep::lib::{Piece, Board, Move, BOARD_ORDINAL, MOVE_ORDINAL};
+use dep::lib::{Piece, Board, Move, SerialisedStateIn, SerialisedStateOut, SerialisedMove};
 
-#[recursive]
+// TESTS TO WRITE:
+//   - Not be able to move opponents pieces by providing them in the `pieces` list
+//     of your `move` (tackle this _after_ commitments are added).
+
+#[test]
+fn serial_test() {
+  // -- Test scenarios.
+  // main("BBDBVBXB");
+  // main("-BDBVBXB");
+  // main("-ADBVBXB");
+  // --/
+
+  main("BBDBVBXBAA", "BBDBBI");
+}
+
+// #[recursive]
 fn main (
   // Player turn inputs.
-  cur_board: pub Board, // As claimed by player.
-  pst_board: pub Board, // As claimed by player.
+  // cur_board: pub Board, // As claimed by player.
+  // pst_board: pub Board, // As claimed by player.
   // move: Move,
-  move: Move,
-  state_commitment: pub PedersenPoint,
-  // ---------- FOO: Recursion?
-  // public: [Field; BOARD_ORDINAL + MOVE_ORDINAL], // See lower TODO for `let mut pubby` in this file.
-  // proof: [Field; 93 + BOARD_ORDINAL + MOVE_ORDINAL],
-  // vk: [Field; 114],
-  // vk_hash: Field
-  // ----------/
-) -> pub Board {
-  let move_hash = pedersen_hash(move.decompose());
-  let pst_board_hash = pedersen_hash(pst_board.decompose());
+  cur_state_serial: pub SerialisedStateIn, // As claimed by player.
+  cur_move_serial: SerialisedMove,
+  // state_commitment: pub PedersenPoint,
+) {
+  let cur_board = Board::deserialise(cur_state_serial);
+  let move = Move::deserialise(cur_move_serial);
+
+  // let move_hash = pedersen_hash(move.decompose());
+  // let pst_board_hash = pedersen_hash(pst_board.decompose());
 
   // `.apply_move()` constrains `move` validity againt the given `cur_board`. So things
   //   like how the piece is moving, whether a capture is legal and so on. It is assumed
@@ -32,38 +45,27 @@ fn main (
   //      type of graph.
   let mut real_pst_board = cur_board.apply_move(move);
 
+  dep::std::println(f"{move}");
+  dep::std::println(f"{cur_board}");
+  dep::std::println(f"{real_pst_board}");
+
   // Real and claimed post-move board match. Since `pst_board` is public input to this
   //   circuit if this verifies we can trust that public input `pst_board` is now
   //   the `cur_board` for the subsequent players' turn.
-  let real_pst_board_hash = pedersen_hash(real_pst_board.decompose());
-  assert(real_pst_board_hash == pst_board_hash);
+  // let real_pst_board_hash = pedersen_hash(real_pst_board.decompose());
+  // assert(real_pst_board_hash == pst_board_hash);
 
   // TODO: Haven't we done this in-part above? Hmmm.
   // We also need to check that the players' move was in-fact against the `cur_board`
   //   and produced the `pst_board`.
-  let computed_commitment = pedersen_commitment([move_hash, real_pst_board_hash]);
+  // let computed_commitment = pedersen_commitment([move_hash, real_pst_board_hash]);
 
-  assert(computed_commitment.x == state_commitment.x, "Bad commitment x");
-  assert(computed_commitment.y == state_commitment.y, "Bad commitment y");
+  // assert(computed_commitment.x == state_commitment.x, "Bad commitment x");
+  // assert(computed_commitment.y == state_commitment.y, "Bad commitment y");
 
   // real_pst_board.commits[!real_pst_board.turn] = state_commitment;
 
-  // TODO: Reconstruct pub input from flat input ourselves? That is, input to
-  //       the circuit for all our pub variables is given as a flat array and
-  //       we reconstruct the types from that array because it's a well
-  //       defined format? Look into this.
-  // let mut pubby = 
-
-  // foo
-  // dep::std::verify_proof(
-  //   vk.as_slice(),
-  //   proof.as_slice(),
-  //   public.as_slice(),
-  //   vk_hash
-  // );
-  // ---/
-
-  real_pst_board
+  // real_pst_board
 }
 
 // ---------------------------------------------------------------------------
