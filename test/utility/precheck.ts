@@ -1,12 +1,12 @@
 import { type AllCircuits } from '../types'
+import { COMMAND_DESC, COMMAND_SUCCESS, logCommand, logHeading } from './misc'
 import { behaviour as args } from './parse_args'
-import { logCommand, logHeading, COMMAND_DESC } from './misc'
 
 // Block while printing chosen Nargo information; this is extremely important
 //   being that Nargo comprises the system under test and having to guess
 //   what version (e.g. multiple installs) is being used sucks, so print it.
-export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
-    logHeading('Check test environment & build circuits')
+export async function checkTestEnvironment (wd: string, circuits: AllCircuits) {
+    logHeading('Environment')
 
     console.log(COMMAND_DESC('project root', wd))
 
@@ -31,37 +31,35 @@ export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
         return false
     }
 
-    // ------------------------------ Compile binary circuits, check library circuits.
+    // ------------------------------ Compile circuits.
 
-    const lib_checks = circuits.lib.map(({ name, root }) =>
-        // Check constraint system (as we cannot compile a library circuit).
-        logCommand(
-            [['nargo', 'check', args.s.do ? args.s.payload : ''], { cwd: root }],
-            `[lib] check '${name}'`,
-            `circuit CONSTRAINT SYSTEM ERROR in ${root}`,
-        )
+    logHeading('Circuits')
+
+    // Fuck efficiency.
+    const all_circuits = [
+        ...circuits.bin.map(({ name }) => name),
+        ...circuits.lib.map(({ name }) => name),
+    ]
+        .join(', ')
+
+    console.write(COMMAND_DESC('found circuits'))
+    console.log(COMMAND_SUCCESS(all_circuits))
+
+    await logCommand(
+        [['nargo', 'compile', '--workspace', args.s.do ? args.s.payload : ''], { cwd: wd }],
+        'compile workspace',
+        'ERROR COMPILING CIRCUITS',
     )
 
-    const bin_checks = circuits.bin.map(({ name, root, artifact }) => {
-        return new Promise(async (resolve) => {
-            // Build circuit.
-            const chk_build = await logCommand(
-                // XXX: Upstream `--include-keys` to `nargo compile` was removed.
-                // TODO: Put `--silence-warnings` under a flag.
-                [['nargo', 'compile', args.s.do ? args.s.payload : '', '--silence-warnings'], {
-                    cwd: root
-                }],
-                `[bin] compile '${name}'`,
-                `COULD NOT COMPILE circuit '${name}' at ${root}`,
-            )
-            // Early return on build circuit, no point checking if we couldn't build.
-            if (chk_build === false) return resolve(false)
+    // ------------------------------ Check artifacts are present.
 
+    const artifact_checks = circuits.bin.map(({ name, root, artifact }) => {
+        return new Promise(async (resolve) => {
             // Check we know path to compiled circuit (arguably pedantic since we
             //   import it later but fine for now; also slow).
             const chk_artifact = await logCommand(
                 [['test', '-f', artifact], { cwd: wd }],
-                `[bin] artifacts '${name}'`,
+                `artifacts '${name}'`,
                 `circuit ARTIFACTS MISSING expected at '${root}'`,
             )
 
@@ -70,7 +68,10 @@ export async function checkTestEnvironment(wd: string, circuits: AllCircuits) {
     })
 
     // Order is orchestrated within relevant promises (only relevant for bin).
-    const circuit_checks = await Promise.all([...lib_checks, ...bin_checks])
+    // const circuit_checks = await Promise.all([...lib_checks, ...bin_checks])
+    const circuit_checks = await Promise.all([...artifact_checks])
+
+    logHeading('Tests')
 
     return { checks: circuit_checks.every((res) => res === true), args }
 }

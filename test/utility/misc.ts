@@ -1,28 +1,25 @@
-import { join } from 'path'
-import chalk from 'chalk'
 import { readableStreamToText } from 'bun'
-import { NonZeroReturnError, type AllCircuits } from '../types'
+import chalk from 'chalk'
+import { basename, join } from 'path'
+import { type AllCircuits, NonZeroReturnError } from '../types'
 
 // TODO: waste time typing this (TypeScript) later.
 // @ts-ignore
 export const asyncMap = (items, fn) => Promise.all(items.map(fn))
 
 // Resolve the root workspace, no other way to do this currently.
-// XXX: Will not work with nested workspaces, don't be satanic.
-//   - Environment variables from `.env` files are not read when in a
-//     subdirectory; honestly it'd be somewhat weird if they were because
-//     when do you stop reading them from the parent? What if a git repo isn't
-//     instantiated yet?
-//   - `exports` from the root workspace package.json are not readable which
-//     is the real killer here; they should be.
-export async function resolveProjectRootDir(): Promise<string> {
-
+//   - Environment variables from `.env` files are not read when in a subdir.
+export async function resolveProjectRootDir (): Promise<string> {
     // No (big) recursive closures please.
-    async function iter(cur: string): Promise<string> {
+    async function iter (cur: string): Promise<string> {
         const nxt = join(cur, '..')
-        if (nxt === cur) return Promise.reject('Workspace package.json not found in any parent directory')
+        if (nxt === cur) {
+            return Promise.reject(
+                'Workspace package.json not found in any parent directory',
+            )
+        }
 
-        const contents = await Bun.file(join(cur, 'package.json')).json().catch(e => {
+        const contents = await Bun.file(join(cur, 'package.json')).json().catch((e) => {
             // errno -2 is 'no such file or directory' which, if there is an error, is the only
             //   error we want to 'accept'.
             if (e.errno !== -2) {
@@ -46,16 +43,16 @@ export async function resolveProjectRootDir(): Promise<string> {
 //       we can afford to do this.
 
 // TODO: Docs; Types maybe.
-export function template(strs, ...expressions) {
+export function template (strs, ...expressions) {
     return (...values) => {
         const dict = values[values.length - 1] || {}
         let result = strs[0]
 
-        function getValue(k) {
+        function getValue (k) {
             return (Number.isInteger(k) ? values[k] : dict[k]) ?? ''
         }
 
-        function getStr(k) {
+        function getStr (k) {
             return strs[k] ?? ''
         }
 
@@ -73,7 +70,7 @@ export function template(strs, ...expressions) {
                         break
                     }
 
-                    chalked_str += (getValue(expressions[j]) + strs[j + 1])
+                    chalked_str += getValue(expressions[j]) + strs[j + 1]
                 }
 
                 if (matched[0] === false) {
@@ -81,12 +78,16 @@ export function template(strs, ...expressions) {
                 }
 
                 // Yes, yes but nah.
-                const colourised = Function('lib', '_str', `return ${expr.replace('>>', 'lib.')}(_str)`)(chalk, chalked_str)
+                const colourised = Function(
+                    'lib',
+                    '_str',
+                    `return ${expr.replace('>>', 'lib.')}(_str)`,
+                )(chalk, chalked_str)
 
-                i = (matched[1] - 1)
+                i = matched[1] - 1
                 result += colourised
             } else {
-                result += (getValue(expr) + strs[i + 1])
+                result += getValue(expr) + strs[i + 1]
             }
         }
 
@@ -98,19 +99,21 @@ export function template(strs, ...expressions) {
 // const COMMAND_DESC = template`${'>>cyan.bold'}${0}+${';'}${0} to ${'>>red'}${0} and ${1}${';'} ${2}: |`
 export const COMMAND_DESC = template`${'>>cyan'}${0}${';'}${'>>gray'}:${';'} ${1}`
 
-const COMMAND_ERROR = template`${'>>gray'}<${';'}${'>>red.bold'}bad${';'}${'>>gray'}>${';'} ${'>>bold'}${0}${';'}\n\
+const COMMAND_ERROR =
+    template`${'>>gray'}<${';'}${'>>red.bold'}bad${';'}${'>>gray'}>${';'} ${'>>bold'}${0}${';'}\n\
 ${3}
 ${'>>bold'}command${';'}: \`${1}\` in directory ${2}`
 
-const COMMAND_SUCCESS = template`${'>>gray'}<${';'}${'>>green'}ok${';'}${'>>gray'}>${';'} ${0}`
+export const COMMAND_SUCCESS =
+    template`${'>>gray'}<${';'}${'>>green'}ok${';'}${'>>gray'}>${';'} ${0}`
 
 const EMPTY_FILLER = template`${'>>gray'}<${0}>${';'}`
 
 // (A)synchronously executes the given command and logs success or output error.
-export async function logCommand(
+export async function logCommand (
     cmd: Parameters<typeof Bun.spawnSync>,
     desc: string,
-    err: string
+    err: string,
 ) {
     try {
         // const { exitCode, stdout, stderr } = Bun.spawn(...cmd)
@@ -132,9 +135,11 @@ export async function logCommand(
             throw new NonZeroReturnError(err, new TextDecoder().decode(stderr).trim())
         } else {
             // const cmdStdout = new TextDecoder().decode(stdout).trim()
-            const cmdStdout = (await readableStreamToText(stdout)).trim();
+            const cmdStdout = (await readableStreamToText(stdout)).trim()
 
-            console.log(COMMAND_SUCCESS(cmdStdout.length === 0 ? EMPTY_FILLER('empty') : cmdStdout))
+            console.log(
+                COMMAND_SUCCESS(cmdStdout.length === 0 ? EMPTY_FILLER('empty') : cmdStdout),
+            )
         }
     } catch (e: unknown) {
         // XXX: TypeScript has cursed exception type-narrowing in switch-case even
@@ -142,7 +147,14 @@ export async function logCommand(
         //      let's have an exception system where you cannot even narrow on
         //      exception types in a switch-case who would ever need that??????
         if (e instanceof Error) {
-            console.log(COMMAND_ERROR(e.message, cmd[0].join(' '), cmd[1]?.cwd, e.cause ?? EMPTY_FILLER('empty error cause')))
+            console.log(
+                COMMAND_ERROR(
+                    e.message,
+                    cmd[0].join(' '),
+                    cmd[1]?.cwd,
+                    e.cause ?? EMPTY_FILLER('empty error cause'),
+                ),
+            )
         }
 
         // Errors.
@@ -158,7 +170,7 @@ const roseChar = '-'
 
 // Single line string only; if left and right padding is odd will preference
 //   left side (i.e. right side will receive the extra str pad).
-export function padCentre(str: string, padStr: string, max = 80) {
+export function padCentre (str: string, padStr: string, max = 80) {
     if (str.length > max) {
         return str
     }
@@ -169,34 +181,42 @@ export function padCentre(str: string, padStr: string, max = 80) {
         .padEnd(max, padStr)
 }
 
-export function logHeading(text: string) {
-    console.log(
-        chalk.yellow(padCentre(text, roseChar)),
-    )
+export function logHeading (text: string) {
+    console.log(chalk.yellow(padCentre(text, roseChar)))
 }
 
 // Reads `noir` key present within `package.json` in given directory and constructs
 //   a list of circuit definitions based on their type (bin/lib) and name by
 //   reading their related `Nargo.toml` files.
-export async function getNoirCircuits(
-    root_dir: string,
-): Promise<AllCircuits> {
-    // TODO: Bun can infer this or something IIRC?
-    const pkg_defs: string[][] = await import(join(root_dir, 'package.json')).then(({ noir }) => noir.circuits)
+export async function getNoirCircuits (root_dir: string): Promise<AllCircuits> {
+    const { name, workspace } = await import(join(root_dir, 'Nargo.toml')).catch((e) => {
+        console.error(e)
+        return Promise.reject('Missing/malformed Nargo.toml in project root directory')
+    })
+
+    if (name !== '__ROOT__') {
+        return Promise.reject(
+            'Root Nargo.toml has missing/wrong identifier, expect `__ROOT__`',
+        )
+    }
+
+    if (Array.isArray(workspace?.members) === false) {
+        return Promise.reject('Root Nargo.toml missing workspace members array')
+    }
 
     const res_defs = {
         bin: [],
-        lib: []
+        lib: [],
     }
 
-    for (let k of Object.keys(pkg_defs)) {
-        const root = join(root_dir, pkg_defs[k])
+    for (let k of workspace.members) {
+        const root = join(root_dir, k)
         const { package: { name, type } } = await import(join(root, 'Nargo.toml'))
 
         res_defs[type].push({
-            name: k,
-            root: join(root_dir, pkg_defs[k]),
-            ...(type === 'bin') && { artifact: join(root_dir, pkg_defs[k], `target/${name}.json`) }
+            name: basename(k),
+            root: join(root_dir, k),
+            ...(type === 'bin') && { artifact: join(root_dir, k, `target/${name}.json`) },
         })
     }
 

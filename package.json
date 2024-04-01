@@ -9,13 +9,6 @@
     "./tooling/*",
     "./test"
   ],
-  "noir": {
-    "circuits": {
-      "xx_util": "./circuit/xx_util",
-      "xx_aggregate": "./circuit/xx_aggregate",
-      "xx_player": "./circuit/xx_player"
-    }
-  },
   "scripts": {
     "bb:term": "bun run --cwd tooling/bb_term do",
     "bb:web": "bun run --cwd tooling/bb_web do",
