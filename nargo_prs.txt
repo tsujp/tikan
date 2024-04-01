@@ -62,3 +62,30 @@ If there isn't an open issue for this bug, consider opening one at https://githu
 
 //     }
 // }
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+`@noir-lang/noir_wasm` should find the path to the circuit entry from the
+Nargo.toml file and not just assume it's under the `src` folder in the same
+directory as said `Nargo.toml`.
+
+i.e. this structure does not work currently if you try and compile using
+`@noir-lang/noir_wasm` for said reasons, even when within Nargo.toml there is:
+
+```toml
+entry = 'foo_circuit.nr'
+```
+
+```
+./Nargo.toml
+./foo_circuit.nr
+```
+
+Whereas this does work:
+```
+./Nargo.toml
+./src/foo_circuit.nr
+```
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
