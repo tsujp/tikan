@@ -117,11 +117,23 @@ impl Piece {
   }
 
   fn serialise(self) -> SerialisedPiece {
-    [
-      if self.captured { CORPUS.empty_value } else { self.idx },
-      // XXX: Compiler cannot resolve the fact that `Char` is a `u8` for casts here.
-      self.lights as u8
-    ]
+    if self.captured {
+      // Captured pieces always have their lights set to true and their idx set
+      //   to the encoding's empty value.
+      [ CORPUS.empty_value, true as u8 + CORPUS.codepoint_start ]
+    } else {
+      // Otherwise the information set depends on the pieces lights.
+      let is_lit = self.lights as u8 + CORPUS.codepoint_start;
+
+      [
+        if is_lit == CORPUS.codepoint_start {
+          CORPUS.empty_value
+        } else {
+          self.idx + CORPUS.codepoint_start
+        },
+        is_lit
+      ]
+    }
   }
   
   fn starting(idx: u8) -> Self {
@@ -180,21 +192,6 @@ impl Board {
     for piece_idx in 0..piece_count {
       let offset_idx = piece_idx * SERIALISED_PIECE_WIDTH;
 
-      // let __sqr = bytes[offset_idx];
-      // let __lit = bytes[offset_idx + 1];
-
-      // let piece_lit = parse_integer(__lit) as bool;
-      // let (piece_sqr, piece_cap) = if __sqr == CORPUS.empty_value {
-      //   (0, piece_lit)
-      // } else {
-      //   (parse_integer(__sqr), false)
-      // };
-
-      // let piece = Piece {
-      //   idx: piece_sqr,
-      //   lights: piece_lit,
-      //   captured: piece_cap,
-      // };
       let piece = Piece::deserialise([
         bytes[offset_idx], bytes[offset_idx + 1]
       ]);
@@ -230,8 +227,8 @@ impl Board {
       }
     }
 
-    serial.push(self.turn as u8);
-    serial.push(self.halfmove);
+    serial.push(self.turn as u8 + CORPUS.codepoint_start);
+    serial.push(self.halfmove + CORPUS.codepoint_start);
 
     // dep::std::println(serial.storage());
     serial.storage()
@@ -359,12 +356,123 @@ impl Move {
     // dep::std::println(f"from: {from}");
     // dep::std::println(f"to: {to}");
 
+    // let bing: [Field; 2] = [420, 69];
+    // let bong: [Char; 2] = [42, 69];
+    // dep::std::println(bing);
+    // dep::std::println(bong);
+
     Self {
       pieces: pieces.storage(),
       idx: idx as u8,
       to,
     }
   }
+
+  fn serialise(self) -> [Char; 6] {
+    let mut serial: BoundedVec<Char, 6> = BoundedVec::new();
+    
+    for i in 0..self.pieces.len() {
+      serial.extend_from_array(self.pieces[i].serialise());
+    }
+
+    serial.push(self.idx);
+    serial.push(self.to);
+
+    serial.storage()
+  }
+}
+
+trait IntoFieldArray<N> {
+  fn as_fields(self) -> [Field; N];
+}
+
+trait IntoCharsArray<N> {
+  fn as_chars(self) -> Chars<N>;
+}
+
+impl<T, N> IntoFieldArray<N> for [Char; N] {
+  fn as_fields(self) -> [Field; N] {
+    let mut arr: [Field; N] = [0; N];
+
+    for i in 0..self.len() {
+      arr[i] = self[i] as Field;
+    }
+
+    arr
+  }
+}
+
+impl<T, N> IntoCharsArray<N> for [Field; N] {
+  fn as_chars(self) -> [Char; N] {
+    let mut arr: [Char; N] = [0; N];
+
+    for i in 0..self.len() {
+      self[i].assert_max_bit_size(8);
+      // XXX: Nargo cannot figure out `as u8` is equivalent to `as Char`.
+      arr[i] = self[i] as u8;
+    }
+
+    arr
+  }
+}
+
+// VALID SYNTAX!!!!!!!!!!!!!!!
+// trait AsFields<N> {
+//   fn as_chars(self) -> [Field; N];
+// }
+
+// impl<N> AsFields<N> for [Field; N] {
+//   fn as_chars(self) -> [Field; N] {
+//     let mut arr: [Field; N] = [0; N];
+
+//     for i in 0..self.len() {
+//       arr[i] = self[i] as Field;
+//     }
+
+//     arr
+//   }
+// }
+// ------- END VALID SYNTAX!
+
+// impl AsFields<N> for [Field; N] {
+//   fn as_chars(self) -> [Field; 6] {
+//     let mut arr: [Field; 6] = [0; 6];
+
+//     for i in 0..self.len() {
+//       arr[i] = self[i] as Field;
+//     }
+
+//     arr
+//   }
+// }
+
+// impl<T, N> AsFields for [T; N] where T: Field {
+//   fn as_chars(self) {
+//     for i in 0..self.len() {
+//       dep::std::println("hi");
+//     }
+//   }
+// }
+
+// trait Serialise<T, N> {
+//   fn serialise(self) -> [T; N];
+// }
+
+// impl<T, N> Serialise for (T, Field) {
+//   fn serialise(self) -> [T; N] {
+//     let mut serial: BoundedVec<T, 6> = BoundedVec::new();
+  
+//     // for i in 0..self.pieces.len() {
+//     //   serial.extend_from_array(self.pieces[i].serialise());
+//     // }
+
+//     serial.push(self.idx as T);
+//     serial.push(self.to as T);
+
+//     serial.storage()
+//   }
+// }
+
   
   // fn decompose(self) -> [Field; MOVE_ORDINAL] {
   //   let mut decomp = [0; MOVE_ORDINAL];
@@ -385,7 +493,6 @@ impl Move {
 
   //   decomp
   // }
-}
 
 
 // ---------------------------------------------------------------------------
@@ -472,13 +579,283 @@ struct Output {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------- TESTING
+
 //
-// TESTS
+// HELPERS
 //
 
-// global T__VALID_START_BOARD =
+use dep::std::println as puts;
+use dep::std::print as put;
 
-// #[test]
-// fn compass_moves() {
+struct Log {}
 
+impl Log {
+  fn kind<N>(log_kind: str<N>) {
+    put(f"{log_kind}:");
+  }
+
+  pub fn test_name<N, T>(name: fmtstr<N, T>) {
+    // Log::kind("T_NAME"); // Test name format string.
+    puts(name); // Cannot do as `f"0001 {name}"` hence this.
+  }
+}
+
+  // pub fn step<N, T>(step: fmtstr<N, T>) {
+  //   Log::kind("T_STEP");
+  //   puts(step);
+  // }
+
+  // pub fn commit(payload: (PedersenPoint, Board)) {
+  //   Log::kind("T_COMT");
+  //   put(payload.0);
+  //   puts(payload.1);
+  // }
+
+  // pub fn input<T>(data: T) {
+  //   // put("T___IN:");
+  //   Log::kind("T___IN");
+  //   puts(data);
+  // }
+
+  // pub fn output<T>(data: T) {
+  //   Log::kind("T__OUT");
+  //   puts(data);
+  // }
 // }
+
+type __ExpectedPieceDeserialisation = (u8, bool, bool);
+
+type __ExpectedBoardDeserialisation = (
+  __ExpectedPieceDeserialisation,
+  __ExpectedPieceDeserialisation,
+  __ExpectedPieceDeserialisation,
+  __ExpectedPieceDeserialisation,
+  u1,
+  u8,
+);
+
+fn test<Env, N, T>(name: fmtstr<N, T>, f: fn[Env]() -> ()) {
+  Log::test_name(name);
+  f();
+}
+
+fn assert_board_deserial(serial: SerialisedStateIn, expected: __ExpectedBoardDeserialisation) {
+  let board = Board::deserialise(serial);
+
+  // Cursed.
+  let (p1, p2, p3, p4, turn, halfmove) = expected;
+  let pieces: [__ExpectedPieceDeserialisation; 4] = [p1, p2, p3, p4];
+
+  for player_idx in 0..PLAYER_COUNT {
+    for i in 0..PLAYER_PIECES {
+      let piece = board.players[player_idx][i];
+
+      let offset = (player_idx * PLAYER_PIECES) + i;
+
+      let (idx, lights, captured) = pieces[offset];
+      
+      // Unroll that loop. Risky, in-sync, example, blah blah.
+      assert(piece.idx == idx, "incorrect: idx");
+      assert(piece.lights == lights, "incorrect: lights");
+      assert(piece.captured == captured, "incorrect: captured");
+    }
+  }
+
+  assert(board.turn == turn, "incorrect: turn");
+  assert(board.halfmove == halfmove, "incorrect: halfmove");
+}
+
+// Cheating a little, so long as board deserialisation works we can just immediately
+//   serialise and check that.
+// TODO: When revealed piece logic is added this will have to be updated since
+//       deserialised piece locations will now be taken into account. It should
+//       just look like an `-A` except not an empty value, i.e. a lights off
+//       revealed piece on square index 11 would be `LA`.
+fn assert_board_serial(serial: SerialisedStateIn) {
+  let bytes = serial.as_bytes();
+  let reserial = Board::deserialise(serial).serialise();
+
+  // puts(bytes);
+  // puts(reserial);
+  assert(bytes == reserial, "incorrect: serialisation");
+}
+
+//
+// TESTS PROPER
+//
+
+#[test]
+fn serialise() {
+  test(f"board basic 1", || assert_board_serial("BBDBVBXBAA"));
+  test(f"board basic 2", || assert_board_serial("UBVBXBYBBC"));
+  test(f"board basic 3", || assert_board_serial("KBFBNBIBBB"));
+  test(f"board advanced 1", || assert_board_serial("-BDBVBXBAA"));
+  test(f"board advanced 2", || assert_board_serial("-B-B-A-AAB"));
+  test(f"board advanced 3", || assert_board_serial("-ADB-BXBBY"));
+}
+
+// --------------- Meta test, make sure assertions fail when they should.
+#[test(should_fail_with="incorrect: idx")]
+fn deserialise_meta_idx() {
+  test(f"meta idx", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, true, false),
+      (0, true, false), // Bad.
+      (23, true, false),
+      0,
+      0,
+    )
+  ));
+}
+
+#[test(should_fail_with="incorrect: lights")]
+fn deserialise_meta_lights() {
+  test(f"meta lights", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, false, false), // Bad.
+      (21, true, false),
+      (23, true, false),
+      0,
+      0,
+    )
+  ));
+}
+
+#[test(should_fail_with="incorrect: captured")]
+fn deserialise_meta_captured() {
+  test(f"meta captured", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, true), // Bad.
+      (3, true, false),
+      (21, true, false),
+      (23, true, false),
+      0,
+      0,
+    )
+  ));
+}
+
+#[test(should_fail_with="incorrect: turn")]
+fn deserialise_meta_turn_1() {
+  test(f"meta turn", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, true, false),
+      (21, true, false),
+      (23, true, false),
+      1, // Bad.
+      0,
+    )
+  ));
+}
+
+#[test(should_fail)]
+fn deserialise_meta_turn_2() {
+  test(f"meta turn bounds", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, true, false),
+      (21, true, false),
+      (23, true, false),
+      1337, // Bad.
+      0,
+    )
+  ));
+}
+
+#[test(should_fail_with="incorrect: halfmove")]
+fn deserialise_meta_halfmove() {
+  test(f"meta halfmove", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, true, false),
+      (21, true, false),
+      (23, true, false),
+      0,
+      1, // Bad.
+    )
+  ));
+}
+
+#[test]
+fn deserialise() {
+  // --------------- Basic, just pieces in different positions.
+  test(f"board basic 1", || assert_board_deserial(
+    "BBDBVBXBAA",
+    (
+      (1, true, false),
+      (3, true, false),
+      (21, true, false),
+      (23, true, false),
+      0,
+      0,
+    )
+  ));
+  test(f"board basic 2", || assert_board_deserial(
+    "EBJBTBYBBU",
+    (
+      (4, true, false),
+      (9, true, false),
+      (19, true, false),
+      (24, true, false),
+      1,
+      20,
+    )
+  ));
+  test(f"board basic 3", || assert_board_deserial(
+    "WBXBCBDBBB",
+    (
+      (22, true, false),
+      (23, true, false),
+      (2, true, false),
+      (3, true, false),
+      1,
+      1,
+    )
+  ));
+
+  // --------------- Advanced, blinded pieces, captured pieces etc.
+  test(f"board advanced 1", || assert_board_deserial(
+    "-BDBVB-AAA",
+    (
+      (0, true, true), // Captured.
+      (3, true, false),
+      (21, true, false),
+      (0, false, false), // Blinded.
+      0,
+      0,
+    )
+  ));
+  test(f"board advanced 2", || assert_board_deserial(
+    "-B-A-B-ABM",
+    (
+      (0, true, true), // Captured.
+      (0, false, false), // Blinded.
+      (0, true, true), // Captured.
+      (0, false, false), // Blinded.
+      1,
+      12,
+    )
+  ));
+  test(f"board advanced 3", || assert_board_deserial(
+    "-A-A-A-AAA",
+    (
+      (0, false, false), // Blinded.
+      (0, false, false), // Blinded.
+      (0, false, false), // Blinded.
+      (0, false, false), // Blinded.
+      0,
+      0,
+    )
+  ));
+}

@@ -5,17 +5,6 @@ use dep::lib::{Piece, Board, Move, SerialisedStateIn, SerialisedStateOut, Serial
 //   - Not be able to move opponents pieces by providing them in the `pieces` list
 //     of your `move` (tackle this _after_ commitments are added).
 
-#[test]
-fn serial_test() {
-  // -- Test scenarios.
-  // main("BBDBVBXB");
-  // main("-BDBVBXB");
-  // main("-ADBVBXB");
-  // --/
-
-  main("BBDBVBXBAA", "BBDBBI");
-}
-
 // #[recursive]
 fn main (
   // Player turn inputs.
@@ -28,6 +17,14 @@ fn main (
 ) {
   let cur_board = Board::deserialise(cur_state_serial);
   let move = Move::deserialise(cur_move_serial);
+
+  // let foobar = ([69, 255]).as_chars();
+  // dep::std::println(f"foobar: {foobar}");
+
+  // let move_serial_arr = move.serialise().as_fields();
+  // dep::std::println(f"move_serial_arr: {move_serial_arr}");
+
+  // let move_agen: [Char] = move.serialise().vert();
 
   // let move_hash = pedersen_hash(move.decompose());
   // let pst_board_hash = pedersen_hash(pst_board.decompose());
@@ -45,9 +42,10 @@ fn main (
   //      type of graph.
   let mut real_pst_board = cur_board.apply_move(move);
 
-  dep::std::println(f"{move}");
-  dep::std::println(f"{cur_board}");
-  dep::std::println(f"{real_pst_board}");
+  dep::std::println(f"MOVE: {move}");
+  dep::std::println(f"CUR: {cur_board}");
+  dep::std::println(f"POST: {real_pst_board}");
+  dep::std::println(real_pst_board.serialise());
 
   // Real and claimed post-move board match. Since `pst_board` is public input to this
   //   circuit if this verifies we can trust that public input `pst_board` is now
