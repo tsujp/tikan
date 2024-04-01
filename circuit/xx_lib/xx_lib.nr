@@ -143,16 +143,6 @@ impl Piece {
       captured: false,
     }
   }
-
-  // TOOD: Shouldn't need this anymore?
-  // fn decompose(self) -> [Field; 3] {
-  //   [
-  //     self.idx as Field,
-  //     self.lights as Field,
-  //     self.captured as Field,
-  //   ]
-  // }
-  // ----/
 }
 
 // ---------------------------------------------------------------------------
@@ -291,31 +281,6 @@ impl Board {
       halfmove: self.halfmove + 1,
     }
   }
-
-  // TODO: Delete, shouldn't need this now if we've already serialised the board.
-  // fn decompose(self) -> [Field; BOARD_ORDINAL] {
-  //   let mut decomp = [0; BOARD_ORDINAL];
-
-  //   decomp[0] = self.turn as Field;
-  //   decomp[1] = self.halfmove as Field;
-
-  //   let mut idx_offset = 2;
-
-  //   // Each player.
-  //   for i in 0..PLAYER_COUNT {
-  //     // Pieces.
-  //     for j in 0..self.players[i].len() {
-  //       let pce_decomp = self.players[i][j].decompose();
-  //       for k in 0..pce_decomp.len() {
-  //         decomp[idx_offset] = pce_decomp[k];
-  //         idx_offset += 1;
-  //       }
-  //     }
-  //   }
-
-  //   decomp
-  // }
-  // END TODO/
 }
 
 // ---------------------------------------------------------------------------
@@ -355,11 +320,6 @@ impl Move {
     // dep::std::println(f"pieces: {pieces}");
     // dep::std::println(f"from: {from}");
     // dep::std::println(f"to: {to}");
-
-    // let bing: [Field; 2] = [420, 69];
-    // let bong: [Char; 2] = [42, 69];
-    // dep::std::println(bing);
-    // dep::std::println(bong);
 
     Self {
       pieces: pieces.storage(),
@@ -415,160 +375,6 @@ impl<T, N> IntoCharsArray<N> for [Field; N] {
     arr
   }
 }
-
-// VALID SYNTAX!!!!!!!!!!!!!!!
-// trait AsFields<N> {
-//   fn as_chars(self) -> [Field; N];
-// }
-
-// impl<N> AsFields<N> for [Field; N] {
-//   fn as_chars(self) -> [Field; N] {
-//     let mut arr: [Field; N] = [0; N];
-
-//     for i in 0..self.len() {
-//       arr[i] = self[i] as Field;
-//     }
-
-//     arr
-//   }
-// }
-// ------- END VALID SYNTAX!
-
-// impl AsFields<N> for [Field; N] {
-//   fn as_chars(self) -> [Field; 6] {
-//     let mut arr: [Field; 6] = [0; 6];
-
-//     for i in 0..self.len() {
-//       arr[i] = self[i] as Field;
-//     }
-
-//     arr
-//   }
-// }
-
-// impl<T, N> AsFields for [T; N] where T: Field {
-//   fn as_chars(self) {
-//     for i in 0..self.len() {
-//       dep::std::println("hi");
-//     }
-//   }
-// }
-
-// trait Serialise<T, N> {
-//   fn serialise(self) -> [T; N];
-// }
-
-// impl<T, N> Serialise for (T, Field) {
-//   fn serialise(self) -> [T; N] {
-//     let mut serial: BoundedVec<T, 6> = BoundedVec::new();
-  
-//     // for i in 0..self.pieces.len() {
-//     //   serial.extend_from_array(self.pieces[i].serialise());
-//     // }
-
-//     serial.push(self.idx as T);
-//     serial.push(self.to as T);
-
-//     serial.storage()
-//   }
-// }
-
-  
-  // fn decompose(self) -> [Field; MOVE_ORDINAL] {
-  //   let mut decomp = [0; MOVE_ORDINAL];
-
-  //   decomp[0] = self.from as Field;
-  //   decomp[1] = self.to as Field;
-
-  //   let mut idx_offset = 2;
-
-  //   // Pieces.
-  //   for i in 0..self.pieces.len() {
-  //     let pce_decomp = self.pieces[i].decompose();
-  //     for j in 0..pce_decomp.len() {
-  //       decomp[idx_offset] = pce_decomp[j];
-  //       idx_offset += 1;
-  //     }
-  //   }
-
-  //   decomp
-  // }
-
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------- XX
-
-// use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
-
-//
-// STATE COMMITMENT HELPER
-//
-
-struct State {
-  cur_board: Board,
-  move: Move,
-}
-
-struct Input {
-  state: Option<State>
-}
-
-// This API is dubious, but we're hacking right now. For invocation from Noir
-//   tests in `xx_player`.
-// impl Input {
-//   pub fn move_commit(cur_board: Board, move: Move) -> Self {
-//     Self {
-//       state: Option::some(State { cur_board, move })
-//     }
-//   }
-// }
-
-// pub fn move_commit(cur_board: Board, move: Move) -> (PedersenPoint, Board) {
-//   let commit = state_commitment(State { cur_board, move });
-
-//   dep::std::println(commit.0);
-//   // assert(commit.1.is_some(), "foo");
-//   // dep::std::println(commit.1);
-
-//   // assert(commit.state_commitment.is_some(), "Error constructing state commitment");
-//   // TODO: No such method `expect`.. wat? Is `expect` broken for nested structs?
-//   // let commitment = fn_output.state_commitment.expect(f"Error constructing move commitment");
-
-//   commit
-// }
-
-struct Output {
-  state_commitment: Option<(PedersenPoint, Board)>
-}
-
-// Commitment that `move` produces post-move board state `pst_board`.
-// pub fn state_commitment(state: State) -> (PedersenPoint, Board) {
-//   let pst_board = state.cur_board.apply_move(state.move);
-
-//   // dep::std::println(pst_board);
-
-//   // TODO: Should these hashes also be `commitment` or is only the final one
-//   //       being a `commitment` enough? Here and elsewhere.
-//   let move_hash = pedersen_hash(state.move.decompose());
-//   let pst_board_hash = pedersen_hash(pst_board.decompose());
-
-//   (pedersen_commitment([move_hash, pst_board_hash]), pst_board)
-// }
-
-// TODO: Add salt later.
-// pub fn commit_to(input: Input) -> Output {
-//   let mut output = Output {
-//     state_commitment: Option::none()
-//   };
-
-//   if input.state.is_some() {
-//     output.state_commitment = Option::some(
-//       state_commitment(input.state.unwrap_unchecked())
-//     );
-//   }
-
-//   output
-// }
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

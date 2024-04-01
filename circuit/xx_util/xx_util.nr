@@ -34,7 +34,6 @@ fn state_commitment(state: State) -> (Field, Field, Board) {
   // let move_hash = pedersen_hash(state.move.decompose());
   // let pst_board_hash = pedersen_hash(pst_board.decompose());
 
-  // TODO: Take a salt.
   // let move_serial_arr = move.serialise().as_fields();
   let mut commit_to: BoundedVec<Field, 7> = BoundedVec::new();
   commit_to.extend_from_array(move.serialise().as_fields());
@@ -57,7 +56,6 @@ fn state_commitment(state: State) -> (Field, Field, Board) {
   (commitment, identity, pst_board)
 }
 
-// TODO: Add salt later.
 fn main(input: Input) -> pub Output {
   let mut output = Output {
     state_commitment: Option::none()
