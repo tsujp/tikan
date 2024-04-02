@@ -46,6 +46,12 @@ export async function checkTestEnvironment (wd: string, circuits: AllCircuits) {
     console.log(COMMAND_SUCCESS(all_circuits))
 
     await logCommand(
+        [['rm', '-f', 'target/*.json'], { cwd: wd }],
+        'cleaning artifacts',
+        'COULD NOT REMOVE EXISTING ARTIFACTS',
+    )
+
+    await logCommand(
         [['nargo', 'compile', '--workspace', args.s.do ? args.s.payload : ''], { cwd: wd }],
         'compile workspace',
         'ERROR COMPILING CIRCUITS',

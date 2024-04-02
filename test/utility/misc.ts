@@ -216,7 +216,7 @@ export async function getNoirCircuits (root_dir: string): Promise<AllCircuits> {
         res_defs[type].push({
             name: basename(k),
             root: join(root_dir, k),
-            ...(type === 'bin') && { artifact: join(root_dir, k, `target/${name}.json`) },
+            ...(type === 'bin') && { artifact: join(root_dir, `target/${name}.json`) },
         })
     }
 

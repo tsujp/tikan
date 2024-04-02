@@ -3,6 +3,7 @@ name = '__ROOT__'
 [workspace]
 members = [
   'circuit/xx_lib',
+  'circuit/xx_start',
   'circuit/xx_player',
   'circuit/xx_aggregate',
   'circuit/xx_util',
