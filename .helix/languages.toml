@@ -1,3 +1,8 @@
+[language-server]
+biome = { command = "biome", args = ["lsp-proxy"] }
+
+#------------------------------------------------------------------------------
+
 [[language]]
 name = "javascript"
 indent = { tab-width = 4, unit = "    " }
@@ -10,8 +15,13 @@ formatter = { command = 'dprint', args = ["fmt", "--stdin", "md"] }
 
 [[language]]
 name = "typescript"
-indent = { tab-width = 4, unit = "    " }
-formatter = { command = 'dprint', args = ["fmt", "--stdin", "ts"] }
+language-servers = [
+  { name = "biome" },
+  { name = "typescript-language-server", except-features = [ "format" ] }
+]
+# indent = { tab-width = 4, unit = "    " }
+# formatter = { command = 'dprint', args = ["fmt", "--stdin", "ts"] }
+formatter = { command = 'biome', args = ["format", "--stdin-file-path"] }
 auto-format = true
 
 [[language]]
@@ -25,3 +35,8 @@ name = "tsx"
 indent = { tab-width = 4, unit = "    " }
 formatter = { command = 'dprint', args = ["fmt", "--stdin", "tsx"] }
 auto-format = true
+
+#------------------------------------------------------------------------------
+
+[language-server.typescript-language-server]
+config = { preferences = { importModuleSpecifierPreference = "non-relative" } }
