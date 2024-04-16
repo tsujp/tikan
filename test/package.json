@@ -7,14 +7,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch compile && bun test:watch",
-    "compile": "bun run build.ts",
-    "test": "bun ./utility/runner.ts",
-    "test:watch": "bun ./utility/runner.ts",
-    "bingbong": "bun index.ts"
+    "compile": "bun run build.ts"
   },
   "dependencies": {
-    "@noir-lang/backend_barretenberg": "0.25.0",
-    "@noir-lang/noir_js": "0.25.0",
+    "@noir-lang/backend_barretenberg": "0.26.0-a0f7474.nightly",
+    "@noir-lang/noir_js": "0.26.0-a0f7474.nightly",
     "chalk": "^5.3.0",
     "ethers": "^5.7.2",
     "fflate": "^0.8.0"
