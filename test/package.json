@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch compile && bun test:watch",
-    "compile": "bun run build.ts"
+    "compile": "bun run build.ts",
+    "test": "bun test --preload ./setup.ts"
   },
   "dependencies": {
     "@noir-lang/backend_barretenberg": "0.26.0-a0f7474.nightly",

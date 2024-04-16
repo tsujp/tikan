@@ -1,7 +1,7 @@
+import { join } from 'node:path'
 import { readableStreamToText } from 'bun'
 import chalk from 'chalk'
-import { basename, join } from 'path'
-import { type AllCircuits, NonZeroReturnError } from '../types'
+import { NonZeroReturnError } from '../types'
 
 // TODO: waste time typing this (TypeScript) later.
 // @ts-ignore
@@ -9,24 +9,24 @@ export const asyncMap = (items, fn) => Promise.all(items.map(fn))
 
 // Resolve the root workspace, no other way to do this currently.
 //   - Environment variables from `.env` files are not read when in a subdir.
-export async function resolveProjectRootDir (): Promise<string> {
+export async function getProjectRoot(): Promise<string> {
     // No (big) recursive closures please.
-    async function iter (cur: string): Promise<string> {
+    async function iter(cur: string): Promise<string> {
         const nxt = join(cur, '..')
         if (nxt === cur) {
-            return Promise.reject(
-                'Workspace package.json not found in any parent directory',
-            )
+            return Promise.reject('Workspace package.json not found in any parent directory')
         }
 
-        const contents = await Bun.file(join(cur, 'package.json')).json().catch((e) => {
-            // errno -2 is 'no such file or directory' which, if there is an error, is the only
-            //   error we want to 'accept'.
-            if (e.errno !== -2) {
-                console.error(e)
-                return Promise.reject('Unexpected error attempting to read file')
-            }
-        })
+        const contents = await Bun.file(join(cur, 'package.json'))
+            .json()
+            .catch((e) => {
+                // errno -2 is 'no such file or directory' which, if there is an error, is the only
+                //   error we want to 'accept'.
+                if (e.errno !== -2) {
+                    console.error(e)
+                    return Promise.reject('Unexpected error attempting to read file')
+                }
+            })
 
         if (contents?.workspaces) {
             return Promise.resolve(cur)
@@ -43,16 +43,16 @@ export async function resolveProjectRootDir (): Promise<string> {
 //       we can afford to do this.
 
 // TODO: Docs; Types maybe.
-export function template (strs, ...expressions) {
+export function template(strs, ...expressions) {
     return (...values) => {
         const dict = values[values.length - 1] || {}
         let result = strs[0]
 
-        function getValue (k) {
+        function getValue(k) {
             return (Number.isInteger(k) ? values[k] : dict[k]) ?? ''
         }
 
-        function getStr (k) {
+        function getStr(k) {
             return strs[k] ?? ''
         }
 
@@ -97,29 +97,32 @@ export function template (strs, ...expressions) {
 
 // Bespoke hacky template syntax cos why not (experimenting).
 // const COMMAND_DESC = template`${'>>cyan.bold'}${0}+${';'}${0} to ${'>>red'}${0} and ${1}${';'} ${2}: |`
-export const COMMAND_DESC = template`${'>>cyan'}${0}${';'}${'>>gray'}:${';'} ${1}`
+export const COMMAND_DESC = template`${0}${'>>gray'}:${';'} ${1}`
 
-const COMMAND_ERROR =
-    template`${'>>gray'}<${';'}${'>>red.bold'}bad${';'}${'>>gray'}>${';'} ${'>>bold'}${0}${';'}\n\
+const COMMAND_ERROR = template`\n${'>>red.bold'}error${';'} ${'>>bold'}${0}${';'}\
 ${3}
 ${'>>bold'}command${';'}: \`${1}\` in directory ${2}`
 
-export const COMMAND_SUCCESS =
-    template`${'>>gray'}<${';'}${'>>green'}ok${';'}${'>>gray'}>${';'} ${0}`
+export const COMMAND_SUCCESS = template`${'>>green'}ok${';'} ${'>>hex("#BBB")'}${0}${';'}`
 
-const EMPTY_FILLER = template`${'>>gray'}<${0}>${';'}`
+const EMPTY_FILLER = template`${'>>hex("#333")'}<${0}>${';'}`
 
-// (A)synchronously executes the given command and logs success or output error.
-export async function logCommand (
+// Asynchronously executes the given command and logs output success or error.
+// Optional callback mutates success (only) output before printing.
+export async function logCommand(
     cmd: Parameters<typeof Bun.spawnSync>,
-    desc: string,
+    // Yes this API sucks, tacking this on for now. Rewrite all this trash later.
+    desc: string | false,
     err: string,
+    cb?: (cmd_stdout: string) => string,
 ) {
     try {
         // const { exitCode, stdout, stderr } = Bun.spawn(...cmd)
         const { exited, stdout, stderr } = Bun.spawn(...cmd)
-        const exitCode = await exited
-        console.write(COMMAND_DESC(desc))
+        const exit_code = await exited
+        if (typeof desc === 'string') {
+            console.write(COMMAND_DESC(desc))
+        }
         // TODO: PR for standard help messages from Nargo. `nargo help test` and
         //       `nargo test --help` both print in the same format, but
         //       `nargo info --help` prints in a different one as does `nargo help info`.
@@ -131,14 +134,17 @@ export async function logCommand (
         //       run them. So that people can see what tests there are without
         //       having to wait and more easily choose which tests they want to
         //       run using the pattern syntax.
-        if (exitCode !== 0) {
+        if (exit_code !== 0) {
             throw new NonZeroReturnError(err, new TextDecoder().decode(stderr).trim())
-        } else {
-            // const cmdStdout = new TextDecoder().decode(stdout).trim()
-            const cmdStdout = (await readableStreamToText(stdout)).trim()
+        }
+
+        if (typeof desc === 'string') {
+            const cmd_stdout_raw = (await readableStreamToText(stdout)).trim()
+
+            const cmd_stdout = cb ? cb(cmd_stdout_raw) : cmd_stdout_raw
 
             console.log(
-                COMMAND_SUCCESS(cmdStdout.length === 0 ? EMPTY_FILLER('empty') : cmdStdout),
+                COMMAND_SUCCESS(cmd_stdout.length === 0 ? EMPTY_FILLER('empty') : cmd_stdout),
             )
         }
     } catch (e: unknown) {
@@ -170,55 +176,23 @@ const roseChar = '-'
 
 // Single line string only; if left and right padding is odd will preference
 //   left side (i.e. right side will receive the extra str pad).
-export function padCentre (str: string, padStr: string, max = 80) {
+export function padCentre(str: string, padStr: string, max = 80) {
     if (str.length > max) {
         return str
     }
 
     const spaceStr = ` ${str} `
 
-    return spaceStr.padStart(Math.floor(spaceStr.length / 2) + Math.floor(max / 2), padStr)
+    return spaceStr
+        .padStart(Math.floor(spaceStr.length / 2) + Math.floor(max / 2), padStr)
         .padEnd(max, padStr)
 }
 
-export function logHeading (text: string) {
+export function logHeading(text: string, conspicuous?: boolean) {
+    if (conspicuous) {
+        console.log(chalk.yellow.bold(`[${text}]`))
+        return
+    }
+
     console.log(chalk.yellow(padCentre(text, roseChar)))
-}
-
-// Reads `noir` key present within `package.json` in given directory and constructs
-//   a list of circuit definitions based on their type (bin/lib) and name by
-//   reading their related `Nargo.toml` files.
-export async function getNoirCircuits (root_dir: string): Promise<AllCircuits> {
-    const { name, workspace } = await import(join(root_dir, 'Nargo.toml')).catch((e) => {
-        console.error(e)
-        return Promise.reject('Missing/malformed Nargo.toml in project root directory')
-    })
-
-    if (name !== '__ROOT__') {
-        return Promise.reject(
-            'Root Nargo.toml has missing/wrong identifier, expect `__ROOT__`',
-        )
-    }
-
-    if (Array.isArray(workspace?.members) === false) {
-        return Promise.reject('Root Nargo.toml missing workspace members array')
-    }
-
-    const res_defs = {
-        bin: [],
-        lib: [],
-    }
-
-    for (let k of workspace.members) {
-        const root = join(root_dir, k)
-        const { package: { name, type } } = await import(join(root, 'Nargo.toml'))
-
-        res_defs[type].push({
-            name: basename(k),
-            root: join(root_dir, k),
-            ...(type === 'bin') && { artifact: join(root_dir, `target/${name}.json`) },
-        })
-    }
-
-    return res_defs
 }
