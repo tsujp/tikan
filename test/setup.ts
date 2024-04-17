@@ -146,7 +146,6 @@ const players = await Promise.all([white, black])
 // * * * * * * * * * * * * *
 function resolveQueue(message) {
     // Queue is resolved in-order only.
-    // for (const m o}
 
     // Mark message as ready.
     if (message) {

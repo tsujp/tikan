@@ -1,4 +1,8 @@
-import { BarretenbergBackend, type CompiledCircuit, ProofData } from '@noir-lang/backend_barretenberg'
+import {
+    BarretenbergBackend,
+    type CompiledCircuit,
+    ProofData,
+} from '@noir-lang/backend_barretenberg'
 import { Noir } from '@noir-lang/noir_js'
 import { logPerf } from './utility/performance_decorator'
 
@@ -26,9 +30,9 @@ export class Player {
 
     static #internal_construction = false
 
-    private constructor (args: Required<PlayerArgs>) {
+    private constructor(args: Required<PlayerArgs>) {
         if (Player.#internal_construction === false) {
-            throw new TypeError('Execute .new() to instantiate object')
+            throw new TypeError('Execute .new() to instantiate')
         }
 
         // TODO: Implement this in JS instead, so that another instantiation (this)
@@ -45,7 +49,7 @@ export class Player {
     }
 
     @logPerf
-    static async new (args: PlayerArgs) {
+    static async new(args: PlayerArgs) {
         Player.#internal_construction = true
 
         if (args.threads == null) {
@@ -69,13 +73,13 @@ export class Player {
         return inst
     }
 
-    get name () {
+    get name() {
         return this.#name
     }
 
     @logPerf
-    async getRecursiveArtifacts (proof: ProofData) {
-        console.log('foooooooooooooooooo')
+    async getRecursiveArtifacts(proof: ProofData) {
+        console.log('foooooooooooooooooo', proof)
         const wat = await this.#game_be.generateRecursiveProofArtifacts(
             proof,
             proof.publicInputs.length,
@@ -85,14 +89,14 @@ export class Player {
     }
 
     @logPerf
-    async moveExecute (
+    async moveExecute(
         proof: ProofData,
         board_serial: string,
         move_serial: string,
         proof_artifacts?: ProofArtifacts,
     ) {
         // console.log('moveExecute proof is:', proof)
-        const artifacts = proof_artifacts ?? await this.getRecursiveArtifacts(proof)
+        const artifacts = proof_artifacts ?? (await this.getRecursiveArtifacts(proof))
 
         return this.#game_nr.execute({
             proof: artifacts.proofAsFields,
@@ -106,12 +110,12 @@ export class Player {
     }
 
     @logPerf
-    async moveProve (witness: CircuitExecution['witness']) {
+    async moveProve(witness: CircuitExecution['witness']) {
         return this.#game_be.generateProof(witness)
     }
 
     @logPerf
-    async verifyProof (proof: ProofData) {
+    async verifyProof(proof: ProofData) {
         return this.#game_nr.verifyProof(proof)
     }
 
@@ -119,12 +123,13 @@ export class Player {
     //   1. Commit to move (TODO).
     //   2. Execute move (as we need to aggregate state).
     //   3. Prove move with witness from (2).
-    async playTurn (
+    async playTurn(
         proof: ProofData,
         board_serial: string,
         move_serial: string,
         proof_artifacts?: ProofArtifacts,
     ) {
+        console.log('PLAY TURN EXECUTED!!!!!!!!!!!!!!!!!!!!!!')
         const move_execute = await this.moveExecute(
             proof,
             board_serial,

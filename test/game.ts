@@ -5,6 +5,8 @@ import { logPerf } from './utility/performance_decorator'
 import { proxyCurry } from '#test/utility/proxy_curry'
 import { sendAndAwait } from '#test/setup'
 
+// TODO: Rename to `match.ts` or something.
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
@@ -110,7 +112,7 @@ export class Game {
     async do(player: string, method: number, ...args: unknown[]) {
         console.log('DO CALLED WITH:', player, method, ...args)
 
-        await sendAndAwait(0, method, args)
+        await sendAndAwait(0, method, ...args)
 
         console.log('DO GOT RESPONSE')
 

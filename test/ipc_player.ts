@@ -1,17 +1,30 @@
-import { Player } from './good_player'
-import { IPC_MESSAGES, MSG_DEFINITION } from './ipc_types'
+import { Player } from '#test/good_player'
+import type { IPC_MESSAGES, MSG_DEFINITION } from '#test/ipc_types'
+import { Queue } from '#test/utility/basic_queue' 
 
-const QUEUE = []
+// TODO: Rename this file to `player_process.ts` or something.
 
-for (const j in QUEUE) {
-    const r = await PLAYER[j.method](...j.args)
-    j.cb(r)
-}
+const QUEUE = new Queue()
 
-function toParent(kind: string, data?: object) {
+// function resolveQueue(message) {
+//     // Queue is resolved in-order only.
+    
+//     // Find first 
+//     // Mark message 
+//     for (const j in QUEUE) {
+//         console.log('checking queue...')
+//         // TODO: Types.
+//         const r = await PLAYER[j.method](...j.args)
+//         j.cb(r)
+//     }
+// }
+
+
+function toParent(kind: string, id, data?: object) {
     console.log('SENDING TO PARENT:', kind, data)
     process.send({
         kind,
+        id,
         ...(data && { data }),
     })
 }
@@ -25,20 +38,35 @@ process.on('message', (message: IPC_MESSAGES) => {
             block_resolve(message.data)
             break
         case 'PLAYER_EXECUTE':
+            // console.log('RECEIVED:', message)
+            QUEUE.add(
+                () => PLAYER[message.data.method](...message.data.args),
+                (x) => {
+                    console.log('callback invoked', x)
+                    toParent('CHILD_EXECUTE_RESULT', message.id, x)
+                }
+            )
+            QUEUE.process()
+            
             // console.log('i am', PLAYER.name)
-            console.log('RECEIVED:', message)
-            QUEUE.push({
-                method: message.data.method,
-                args: message.data.arg_3,
-                cb: toParent.bind('CHILD_EXECUTE_RESULT'),
-            })
+            // resolveQueue({
+            //     method: message.data.method,
+            //     args: message.data.arg_3,
+            //     cb: toParent.bind('CHILD_EXECUTE_RESULT'),
+            // })
 
-            // Immediately send back.
-            process.send({
-                kind: 'CHILD_EXECUTE_RESULT',
-                data: 'bing bong 123 yolo',
-                id: message.id,
-            })
+            // QUEUE.push({
+            //     method: message.data.method,
+            //     args: message.data.arg_3,
+            //     cb: toParent.bind('CHILD_EXECUTE_RESULT'),
+            // })
+
+            // // Immediately send back.
+            // process.send({
+            //     kind: 'CHILD_EXECUTE_RESULT',
+            //     data: 'bing bong 123 yolo',
+            //     id: message.id,
+            // })
             break
     }
 })
