@@ -21,7 +21,7 @@ language-servers = [
 ]
 # indent = { tab-width = 4, unit = "    " }
 # formatter = { command = 'dprint', args = ["fmt", "--stdin", "ts"] }
-formatter = { command = 'biome', args = ["format", "--stdin-file-path"] }
+formatter = { command = 'biome', args = ["format", "--stdin-file-path", "a.ts"] }
 auto-format = true
 
 [[language]]
