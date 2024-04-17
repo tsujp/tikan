@@ -144,6 +144,17 @@ const players = await Promise.all([white, black])
 //
 // * * * * * * * * * * * * * * * * * * * * * * * MESSAGE PASSING
 // * * * * * * * * * * * * *
+function queueMessage(id, resolver) {
+    QUEUE.push({
+        id,
+        ready: false,
+        // When invoked returns a curried function with arguments curried to resolver.
+        cb: (data) => () => {
+                resolver(data)
+            }
+    })
+}
+
 function resolveQueue(message) {
     // Queue is resolved in-order only.
 
@@ -156,7 +167,7 @@ function resolveQueue(message) {
         }
 
         QUEUE[idx].ready = true
-        QUEUE[idx].cb.bind(message.data)
+        QUEUE[idx].cb = QUEUE[idx].cb(message.data)
     }
 
     // Clear messages out of queue; contiguous `ready` messages only with a
@@ -197,15 +208,16 @@ export async function sendAndAwait(player: number, method: string, ...args: unkn
     //          that matches the one we sent.
     const { promise, resolve } = Promise.withResolvers<IPC_MESSAGES>()
 
-    QUEUE.push({
-        id: globalThis.MESSAGE_ID,
-        ready: false,
-        cb: resolve,
-    })
+    queueMessage(globalThis.MESSAGE_ID, resolve)
+    // QUEUE.push({
+    //     id: globalThis.MESSAGE_ID,
+    //     ready: false,
+    //     cb: resolve,
+    // })
 
     // Wait for message response.
     const reply = await promise
-    console.log('RECEIVED REPLY: reply')
+    console.log('RECEIVED REPLY', reply)
     return reply
 }
 

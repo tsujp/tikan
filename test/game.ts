@@ -112,17 +112,7 @@ export class Game {
     async do(player: string, method: number, ...args: unknown[]) {
         console.log('DO CALLED WITH:', player, method, ...args)
 
-        await sendAndAwait(0, method, ...args)
-
-        console.log('DO GOT RESPONSE')
-
-        // this.#plyr[player].send({
-        //     kind: 'PLAYER_EXECUTE',
-        //     data: {
-        //         method,
-        //         args,
-        //     },
-        // })
+        return await sendAndAwait(0, method, ...args)
     }
 
     // TODO: Make private.
