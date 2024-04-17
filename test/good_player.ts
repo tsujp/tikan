@@ -1,10 +1,10 @@
 import {
     BarretenbergBackend,
     type CompiledCircuit,
-    ProofData,
+    type ProofData,
 } from '@noir-lang/backend_barretenberg'
 import { Noir } from '@noir-lang/noir_js'
-import { logPerf } from './utility/performance_decorator'
+import { logPerf } from '#test/utility/performance_decorator'
 
 // TODO: Add secret to these args and setting via `new` and `constructor`.
 type PlayerArgs = {
@@ -22,7 +22,7 @@ type ProofArtifacts = Awaited<
 type CircuitExecution = Awaited<ReturnType<Noir['execute']>>
 
 export class Player {
-    #util_nr: Noir
+    #util_nr: Noir // TODO: Commitments, etc.
     #game_nr: Noir
     #game_be: BarretenbergBackend
     #secret: string // Hex string, e.g. `0x123`.
@@ -79,13 +79,7 @@ export class Player {
 
     @logPerf
     async getRecursiveArtifacts(proof: ProofData) {
-        console.log('foooooooooooooooooo', proof)
-        const wat = await this.#game_be.generateRecursiveProofArtifacts(
-            proof,
-            proof.publicInputs.length,
-        )
-        console.log('baaaaaaaaaaarrrrrrrrrr')
-        return wat
+        return this.#game_be.generateRecursiveProofArtifacts(proof, proof.publicInputs.length)
     }
 
     @logPerf
@@ -95,7 +89,6 @@ export class Player {
         move_serial: string,
         proof_artifacts?: ProofArtifacts,
     ) {
-        // console.log('moveExecute proof is:', proof)
         const artifacts = proof_artifacts ?? (await this.getRecursiveArtifacts(proof))
 
         return this.#game_nr.execute({
@@ -129,7 +122,6 @@ export class Player {
         move_serial: string,
         proof_artifacts?: ProofArtifacts,
     ) {
-        console.log('PLAY TURN EXECUTED!!!!!!!!!!!!!!!!!!!!!!')
         const move_execute = await this.moveExecute(
             proof,
             board_serial,

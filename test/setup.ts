@@ -150,8 +150,8 @@ function queueMessage(id, resolver) {
         ready: false,
         // When invoked returns a curried function with arguments curried to resolver.
         cb: (data) => () => {
-                resolver(data)
-            }
+            resolver(data)
+        },
     })
 }
 
@@ -209,11 +209,6 @@ export async function sendAndAwait(player: number, method: string, ...args: unkn
     const { promise, resolve } = Promise.withResolvers<IPC_MESSAGES>()
 
     queueMessage(globalThis.MESSAGE_ID, resolve)
-    // QUEUE.push({
-    //     id: globalThis.MESSAGE_ID,
-    //     ready: false,
-    //     cb: resolve,
-    // })
 
     // Wait for message response.
     const reply = await promise
