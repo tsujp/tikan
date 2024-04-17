@@ -24,10 +24,6 @@ const NOTHING_RECURSION = {
     vk_hash: NOTHING_FIELD,
 }
 
-class Queue {
-    #queue = []
-}
-
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
@@ -107,6 +103,7 @@ export class Game {
         }
     }
 
+    // TODO: Make private?
     // You may call `do` yourself for more manual control, otherwise use the methods
     //   provided by the `Proxy` from class instantiation.
     async do(player: string, method: number, ...args: unknown[]) {
@@ -114,13 +111,4 @@ export class Game {
 
         return await sendAndAwait(0, method, ...args)
     }
-
-    // TODO: Make private.
-    // async do(foo: string, bar: number) {
-    //     console.log('called with:', foo, bar)
-    // }
-
-    // async white() {
-    //     return this.do.bind('white')
-    // }
 }

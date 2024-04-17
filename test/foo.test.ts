@@ -45,27 +45,16 @@ describe('legal aggregation', async () => {
                 console.log('white_t1:', white_t1)
                 console.log('------------------------------------------ EXPERIMENT END')
 
-                // process.exit(1)
+                const black_t1 = await game.black.playTurn(
+                    white_t1.prf,
+                    'BBDBVBXBBB',
+                    'VBXBAQ',
+                )
 
-                // const white_t1 = await plyr.white.playTurn(
-                //     start_proof,
-                //     'BBDBVBXBAA', // TODO: Current board state should be abstracted away into Player class.
-                //     'BBDBBI',
-                //     start_artifacts,
-                // )
+                // const white_t2 = await game.white.playTurn(black_t1.prf, 'BBDBVBXBAC', 'BBDBBI')
 
-                // const black_t1 = await plyr.black.playTurn(
-                //     white_t1.prf,
-                //     'BBDBVBXBBB',
-                //     'VBXBAQ',
-                // )
-
-                // const white_t2 = await plyr.white.playTurn(black_t1.prf, 'BBDBVBXBAC', 'BBDBBI')
-
-                // const white_accepts = await plyr.white.verifyProof(black_t1.prf)
-                // const black_accepts = await plyr.black.verifyProof(black_t1.prf)
-                const white_accepts = true
-                const black_accepts = true
+                const white_accepts = await game.white.verifyProof(black_t1.prf)
+                const black_accepts = await game.black.verifyProof(black_t1.prf)
 
                 expect(white_accepts).toBe(true)
                 expect(black_accepts).toBe(true)
