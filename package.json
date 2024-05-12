@@ -12,7 +12,7 @@
   "scripts": {
     "bb:term": "bun run --cwd tooling/bb_term do",
     "bb:web": "bun run --cwd tooling/bb_web do",
-    "do:test": "bun run --cwd test test",
+    "do:test": "bun run ./test/harness/output.ts",
     "do:test:watch": "bun run --cwd test test:watch",
     "fmt": "dprint fmt"
   },

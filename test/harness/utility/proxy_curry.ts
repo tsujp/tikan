@@ -1,19 +1,10 @@
-type ExtractInstanceType<T> = T extends new (
-    ...args: any[]
-) => infer R
-    ? R
-    : T extends { prototype: infer P }
-      ? P
-      : any
-
-type PickMethods<T> = {
-    [K in keyof T as T[K] extends (...args: any[]) => any ? K : never]: T[K]
-}
-
 // XXX: This implementation constructs methods at invocation time. Use of `Proxy`
 //      would construct the first layers at invocation time and the rest as called
 //      at runtime. Types with `Proxy` and even `Object.assign()` are very hard
 //      so for now the return type is manually asserted. SO THE TYPES HERE ARE
+
+import type { ExtractInstanceType, PickMethods } from '#test/harness/types'
+
 //      NOT DERIVED FROM THE IMPLEMENTATION. CHANGING EITHER REQUIRES UPDATING!
 export function proxyCurry<
     const S extends object,

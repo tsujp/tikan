@@ -1,17 +1,11 @@
-import { basename, join } from 'node:path'
+import type { AllCircuits } from '#test/harness/types'
 import type { CompiledCircuit } from '@noir-lang/backend_barretenberg'
-import type { AllCircuits } from '#test/types'
+import { basename, join } from 'node:path'
 
-export async function getCircuitDefinitions(
-    root_dir: string,
-): Promise<AllCircuits> {
-    const { name, workspace } = await import(
-        join(root_dir, 'Nargo.toml')
-    ).catch((e) => {
+export async function resolveAvailableCircuits(root_dir: string): Promise<AllCircuits> {
+    const { name, workspace } = await import(join(root_dir, 'Nargo.toml')).catch((e) => {
         console.error(e)
-        return Promise.reject(
-            'Missing/malformed Nargo.toml in project root directory',
-        )
+        return Promise.reject('Missing/malformed Nargo.toml in project root directory')
     })
 
     if (name !== '__ROOT__') {

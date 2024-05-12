@@ -2,11 +2,7 @@
 
 // This won't work correctly if you have a non `async` function return a `Promise`
 //   and the extra effort to make that so for this test suite is not worth it.
-export function logPerf<T> (
-    target: T,
-    key: string,
-    descriptor: TypedPropertyDescriptor<T>,
-) {
+export function logPerf<T>(target: T, key: string, descriptor: TypedPropertyDescriptor<T>) {
     // console.log('target', target)
     // console.log('key', key)
     // console.log('descriptor', descriptor)

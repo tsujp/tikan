@@ -1,82 +1,49 @@
-import { describe, test, expect, beforeAll } from 'bun:test'
-import { testInvokeGuard } from '#test/utility/guard'
+import { Match, describe, test } from '#test/harness'
+import { expect } from 'bun:test'
 
-testInvokeGuard()
-
-function getGame() {
-    const game = Game.new({
+function getMatch() {
+    const match = Match.new({
         white: globalThis.TIKAN_WHITE,
         black: globalThis.TIKAN_BLACK,
         start: globalThis.TIKAN_START,
     })
 
     return {
-        game,
+        match,
         // Wicked overkill considering `Game` is not async but it might be in
         //   future plus this pattern is kind of nice anyway instead of `beforeAll()`
         //   and hoisting scope with `let`.
         [Symbol.dispose]: () => {
-            console.log('disposing of game...')
+            // TODO: When the dispose happens (and verify its actually happening AFTER cos it doesnt look like it...?)
+            //       log the game somewhere appropriate?
+            // console.log('disposing of game...')
         },
     }
 }
 
-describe('legal aggregation', async () => {
-    using g = getGame()
-    const game = g.game
+describe('legal aggregation', () => {
+    using g = getMatch()
+    const match = g.match
 
     // No hidden state.
-    describe('basic moves', async () => {
-        __test(
-            'white, black, white, verify',
-            async () => {
-                const { proof: start_proof, artifacts: start_artifacts } =
-                    await game.startGame()
+    describe('basic moves', () => {
+        test('white, black, white, verify', async () => {
+            const { proof: start_proof, artifacts: start_artifacts } = await match.startGame()
+            const white_t1 = await match.white.playTurn(
+                start_proof,
+                'BBDBVBXBAA', // TODO: Current board state should be abstracted away into Player class.
+                'BBDBBI',
+                start_artifacts,
+            )
 
-                // TODO: When commitments are checked, and board state updates the board inputs here will need to be fixed.
+            const black_t1 = await match.black.playTurn(white_t1.prf, 'BBDBVBXBBB', 'VBXBAQ')
+            const white_t2 = await match.white.playTurn(black_t1.prf, 'BBDBVBXBAC', 'BBDBBI')
 
-                console.log('------------------------------------------ EXPERIMENT START')
-                const white_t1 = await game.white.playTurn(
-                    start_proof,
-                    'BBDBVBXBAA', // TODO: Current board state should be abstracted away into Player class.
-                    'BBDBBI',
-                    start_artifacts,
-                )
-                console.log('white_t1:', white_t1)
-                console.log('------------------------------------------ EXPERIMENT END')
+            const white_accepts = await match.white.verifyProof(white_t2.prf)
+            const black_accepts = await match.black.verifyProof(white_t2.prf)
 
-                const black_t1 = await game.black.playTurn(
-                    white_t1.prf,
-                    'BBDBVBXBBB',
-                    'VBXBAQ',
-                )
-
-                // const white_t2 = await game.white.playTurn(black_t1.prf, 'BBDBVBXBAC', 'BBDBBI')
-
-                const white_accepts = await game.white.verifyProof(black_t1.prf)
-                const black_accepts = await game.black.verifyProof(black_t1.prf)
-
-                expect(white_accepts).toBe(true)
-                expect(black_accepts).toBe(true)
-            },
-            120_000,
-        )
+            expect(white_accepts).toBe(true)
+            expect(black_accepts).toBe(true)
+        }, 120000)
     })
 })
-
-// TODO: Maybe just have _our_ test output logs beforehand, then all the `bun
-//       test` output logs afterwards; clean seperation.
-// NB: `bun test` output is on `stderr` by default. All of it.
-import { type Test } from 'bun:test'
-import { Game } from '#test/game'
-function __test(...args: Parameters<Test>): void {
-    // There's not really a way to 'wrap' the test API output nicely in Bun
-    //   currently because `bun test` implements custom logic to output the
-    //   tests it's running, coverage, statistics etc. To make the output a
-    //   teeny bit more readable though we prefix each test we're running with
-    //   it's deepest name (`expect.getName()` API equivalent does not exist
-    //   yet) as the test results are printed afterwards and we cannot change
-    //   that.
-    console.log(`----------- ${args[0]}`)
-    test(...args)
-}

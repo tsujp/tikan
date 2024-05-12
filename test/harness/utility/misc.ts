@@ -1,7 +1,12 @@
 import { join } from 'node:path'
-import { readableStreamToText } from 'bun'
 import chalk from 'chalk'
-import { NonZeroReturnError } from '../types'
+import { NonZeroReturnError } from '#test/harness/utility'
+
+const MEGABYTES = 1_048_576
+
+export function printMemory(mem: number) {
+    console.log((mem / MEGABYTES).toFixed(1))
+}
 
 // TODO: waste time typing this (TypeScript) later.
 // @ts-ignore
@@ -99,13 +104,13 @@ export function template(strs, ...expressions) {
 // const COMMAND_DESC = template`${'>>cyan.bold'}${0}+${';'}${0} to ${'>>red'}${0} and ${1}${';'} ${2}: |`
 export const COMMAND_DESC = template`${0}${'>>gray'}:${';'} ${1}`
 
-const COMMAND_ERROR = template`\n${'>>red.bold'}error${';'} ${'>>bold'}${0}${';'}\
+export const COMMAND_ERROR = template`\n${'>>red.bold'}error${';'} ${'>>bold'}${0}${';'}\
 ${3}
-${'>>bold'}command${';'}: \`${1}\` in directory ${2}`
+\`${1}\` in directory ${2}`
 
 export const COMMAND_SUCCESS = template`${'>>green'}ok${';'} ${'>>hex("#BBB")'}${0}${';'}`
 
-const EMPTY_FILLER = template`${'>>hex("#333")'}<${0}>${';'}`
+export const EMPTY_FILLER = template`${'>>hex("#333")'}<${0}>${';'}`
 
 // Asynchronously executes the given command and logs output success or error.
 // Optional callback mutates success (only) output before printing.
@@ -114,7 +119,7 @@ export async function logCommand(
     // Yes this API sucks, tacking this on for now. Rewrite all this trash later.
     desc: string | false,
     err: string,
-    cb?: (cmd_stdout: string) => string,
+    cb?: (cmd_stdout: string, cmd_stderr: string) => string,
 ) {
     try {
         // const { exitCode, stdout, stderr } = Bun.spawn(...cmd)
@@ -138,13 +143,18 @@ export async function logCommand(
             throw new NonZeroReturnError(err, new TextDecoder().decode(stderr).trim())
         }
 
+        // Stderr probably won't appear in the same place now since we're
+        //   sequencing this with `await`.
+        const cmd_stdout_raw = (await new Response(stdout).text()).trim()
+        const cmd_stderr_raw = (await new Response(stderr).text()).trim()
+
+        const cmd_out = cb
+            ? cb(cmd_stdout_raw, cmd_stderr_raw)
+            : `${cmd_stdout_raw}${cmd_stderr_raw}`
+
         if (typeof desc === 'string') {
-            const cmd_stdout_raw = (await readableStreamToText(stdout)).trim()
-
-            const cmd_stdout = cb ? cb(cmd_stdout_raw) : cmd_stdout_raw
-
             console.log(
-                COMMAND_SUCCESS(cmd_stdout.length === 0 ? EMPTY_FILLER('empty') : cmd_stdout),
+                COMMAND_SUCCESS(cmd_out.length === 0 ? EMPTY_FILLER('empty') : cmd_out),
             )
         }
     } catch (e: unknown) {
@@ -195,4 +205,25 @@ export function logHeading(text: string, conspicuous?: boolean) {
     }
 
     console.log(chalk.yellow(padCentre(text, roseChar)))
+}
+
+// Really basic spinner, nothing fancy, blocking for single lines only.
+const SPINNER_FRAMES = ['/', '-', '\\', '|', '|']
+const SPINNER_FRAME_COUNT = SPINNER_FRAMES.length
+export function spinner(annotation: string) {
+    const _a = COMMAND_DESC(annotation)
+    let frame = 0
+
+    // Print immediately without delay.
+    process.stdout.write(`\r${_a}${SPINNER_FRAMES[frame]} `)
+
+    const interval = setInterval(() => {
+        frame = (frame + 1) % SPINNER_FRAME_COUNT
+        process.stdout.write(`\r${_a}${SPINNER_FRAMES[frame]} `)
+    }, 125)
+
+    return (completion_message: string) => {
+        clearInterval(interval)
+        process.stdout.write(`\r${_a}${COMMAND_SUCCESS(completion_message)}\n`)
+    }
 }

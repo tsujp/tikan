@@ -1,25 +1,32 @@
+import type {
+    CircuitExecution,
+    ExtractInstanceType,
+    PickMethods,
+    Prettify,
+    ProofArtifacts,
+} from '#test/harness/types'
+import { logPerf } from '#test/harness/utility'
 import {
     BarretenbergBackend,
     type CompiledCircuit,
     type ProofData,
 } from '@noir-lang/backend_barretenberg'
 import { Noir } from '@noir-lang/noir_js'
-import { logPerf } from '#test/utility/performance_decorator'
 
-// TODO: Add secret to these args and setting via `new` and `constructor`.
-type PlayerArgs = {
-    secret: bigint
-    util: CompiledCircuit
+export type PlayerCircuits = {
     game: CompiledCircuit
-    name: string
-    threads?: number
+    utility: CompiledCircuit
 }
 
-type ProofArtifacts = Awaited<
-    ReturnType<BarretenbergBackend['generateRecursiveProofArtifacts']>
+export type PlayerArgs = Prettify<
+    {
+        name: 'WHITE' | 'BLACK'
+        secret: bigint
+        threads?: number
+    } & PlayerCircuits
 >
 
-type CircuitExecution = Awaited<ReturnType<Noir['execute']>>
+export type PlayerMethods = Prettify<PickMethods<ExtractInstanceType<typeof Player>>>
 
 export class Player {
     #util_nr: Noir // TODO: Commitments, etc.
@@ -38,7 +45,7 @@ export class Player {
         // TODO: Implement this in JS instead, so that another instantiation (this)
         //       isn't required.
         // Utility helpers (like creating a commitment).
-        this.#util_nr = new Noir(args.util)
+        this.#util_nr = new Noir(args.utility)
 
         // Actual game.
         this.#game_be = new BarretenbergBackend(args.game, { threads: args.threads })
@@ -52,23 +59,17 @@ export class Player {
     static async new(args: PlayerArgs) {
         Player.#internal_construction = true
 
-        if (args.threads == null) {
-            args.threads = 8
-        }
-
-        // FUTURE JORDAN: I bet if I structured clone `args` and then do
-        //                as I've done on the clone TS will shut up. It probably
-        //                is protecting against someone else with a reference to
-        //                the `args` object (as it is right now) unsetting
-        //                threads.
-        // UPDATE: Nope, that's not it. Lol TypeScript.
-
         // Other validations (later on if required) go here.
+
         // TODO: Stringify player secret and check length is within 254 bits which
         //       is the maximum Field size for default backend (confirm it is
         //       254 bits and not 255).
 
-        const inst = new Player(args)
+        const inst = new Player({
+            ...args,
+            threads: args.threads ?? 8,
+        })
+
         await inst.#game_be.instantiate()
         return inst
     }
@@ -122,6 +123,7 @@ export class Player {
         move_serial: string,
         proof_artifacts?: ProofArtifacts,
     ) {
+        console.log('PLAY TURN INVOKED')
         const move_execute = await this.moveExecute(
             proof,
             board_serial,
@@ -129,6 +131,7 @@ export class Player {
             proof_artifacts,
         )
         const move_proof = await this.moveProve(move_execute.witness)
+        console.log('got move proof', move_proof)
 
         return {
             exc: move_execute,

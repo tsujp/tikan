@@ -1,11 +1,10 @@
-import { BarretenbergBackend } from '@noir-lang/backend_barretenberg'
-import { CompiledCircuit, Noir } from '@noir-lang/noir_js'
-import { Player } from './good_player'
-import { logPerf } from './utility/performance_decorator'
-import { proxyCurry } from '#test/utility/proxy_curry'
-import { sendAndAwait } from '#test/setup'
-
-// TODO: Rename to `match.ts` or something.
+import { BarretenbergBackend, type CompiledCircuit } from '@noir-lang/backend_barretenberg'
+// import { sendAndAwait } from '#test/setup'
+import type { Prettify } from '#test/harness/types'
+import { logPerf, proxyCurry } from '#test/harness/utility'
+import { Noir } from '@noir-lang/noir_js'
+import type { AsyncWorker } from '#test/async_worker'
+import { Player, type PlayerArgs, type PlayerMethods } from '#test/harness'
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -27,16 +26,22 @@ const NOTHING_RECURSION = {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-type GameArgs = { white: Player; black: Player; start: CompiledCircuit }
+type PlayerNames = Lowercase<PlayerArgs['name']>
+type Players = {
+    [K in PlayerNames]: AsyncWorker
+}
 
-export class Game {
+type MatchArgs = Prettify<{ start: CompiledCircuit } & Players>
+
+export class Match {
     #start_cr: CompiledCircuit
-    readonly #plyr: { [key: string]: Player }
+    // TODO: Put the 'WHITE' and 'BLACK' union literal for key here.
+    readonly #plyr: Players
 
     static #internal_construction = false
 
-    private constructor(args: Required<GameArgs>) {
-        if (Game.#internal_construction === false) {
+    private constructor(args: Required<MatchArgs>) {
+        if (Match.#internal_construction === false) {
             throw new TypeError('Execute .new() to instantiate')
         }
 
@@ -47,12 +52,12 @@ export class Game {
         }
     }
 
-    static new(args: GameArgs) {
-        Game.#internal_construction = true
+    static new(args: MatchArgs) {
+        Match.#internal_construction = true
 
         // XXX: Any further validation before instantiation goes here.
 
-        const inst = new Game(args)
+        const inst = new Match(args)
         return proxyCurry(inst, 'do', ['white', 'black'], Player)
     }
 
@@ -61,13 +66,13 @@ export class Game {
     // @ts-ignore
     @logPerf
     async startGame() {
-        console.log('this is', this)
+        // console.log('this is', this)
         // TODO: Get max threads from that new Bun API in v1.1
 
         // This circuit is one-time only so instantiate backend etc and destroy it
         //   after we have the proof.
-        console.log('start cr', this.#start_cr)
-        const start_cr = structuredClone(this.#start_cr)
+        // console.log('start cr', this.#start_cr)
+        const start_cr = structuredClone(this.#start_cr) // So we 'own' it.
         const start_be = new BarretenbergBackend(start_cr, { threads: 8 })
         const start_nr = new Noir(start_cr, start_be)
 
@@ -106,9 +111,21 @@ export class Game {
     // TODO: Make private?
     // You may call `do` yourself for more manual control, otherwise use the methods
     //   provided by the `Proxy` from class instantiation.
-    async do(player: string, method: number, ...args: unknown[]) {
-        console.log('DO CALLED WITH:', player, method, ...args)
+    async do<M extends keyof PlayerMethods>(
+        player: PlayerNames,
+        method: M,
+        ...args: Parameters<PlayerMethods[M]>
+    ) {
+        // console.log('DO CALLED WITH:', player, method, ...args)
 
-        return await sendAndAwait(0, method, ...args)
+        const result = this.#plyr[player].postMessage({
+            kind: 'WORKER_EXEC_REQUEST',
+            payload: {
+                method,
+                args,
+            },
+        })
+
+        return result
     }
 }
