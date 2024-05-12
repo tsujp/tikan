@@ -8,7 +8,8 @@ import { TextLineStream } from '#test/harness/utility'
 
 // NB: All Bun's own test information is in stderr by default.
 const { exited, stdout, stderr } = Bun.spawn(
-    ['bun', 'test', '--preload', './test/harness/preload.ts'],
+    // TODO: Argument parsing and/or passing?
+    ['bun', 'test', '--preload', './test/harness/preload.ts', ...Bun.argv.slice(2)],
     {
         stdout: 'inherit', // Merged to parent.
         stderr: 'pipe', // Stream buffer.

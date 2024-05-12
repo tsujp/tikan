@@ -42,14 +42,14 @@ fn state_commitment(state: State) -> (Field, Field, Board) {
   let commitment = poseidon2::hash(commit_to.storage(), 7);
   dep::std::println(f"MOVE HASH IS: {commitment}");
 
-  // Why bjj.base8?
+  // TODO: Why bjj.base8?
   let bjj = baby_jubjub();
   let pubkey = bjj.curve.mul(state.secret, bjj.base8);
 
   // println(pubkey.x);
   // println(pubkey.y);
 
-  // Why?
+  // TODO: Why?
   let identity = poseidon2::hash([commitment, pubkey.x, pubkey.y], 3);
 
   // (pedersen_commitment([move_hash, pst_board_hash]), pst_board)

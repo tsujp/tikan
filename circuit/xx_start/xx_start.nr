@@ -4,22 +4,22 @@ use dep::lib::{Board, SerialisedStateIn};
 fn main(start_serial: SerialisedStateIn) {
     let sb = Board::deserialise(start_serial);
 
-    // p1
+    // Piece 1
     assert(sb.players[0][0].idx == 1);
     assert(sb.players[0][0].lights == true);
     assert(sb.players[0][0].captured == false);
 
-    // p2
+    // Piece 2
     assert(sb.players[0][1].idx == 3);
     assert(sb.players[0][1].lights == true);
     assert(sb.players[0][1].captured == false);
 
-    // p3
+    // Piece 3
     assert(sb.players[1][0].idx == 21);
     assert(sb.players[1][0].lights == true);
     assert(sb.players[1][0].captured == false);
 
-    // p4
+    // Piece 4
     assert(sb.players[1][1].idx == 23);
     assert(sb.players[1][1].lights == true);
     assert(sb.players[1][1].captured == false);

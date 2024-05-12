@@ -1,4 +1,3 @@
-// TODO: Argument parsing and/or passing?
 import { Circuits, Players, log } from '#test/harness'
 
 const circuits = await Circuits(['xx_player', 'xx_start', 'xx_util'])

@@ -14,7 +14,7 @@ use dep::std::hash::{pedersen_hash, pedersen_commitment, PedersenPoint};
 //
 // So 8 characters are required for this. There are two special encoding patterns
 //   regarding captured pieces and blinded pieces. The former comes from the
-//   (informal) constraint of a constant input size, so avoid extra special-
+//   (informal) constraint of a constant input size, so to avoid extra special-
 //   purpose padding-characters we:
 //     (3) Represent a captured piece as having no index value, with lights on.
 //     (4) Represent a blinded piece as having no index value, with lights off.
