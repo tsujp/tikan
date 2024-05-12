@@ -1,4 +1,4 @@
-import type { IPC_WORKER_MESSAGES, RawParentMessage, WorkerMessage } from '#test/harness/types'
+import type { WW_WORKER_MESSAGES, RawParentMessage, WorkerMessage } from '#test/harness/types'
 
 // ----------------------------------------------------------------------------
 // ------------------------------------ Helper
@@ -16,7 +16,7 @@ function promiseWithResolvers() {
     // XXX: Remember TypeScript automatically expands unions, so accessing the
     //      `payload` property here is accessing it on all members of the given
     //      union and returning that as a union.
-    return Promise.withResolvers<IPC_WORKER_MESSAGES['payload']>()
+    return Promise.withResolvers<WW_WORKER_MESSAGES['payload']>()
 }
 
 // ----------------------------------------------------------------------------

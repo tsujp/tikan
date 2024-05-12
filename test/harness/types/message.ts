@@ -73,18 +73,18 @@ type ALL_MESSAGES =
     | MSG_WORKER_EXECUTE_REQUEST
     | MSG_WORKER_EXECUTE_RESULT
 
-type PARENT_MESSAGES = Extract<IPC_MESSAGES, FromParent>
-type WORKER_MESSAGES = Extract<IPC_MESSAGES, FromWorker>
+type PARENT_MESSAGES = Extract<WW_MESSAGES, FromParent>
+type WORKER_MESSAGES = Extract<WW_MESSAGES, FromWorker>
 
 type WithoutKeys<T, K extends string> = T extends object ? Omit<T, K> : never
 
-export type RawParentMessage = Prettify<WithoutKeys<IPC_PARENT_MESSAGES, 'id' | 'origin'>>
-export type ParentMessage = MessageEvent<IPC_PARENT_MESSAGES>
+export type RawParentMessage = Prettify<WithoutKeys<WW_PARENT_MESSAGES, 'id' | 'origin'>>
+export type ParentMessage = MessageEvent<WW_PARENT_MESSAGES>
 
-export type RawWorkerMessage = Prettify<WithoutKeys<IPC_WORKER_MESSAGES, 'origin'>>
-export type WorkerMessage = MessageEvent<IPC_WORKER_MESSAGES>
+export type RawWorkerMessage = Prettify<WithoutKeys<WW_WORKER_MESSAGES, 'origin'>>
+export type WorkerMessage = MessageEvent<WW_WORKER_MESSAGES>
 // export type QueuedWorkerMessage = MessageEvent<Extract<IPC_WORKER_MESSAGES, { id: number }>>
 
-export type IPC_MESSAGES = ALL_MESSAGES
-export type IPC_PARENT_MESSAGES = PARENT_MESSAGES
-export type IPC_WORKER_MESSAGES = WORKER_MESSAGES
+export type WW_MESSAGES = ALL_MESSAGES
+export type WW_PARENT_MESSAGES = PARENT_MESSAGES
+export type WW_WORKER_MESSAGES = WORKER_MESSAGES

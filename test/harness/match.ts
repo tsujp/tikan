@@ -1,10 +1,8 @@
 import { BarretenbergBackend, type CompiledCircuit } from '@noir-lang/backend_barretenberg'
-// import { sendAndAwait } from '#test/setup'
+import { Noir } from '@noir-lang/noir_js'
+import { type AsyncWorker, Player, type PlayerArgs, type PlayerMethods } from '#test/harness'
 import type { Prettify } from '#test/harness/types'
 import { logPerf, proxyCurry } from '#test/harness/utility'
-import { Noir } from '@noir-lang/noir_js'
-import type { AsyncWorker } from '#test/async_worker'
-import { Player, type PlayerArgs, type PlayerMethods } from '#test/harness'
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -66,7 +64,6 @@ export class Match {
     // @ts-ignore
     @logPerf
     async startGame() {
-        // console.log('this is', this)
         // TODO: Get max threads from that new Bun API in v1.1
 
         // This circuit is one-time only so instantiate backend etc and destroy it
@@ -116,8 +113,6 @@ export class Match {
         method: M,
         ...args: Parameters<PlayerMethods[M]>
     ) {
-        // console.log('DO CALLED WITH:', player, method, ...args)
-
         const result = this.#plyr[player].postMessage({
             kind: 'WORKER_EXEC_REQUEST',
             payload: {

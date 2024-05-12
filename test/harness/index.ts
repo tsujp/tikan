@@ -1,10 +1,13 @@
 // Hoist exports from `.ts` files.
 
-// export * from '#test/harness/setup_circuit'
+// Setup/check.
 export * from '#test/harness/setup'
+export * from '#test/harness/precheck'
+// Augment Bun.
+export * from '#test/harness/exec'
 export * from '#test/harness/bun_jest'
-// export * from '#test/harness/guard'
+// Harness primitives.
+export * from '#test/harness/log'
+export * from '#test/harness/async_worker'
 export * from '#test/harness/match'
 export * from '#test/harness/player'
-// export * from '#test/harness/player_process'
-export * from '#test/harness/stream'

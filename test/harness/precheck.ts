@@ -1,7 +1,6 @@
-import { $exec } from '#test/exec_v2'
 import type { AllCircuits } from '#test/harness/types'
 import { COMMAND_DESC, COMMAND_SUCCESS } from '#test/harness/utility'
-import { SilenceLogParam, log } from '#test/loggies'
+import { $exec, SilenceLogParam, log } from '#test/harness'
 
 export async function assertEnvironment(wd: string, circuits: AllCircuits) {
     log.heading('Check and load', true)

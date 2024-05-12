@@ -1,11 +1,14 @@
-import { AsyncWorker } from '#test/async_worker'
-import type { PlayerArgs, PlayerCircuits } from '#test/harness'
+import {
+    AsyncWorker,
+    assertEnvironment,
+    type PlayerArgs,
+    type PlayerCircuits,
+} from '#test/harness'
 import type { Prettify } from '#test/harness/types'
 import {
     resolveAvailableCircuits,
     getCompiledCircuits,
     getProjectRoot,
-    assertEnvironment,
     spinner,
 } from '#test/harness/utility'
 
@@ -51,40 +54,6 @@ async function setupPlayers(config: SetupConfig) {
     const spinterval = spinner('init players')
 
     const __players = config.secrets.map(async (secret, i) => {
-        // -- ORIGINAL AND WORKS FINE!
-        // const { promise, resolve } = Promise.withResolvers()
-
-        // const worker = new Worker(workerUrl)
-
-        // // When `CHILD_READY` event is received the worker's message handler is
-        // //   set to that defined by `config.message_broker`.
-        // worker.onmessage = (event) => {
-        //     // console.log(event.target) // Contains worker thread info.
-        //     if (event.data.kind === 'CHILD_READY') {
-        //         resolve()
-
-        //         worker.onmessage = config.message_broker
-        //         return
-        //     }
-
-        //     throw new Error('Out of order message during setup (worker not ready yet!)')
-        // }
-
-        // // Don't need to wait for the worker _thread_ to spawn as Bun will automatically
-        // //   queue our messages and send them when the thread comes alive.
-        // worker.postMessage({
-        //     kind: 'PLAYER_DEFINITION',
-        //     payload: {
-        //         name: i === 0 ? 'WHITE' : 'BLACK',
-        //         threads: config.threads,
-        //         secret,
-        //         ...config.circuits,
-        //     },
-        // })
-
-        // await promise
-        // -- END ORIGINAL AND WORKS FINE!
-
         const worker = new AsyncWorker(workerUrl)
 
         await worker.postMessage({
@@ -100,7 +69,6 @@ async function setupPlayers(config: SetupConfig) {
         return worker
     })
 
-    // return Promise.all(__players)
     const all_players = Promise.all(__players)
     await all_players
 

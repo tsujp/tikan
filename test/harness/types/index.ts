@@ -4,7 +4,7 @@ export type * from '#test/harness/types/util'
 export type * from '#test/harness/types/noir'
 export type * from '#test/harness/types/numeric'
 export type * from '#test/harness/types/tikan'
-export type * from '#test/harness/types/ipc'
+export type * from '#test/harness/types/message'
 
 // TODO: Clean up the below dumping ground.
 

@@ -1,6 +1,6 @@
-import { TextLineStream } from '#test/harness'
-import { log } from '#test/loggies'
 import chalk from 'chalk'
+import { log } from '#test/harness'
+import { TextLineStream } from '#test/harness/utility'
 
 // This file runs our test suite (you could invoke it yourself if you'd like)
 //   and prints our logs first, and then Bun's which Bun itself outputs on

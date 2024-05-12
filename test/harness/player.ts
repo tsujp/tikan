@@ -1,3 +1,9 @@
+import {
+    BarretenbergBackend,
+    type CompiledCircuit,
+    type ProofData,
+} from '@noir-lang/backend_barretenberg'
+import { Noir } from '@noir-lang/noir_js'
 import type {
     CircuitExecution,
     ExtractInstanceType,
@@ -6,12 +12,6 @@ import type {
     ProofArtifacts,
 } from '#test/harness/types'
 import { logPerf } from '#test/harness/utility'
-import {
-    BarretenbergBackend,
-    type CompiledCircuit,
-    type ProofData,
-} from '@noir-lang/backend_barretenberg'
-import { Noir } from '@noir-lang/noir_js'
 
 export type PlayerCircuits = {
     game: CompiledCircuit
