@@ -27,3 +27,12 @@ fn main(start_serial: SerialisedStateIn) {
     assert(sb.turn == 0);
     assert(sb.halfmove == 0);
 }
+
+// XXX: As at `0.26.0+a0f7474ae6bd74132efdb945d2eb2383f3913cce` cannot test a
+//      function which is attributed with `#[recursive]`. Attempting to do so
+//      panicks. So, the tests are in JS-land instead.
+//
+// #[test]
+// fn legal_start_board() {
+//     main("BBDBVBXBAA");
+// }

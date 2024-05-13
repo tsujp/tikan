@@ -61,20 +61,19 @@ export class Match {
 
     // Start of the game is a proof from concerning all piece positions which are
     //   always (all) public initially.
-    // @ts-ignore
     @logPerf
-    async startGame() {
+    async startGame({ board = VALID_START_BOARD, for_aggregation = false } = {}) {
         // TODO: Get max threads from that new Bun API in v1.1
 
         // This circuit is one-time only so instantiate backend etc and destroy it
         //   after we have the proof.
         // console.log('start cr', this.#start_cr)
         const start_cr = structuredClone(this.#start_cr) // So we 'own' it.
-        const start_be = new BarretenbergBackend(start_cr, { threads: 8 })
+        const start_be = new BarretenbergBackend(start_cr, { threads: 2 })
         const start_nr = new Noir(start_cr, start_be)
 
         const start_proof = await start_nr.generateProof({
-            start_serial: 'BBDBVBXBAA',
+            start_serial: board,
         })
 
         const start_artifacts = await start_be.generateRecursiveProofArtifacts(
@@ -97,7 +96,10 @@ export class Match {
         //   (2) 16 because the proof aggregation object is implicitly a public
         //       input to a `#[recursive]` circuit.
 
-        start_proof.publicInputs = NOTHING_RECURSION.public
+        if (for_aggregation) {
+            // XXX: Required or things silently break. Behind a flag for testing.
+            start_proof.publicInputs = NOTHING_RECURSION.public
+        }
 
         return {
             proof: start_proof,

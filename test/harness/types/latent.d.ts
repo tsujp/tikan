@@ -9,9 +9,12 @@ export type SetRequired<BaseType, Keys extends keyof BaseType> = BaseType &
 
 declare global {
     var MESSAGE_ID: number
+
     var TIKAN_WHITE: AsyncWorker
     var TIKAN_BLACK: AsyncWorker
     var TIKAN_START: CompiledCircuit
+
+    var __TEST_PATH: Array<string>
 
     // See: https://github.com/microsoft/TypeScript/issues/44253#issuecomment-1097202653
     // Thanks to @jamiebuilds at the above link for fixing this stupidity.

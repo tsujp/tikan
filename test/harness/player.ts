@@ -70,7 +70,10 @@ export class Player {
             threads: args.threads ?? 8,
         })
 
-        await inst.#game_be.instantiate()
+        // XXX: Because we need to run some basic tests now too (like a valid
+        //      start board) we no longer await on this; it will be done when
+        //      first required automatically by NoirJS.
+        // await inst.#game_be.instantiate()
         return inst
     }
 

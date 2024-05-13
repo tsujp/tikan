@@ -1,25 +1,5 @@
-import { Match, describe, test } from '#test/harness'
 import { expect } from 'bun:test'
-
-function getMatch() {
-    const match = Match.new({
-        white: globalThis.TIKAN_WHITE,
-        black: globalThis.TIKAN_BLACK,
-        start: globalThis.TIKAN_START,
-    })
-
-    return {
-        match,
-        // Wicked overkill considering `Game` is not async but it might be in
-        //   future plus this pattern is kind of nice anyway instead of `beforeAll()`
-        //   and hoisting scope with `let`.
-        [Symbol.dispose]: () => {
-            // TODO: When the dispose happens (and verify its actually happening AFTER cos it doesnt look like it...?)
-            //       log the game somewhere appropriate?
-            // console.log('disposing of game...')
-        },
-    }
-}
+import { describe, getMatch, test } from '#test/harness'
 
 describe('legal aggregation', () => {
     using g = getMatch()
