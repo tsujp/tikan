@@ -267,10 +267,6 @@ impl Board {
     let valid_move = (move_delta == 6) | (move_delta == 5)| (move_delta == 4) | (move_delta == 1);
     assert(valid_move, "invalid move pattern");
 
-    // TODO: It's ugly but constrain if halfmove == 0 (whites first turn) that white
-    //       has correct starting pieces. And if halfmove == 1 (blacks first turn) that
-    //       black has correct starting pieces.
-
     // Update players' piece state.
     // new_players[self.turn][piece_idx.unwrap_unchecked()].idx = to;
     new_players[self.turn][move.idx].idx = to;

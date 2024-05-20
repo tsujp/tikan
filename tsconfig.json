@@ -15,6 +15,7 @@
     "resolveJsonModule": true,
     "downlevelIteration": true,
     "noImplicitAny": true,
+    "verbatimModuleSyntax": true,
     "plugins": [],
     "lib": [
       "ESNext"

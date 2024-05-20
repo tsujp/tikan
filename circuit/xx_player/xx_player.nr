@@ -23,14 +23,16 @@ fn main (
   secret: Field,
   // state_commitment: pub PedersenPoint,
 ) {
-  let cur_board = Board::deserialise(cur_state_serial);
+  if cur_state_serial != "BBDBVBXBAA" {
+    dep::std::verify_proof(
+      vk.as_slice(),
+      proof.as_slice(),
+      public.as_slice(),
+      vk_hash,
+    );
+  }
 
-  dep::std::verify_proof(
-    vk.as_slice(),
-    proof.as_slice(),
-    public.as_slice(),
-    vk_hash,
-  );
+  let cur_board = Board::deserialise(cur_state_serial);
 
   let move = Move::deserialise(cur_move_serial);
 
