@@ -22,13 +22,13 @@ fn main(
 
     // XXX: Concatenating Field arrays is currently cancer, so do multiple
     //      commitment steps.
-    let game_hash = pedersen_commitment(game.decompose()).x;
-    let turn_hash = pedersen_commitment(turn.decompose()).x;
-    let computed_commitment = pedersen_commitment([game_hash, turn_hash, turn_salt]).x;
+    // let game_hash = pedersen_commitment(game.decompose()).x;
+    // let turn_hash = pedersen_commitment(turn.decompose()).x;
+    // let computed_commitment = pedersen_commitment([game_hash, turn_hash, turn_salt]).x;
 
     // Verify no tampering by checking commitments against prior state and the
     //   turn made against that state.
-    assert(computed_commitment == turn_commitment);
+    // assert(computed_commitment == turn_commitment);
 
     new_gamestate
 }

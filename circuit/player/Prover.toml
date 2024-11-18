@@ -1,17 +1,27 @@
-turn_commitment = ""
-turn_salt = ""
+turn_commitment = "0x0ce7455bc1f72a29c691ead1751bc866d7d34bf8c46a7778038ca1ddaaf362a0"
+turn_salt = "1337"
 
 [game]
-army = ""
-bbs = ["", "", "", "", "", "", "", "", ""]
-castle_rights = ""
-en_passant = ""
-fullmove = ""
-halfmove = ""
-has_fog = ""
+army = "0"
+bbs = [
+    "0x080000f7ff",
+    "0xffef001000000000",
+    "0x4200000000000042",
+    "0x2400000000000024",
+    "0x8100000000000081",
+    "0x0800000000000008",
+    "0x1000000000000010",
+    "0xef00180000f700",
+    "0xeeffff6f0000"
+]
+castle_rights = "15"
+en_passant = "44"
+fullmove = "0"
+halfmove = "1"
+has_fog = "1"
 
 [turn]
-from = ""
-piece = ""
-promotion_piece = ""
-to = ""
+from = "35"
+piece = "5"
+promotion_piece = "0"
+to = "44"
