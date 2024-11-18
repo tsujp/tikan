@@ -39,7 +39,7 @@ pub fn ls1b_8(b: u8) -> u8 {
 
 // Checks that given occupancy has a bit of value 1 (set) at given LERLEF
 //   index. Occupancy is a bitboard mask.
-pub fn is_bit_set(occupancy: u64, idx: u64) -> bool {
+pub fn is_bit_set(occupancy: u64, idx: u8) -> bool {
     ((occupancy >> idx) & 1) as bool
 }
 // pub fn is_bit_set<T>(occupancy: T, idx: T): T where Field -> bool {
@@ -62,21 +62,21 @@ pub fn ms1b_8(b: u8) -> u8 {
     }
 }
 
-pub fn east_ray(about_idx: u64) -> u64 {
-    2 * ((1 << (about_idx | 7)) - (1 << about_idx))
-}
+// pub fn east_ray(about_idx: u64) -> u64 {
+//     2 * ((1 << (about_idx | 7)) - (1 << about_idx))
+// }
 
-pub fn west_ray(about_idx: u64) -> u64 {
-    (1 << about_idx) - (1 << (about_idx & 56))
-}
+// pub fn west_ray(about_idx: u64) -> u64 {
+//     (1 << about_idx) - (1 << (about_idx & 56))
+// }
 
 // Return mask with all positions below single occupancy input mask set to 1.
-pub fn west_ray_3_8(input_idx: u3) -> u8 {
+pub fn west_ray_3_8(input_idx: u8) -> u8 {
     (1 as u8 << (input_idx as u8)) - (1 as u8 << 0)
 }
 
 // Return mask with all positions above single occupancy input mask set to 1.
-pub fn east_ray_3_8(input_idx: u3) -> u8 {
+pub fn east_ray_3_8(input_idx: u8) -> u8 {
     (128 as u8 - (1 as u8 << input_idx as u8)) * 2
 }
 
@@ -87,12 +87,12 @@ pub fn east_ray_3_8(input_idx: u3) -> u8 {
 // ];
 
 // DeBruijn log2 (MS1B as index).
-pub fn ms1b_idx_8_3(b: u8) -> u3 {
+pub fn ms1b_idx_8_3(b: u8) -> u8 {
     // TODO
     // XXX: This is the version for 32-bits and under, fine for us. Have a crack
     //      at brute-forcing a dense magic lookup table (like this) but for
     //      8-bits for fun later on.
-    let DEBRUIJN_POS: [u6; 32] = [
+    let DEBRUIJN_POS: [u8; 32] = [
         0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
         31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
     ];
@@ -103,7 +103,7 @@ pub fn ms1b_idx_8_3(b: u8) -> u3 {
 
     assert(idx < 8, "DeBruijn lookup for MS1B above 8-bit value");
 
-    idx as u3
+    idx as u8
 }
 
 pub fn reverse_8(b: u8) -> u8 {
@@ -119,28 +119,31 @@ pub fn reverse_8(b: u8) -> u8 {
 // TODO: Can generic with integer size so only one of these is needed with
 //       less scuffed naming?
 
-// Helper to prevent `as u3` spam.
-pub fn rank_idx_6_3(square_idx: u6) -> u3 {
-    rank_idx_6_6(square_idx) as u3
+// Helper to prevent `as u8` spam.
+pub fn rank_idx_6_3(square_idx: u8) -> u8 {
+    rank_idx_6_6(square_idx) as u8
 }
 
-// Helper to prevent `as u3` spam.
-pub fn file_idx_6_3(square_idx: u6) -> u3 {
-    file_idx_6_6(square_idx) as u3
+// Helper to prevent `as u8` spam.
+pub fn file_idx_6_3(square_idx: u8) -> u8 {
+    file_idx_6_6(square_idx) as u8
 }
 
 // Given a LERLEF index return rank index (0 - 7).
-pub fn rank_idx_6_6(square_idx: u6) -> u6 {
+// XXX: YOLO
+pub fn rank_idx_6_6(square_idx: u8) -> u8{
     square_idx >> 3 // Floor divides by 8.
 }
 
 // Given LERLEF index return file index (0 - 7)
-pub fn file_idx_6_6(square_idx: u6) -> u6 {
+// XXX: YOLO
+pub fn file_idx_6_6(square_idx: u8) -> u8{
     square_idx & 7 // Modulo 8.
 }
 
 // Return LERLEF index marking start of rank for the given LERLEF index.
-pub fn rank_start_idx_6(square_idx: u6) -> u6 {
+// XXX: YOLO
+pub fn rank_start_idx_6(square_idx: u8) -> u8 {
     // `idx & 56` effectively computes: `floor(idx / 8) * 8`.
     //
     // So for 44 (square e6): 44 / 8 = 5.5... floored is 5... times 8 is 40.
@@ -148,23 +151,24 @@ pub fn rank_start_idx_6(square_idx: u6) -> u6 {
 }
 
 // Given LERLEF index return mask of the rank that index is on.
-pub fn rank_mask_6_64(square_idx: u6) -> u64 {
+pub fn rank_mask_6_64(square_idx: u8) -> u64 {
     // Square 44 is on the 6th rank and the starting index of the 6th rank
     //   is square 40 (a6), if we shift 0xFF (8 1s) 40 places left that yields
     //   a mask of that rank from 40 - 47 (8 squares).
-    (0xFF as u64) << (rank_start_idx_6(square_idx) as u64)
+    (0xFF as u64) << rank_start_idx_6(square_idx)
 }
 
 // Given two LERLEF square indices return the absolute difference between them
 //   without overflowing.
-pub fn abs_6(a: u6, b: u6) -> u6 {
+// XXX: YOLO
+pub fn abs_6(a: u8, b: u8) -> u8{
     let mut signed_diff_bits = ((a as i8) - (b as i8)) as u8;
     let sub = signed_diff_bits >> 4;
 
     signed_diff_bits ^= sub;
     signed_diff_bits -= sub;
 
-    (signed_diff_bits & 0x0F) as u6
+    (signed_diff_bits & 0x0F) as u8
 }
 
 // Given single occupancy bitboard mask return mask of diagonals about
@@ -340,7 +344,7 @@ pub fn collapse_diagonal_to_rank_64_8(diag_occ: u64) -> u8 {
 //     implementations ought to work for both scenarios.
 
 // Given two square indices return true if those indices are on the same diagonal.
-pub fn on_same_diagonal(a_idx: u6, b_idx: u6) -> bool {
+pub fn on_same_diagonal(a_idx: u8, b_idx: u8) -> bool {
     if (a_idx > b_idx) {
         (a_idx - b_idx) % 9 == 0
     } else {
@@ -349,7 +353,7 @@ pub fn on_same_diagonal(a_idx: u6, b_idx: u6) -> bool {
 }
 
 // Given two square indices return true if those indices are on the same anti-diagonal.
-pub fn on_same_anti_diagonal(a_idx: u6, b_idx: u6) -> bool {
+pub fn on_same_anti_diagonal(a_idx: u8, b_idx: u8) -> bool {
     let a_rank = rank_idx_6_6(a_idx);
     let b_rank = rank_idx_6_6(b_idx);
 
@@ -360,11 +364,11 @@ pub fn on_same_anti_diagonal(a_idx: u6, b_idx: u6) -> bool {
 }
 
 // Given two square indices return true if those indices are on the same rank.
-pub fn on_same_rank(a_idx: u6, b_idx: u6) -> bool {
+pub fn on_same_rank(a_idx: u8, b_idx: u8) -> bool {
     rank_idx_6_6(a_idx) == rank_idx_6_6(b_idx)
 }
 
 // Given two square indices return true if those indices are on the same file.
-pub fn on_same_file(a_idx: u6, b_idx: u6) -> bool {
+pub fn on_same_file(a_idx: u8, b_idx: u8) -> bool {
     file_idx_6_6(a_idx) == file_idx_6_6(b_idx)
 }

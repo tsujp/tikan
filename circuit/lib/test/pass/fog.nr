@@ -6,7 +6,7 @@ use crate::test::util::swiss as t;
 //
 
 // TODO: Temp until `assert_delta` in slider tests.
-fn slider_s(from: u6, to: u6, piece: u3) -> () {
+fn slider_s(from: u8, to: u8, piece: u8) -> () {
     let _ = cc(t::sc::COMMON_SLIDING[0].game, piece)(from, to);
 }
 

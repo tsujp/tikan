@@ -6,7 +6,8 @@ use crate::test::util::swiss as t;
 // FAILING SPECIAL
 //
 
-fn white_scenario(from: u6, to: u6, promote: u2) -> () {
+// XXX: Maybe promotion here is fucked??
+fn white_scenario(from: u8, to: u8, promote: u8) -> () {
     let _ = cc_promote(
         t::sg::init(
             t::Player::WHITE,
@@ -20,7 +21,8 @@ fn white_scenario(from: u6, to: u6, promote: u2) -> () {
     )(from, to, promote);
 }
 
-fn black_scenario(from: u6, to: u6, promote: u2) -> () {
+// XXX: Maybe promotion here is fucked?
+fn black_scenario(from: u8, to: u8, promote: u8) -> () {
     let _ = cc_promote(
         t::sg::init(
             t::Player::BLACK,
@@ -37,7 +39,7 @@ fn black_scenario(from: u6, to: u6, promote: u2) -> () {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------- PROMOTION
 
-// Really these are just checking the bounds of a u2 but meh.
+// Really these are just checking the bounds of a u8 but meh.
 
 #[test(should_fail)]
 fn pawn_promote_vertical_1() {

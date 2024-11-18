@@ -13,7 +13,7 @@ for (let idx = 0; idx < 64; idx++) {
     // x & 7 === modulo 8
     const file = String.fromCharCode((idx & 7) + ASCII_OFFSET)
 
-    phat_codegen.push(`    global ${file}${rank}: u6 = ${idx};`)
+    phat_codegen.push(`    global ${file}${rank}: u8= ${idx};`)
 }
 
 phat_codegen.push('}')

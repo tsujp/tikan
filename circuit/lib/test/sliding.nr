@@ -116,7 +116,7 @@ fn slp07(from: BitboardIndex, to: BitboardIndex) -> Game {
 }
 
 // Curry a game and a piece for further (simple) tests.
-// fn _cur<Env>(game: Game, piece: u3) {}
+// fn _cur<Env>(game: Game, piece: u8) {}
 // fn _ting(wat: Field) -> fn[(Field, Field, Field)](Field) -> Field {
 //     let a = 0;
 //     let b = 0;
@@ -134,7 +134,7 @@ fn slp07(from: BitboardIndex, to: BitboardIndex) -> Game {
 //   lambda returned by this function; meaning many test cases can be made
 //   against the same base state.
 // If the new state is desired one can bind the return value and invoke `.apply`.
-fn _cc(game: Game, piece: u3) -> fn[(Game, u3)](BitboardIndex, BitboardIndex) -> Game {
+fn _cc(game: Game, piece: u8) -> fn[(Game, u8)](BitboardIndex, BitboardIndex) -> Game {
     |from, to| game.apply(Turn { piece, from, to, promotion_piece: 0 })
 }
 

@@ -10,13 +10,13 @@ struct Scenario {
 }
 
 // Make scenario.
-fn mk_s<N>(bb_defs: [t::sg::BbDef; N]) -> Scenario {
+fn mk_s<let N: u32>(bb_defs: [t::sg::BbDef; N]) -> Scenario {
     Scenario { no_fog: t::sg::init(0, bb_defs), with_fog: t::sg::init_fog(0, bb_defs) }
 }
 
 // ----
 
-fn mk_s_TWO<N>(turn: u1, bb_defs: [t::sg::BbDef; N]) -> t::sg::SeededGame {
+fn mk_s_TWO<let N: u32>(turn: u1, bb_defs: [t::sg::BbDef; N]) -> t::sg::SeededGame {
     t::sg::init(turn, bb_defs)
 }
 

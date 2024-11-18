@@ -20,7 +20,7 @@ fn main(game: Game, turn: Turn, turn_salt: Field) -> pub Field {
 // XXX: `game` here has to be the _public_ gamestate otherwise when the opponent tries to
 //      verify the commitment it will fail unless white reveals more private state which defeats
 //      the point.
-// fn commit_piece(game: Game, piece: u3, idx: u6) -> pub Field {
+// fn commit_piece(game: Game, piece: u8, idx: u8) -> pub Field {
 
 // }
 
@@ -112,7 +112,7 @@ fn example_move_commitment() {
 
 // struct PieceCommitment {
 //     // TODO: Ye olde constrain on 0 - 5 as is required elsewhere for types.nr::Piece.
-//     piece: u3,
-//     // TODO: From u6 to BitboardIndex (which is a u6 so same thing).
-//     idx: u6
+//     piece: u8,
+//     // TODO: From u8 to BitboardIndex (which is a u8 so same thing).
+//     idx: u8
 // }

@@ -8,7 +8,7 @@ use crate::test::util::swiss as t;
 // FAILING KNIGHT
 //
 
-fn scenario(idx: u64, from: u6, to: u6) -> () {
+fn scenario(idx: u64, from: u8, to: u8) -> () {
     let _ = cc(t::sc::KNIGHT[idx].no_fog.game, t::Piece::KNIGHT)(from, to);
 }
 

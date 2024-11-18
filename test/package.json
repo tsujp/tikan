@@ -11,13 +11,13 @@
     "test": "bun test --preload ./setup.ts"
   },
   "dependencies": {
-    "@noir-lang/backend_barretenberg": "0.26.0-a0f7474.nightly",
-    "@noir-lang/noir_js": "0.26.0-a0f7474.nightly",
-    "@types/bignumber.js": "^5.0.0",
+    "@noir-lang/backend_barretenberg": "^0.36.0",
+    "@noir-lang/noir_js": "^0.36.0",
+    "@types/bignumber.js": "^5.0.4",
     "bignumber.js": "^9.1.2",
     "chalk": "^5.3.0",
     "ethers": "^5.7.2",
-    "fflate": "^0.8.0"
+    "fflate": "^0.8.2"
   },
   "devDependencies": {
     "dev": "workspace:*"

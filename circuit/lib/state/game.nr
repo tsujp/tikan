@@ -36,8 +36,8 @@ use crate::types::{Bitboard, BitboardIndex, REQUIRED_BITBOARDS, PIECE_OFFSET, Bi
 //   spread all over the place.
 // XXX: Put here and not on the `Game` struct because doing so there is giving:
 //      `expected global variable got local variable` in other files.
-pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
-    let required_bbs = REQUIRED_BITBOARDS as u64; // Cannot use in println as `REQUIRED_BITBOARDS`.
+pub fn init<let N: u32>(given_bbs: [u64; N], with_fog: bool) -> Game {
+    let required_bbs = REQUIRED_BITBOARDS; // Cannot use in println as `REQUIRED_BITBOARDS`.
 
     if N == 0 {
         assert(false, "Need at least 1 Bitboard");
@@ -74,7 +74,8 @@ pub fn init<N>(given_bbs: [u64; N], with_fog: bool) -> Game {
 pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
     let all_pieces: Bitboard = w | b;
 
-    let all_bits = (all_pieces as Field).to_le_bits(64);
+    // XXX: to_le_bits was called with 64 but now is generic over self hence [u1; 64].
+    let all_bits: [u1; 64] = (all_pieces as Field).to_le_bits();
 
     let mut fog: Bitboard = 0;
 
@@ -88,7 +89,7 @@ pub fn compute_fog(w: Bitboard, b: Bitboard) -> Bitboard {
         let bit = all_bits[i];
 
         let bit_fog = if bit == 1 {
-            bl::taxi_mask((2 as Field).pow_32(i) as u64)
+            bl::taxi_mask((2 as Field).pow_32(i as Field) as u64)
         } else {
             0
         };
@@ -123,12 +124,12 @@ impl Game {
 
     pub fn apply(self, move: Turn) -> Game {
         let army = self.army;
-        let from_idx = move.from as Bitboard;
-        let to_idx = move.to as Bitboard;
+        let from_idx = move.from;
+        let to_idx = move.to;
         let piece = move.piece + PIECE_OFFSET;
 
-        let from_bb = 0 as Bitboard | 1 << from_idx;
-        let to_bb = 0 as Bitboard | 1 << to_idx;
+        let from_bb = 0 as u64 | 1 << from_idx;
+        let to_bb = 0 as u64 | 1 << to_idx;
 
         let move_result = Move::check_legal(self, move);
 
@@ -144,7 +145,7 @@ impl Game {
         // dep::std::println(f"ep_capture_bb: {ep_capture_bb}"); // TODO: Uncomment later.
 
         let summon_bb = move_result.special_bbs.summon.0;
-        let summon_piece = move_result.special_bbs.summon.1 as u3;
+        let summon_piece = move_result.special_bbs.summon.1 as u8;
         // TODO: PR cannot print global constants.
         // dep::std::println(f"piece_offset: {PIECE_OFFSET}");
 
@@ -155,7 +156,7 @@ impl Game {
             // let current_bb = new_bbs[bb_idx];
             // dep::std::println(f"current bb: {current_bb}");
 
-            // if ((bb_idx != piece as u4) & (new_bbs[bb_idx] & to_bb) > 0) {
+            // if ((bb_idx != piece as u8) & (new_bbs[bb_idx] & to_bb) > 0) {
             if ((new_bbs[bb_idx] & to_bb) > 0) {
                 // Captured piece.
                 new_bbs[bb_idx] ^= to_bb;

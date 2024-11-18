@@ -1,0 +1,17 @@
+turn_commitment = ""
+turn_salt = ""
+
+[game]
+army = ""
+bbs = ["", "", "", "", "", "", "", "", ""]
+castle_rights = ""
+en_passant = ""
+fullmove = ""
+halfmove = ""
+has_fog = ""
+
+[turn]
+from = ""
+piece = ""
+promotion_piece = ""
+to = ""

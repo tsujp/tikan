@@ -39,24 +39,24 @@ struct Data {
     turn: Turn,
     from_idx64: Bitboard,
     to_idx64: Bitboard,
-    piece: u3,
+    piece: u8, // XXX: YOLO
     from_bb: Bitboard,
     to_bb: Bitboard
 }
 
 impl Data {
     pub fn init(game: Game, turn: Turn) -> Self {
-        let tf = turn.from as Bitboard;
-        let tt = turn.to as Bitboard;
+        let tf = turn.from;
+        let tt = turn.to;
 
         Self {
             game: game,
             turn: turn,
-            from_idx64: tf,
-            to_idx64: tt,
+            from_idx64: tf as u64,
+            to_idx64: tt as u64,
             piece: turn.piece + PIECE_OFFSET, // Offset to types.nr::BitboardOf
-            from_bb: 0 as Bitboard | 1 << tf,
-            to_bb: 0 as Bitboard | 1 << tt
+            from_bb: 0 as u64 | 1 << tf,
+            to_bb: 0 as u64 | 1 << tt
         }
     }
 }
@@ -64,14 +64,14 @@ impl Data {
 // Returns arguments for `valid_rank_move` for the given file.
 // To get a file as a rank the board must be rotated 90 degrees clockwise.
 fn file_as_rank(
-    from_idx6: u6,
-    to_idx6: u6,
-    file_idx3: u3,
+    from_idx6: u8,
+    to_idx6: u8,
+    file_idx3: u8,
     us: Bitboard,
     them: Bitboard,
     fog: Bitboard
-) -> (u6, u64, u6, u64, u64, u64, u64) {
-    let file_mask64 = bb::A_FILE * (1 << file_idx3 as u64);
+) -> (u8, u64, u8, u64, u64, u64, u64) {
+    let file_mask64 = bb::A_FILE * (1 << file_idx3);
     let file_shift64 = 7 - file_idx3;
 
     // Multiplying the H file by the shifted anti-diagonal bitboard moves the
@@ -81,28 +81,28 @@ fn file_as_rank(
     let us_bb8 = wrapping_mul(
         bb::SHIFTED_ANTI_DIAGONAL,
         // only our pieces    // shift to H file
-        (file_mask64 & us) << (file_shift64 as u64)
+        (file_mask64 & us) << (file_shift64)
     )
         >> 56;
 
     let them_bb8 = wrapping_mul(
         bb::SHIFTED_ANTI_DIAGONAL,
-        (file_mask64 & them) << (file_shift64 as u64)
+        (file_mask64 & them) << (file_shift64)
     )
         >> 56;
 
     let fog_bb8 = wrapping_mul(
         bb::SHIFTED_ANTI_DIAGONAL,
-        (file_mask64 & fog) << (file_shift64 as u64)
+        (file_mask64 & fog) << (file_shift64 )
     )
         >> 56;
 
-    let from_idx3 = bl::rank_idx_6_3(from_idx6) as u6;
-    let from_bb = 1 << (from_idx3 as u64);
-    let to_bb = 1 << (bl::rank_idx_6_3(to_idx6) as u64);
+    let from_idx3 = bl::rank_idx_6_3(from_idx6) as u8;
+    let from_bb = 1 << (from_idx3);
+    let to_bb = 1 << (bl::rank_idx_6_3(to_idx6));
 
     // To index is rank index when rotated 90-deg cw.
-    let to_idx3 = bl::rank_idx_6_3(to_idx6) as u6;
+    let to_idx3 = bl::rank_idx_6_3(to_idx6) as u8;
 
     (from_idx3, from_bb, to_idx3, to_bb, us_bb8, them_bb8, fog_bb8)
 }
@@ -123,7 +123,7 @@ fn collapse_diag(
     )
 }
 
-// TODO: `Bitboard` here can all be u8 (for a single rank) and `BitboardIndex` a u3. That requires the valid rank function to take uniform data so do it after that.
+// TODO: `Bitboard` here can all be u8 (for a single rank) and `BitboardIndex` a u8. That requires the valid rank function to take uniform data so do it after that.
 struct RankifiedTurn {
     from: BitboardIndex,
     from_bb: Bitboard,
@@ -152,13 +152,13 @@ impl RankifiedTurn {
 // Determine whether a move is horizontal, vertical, diagonal, or anti-diagonal
 //   and then transforms the move into a rank-equivalent (for feeding into
 //   `valid_rank_move`).
-fn rankified_sliding_data(d: Data) -> (u3, RankifiedTurn) {
+fn rankified_sliding_data(d: Data) -> (u8, RankifiedTurn) {
     let us = d.game.bbs[d.game.army];
     let them = d.game.bbs[!d.game.army];
     let fog = d.game.bbs[BitboardOf::FOG];
 
     // TODO: `let mut transposed` at the top cheaper or more expensive gate wise?
-    // let mut turn_data: (u3, RankifiedTurn) = (7, RankifiedTurn::init());
+    // let mut turn_data: (u8, RankifiedTurn) = (7, RankifiedTurn::init());
 
     if (bl::on_same_rank(d.turn.from, d.turn.to)) {
         // HORIZONTAL MOVE if the rank indices are the same.
@@ -219,11 +219,11 @@ fn knight_legal(d: Data) {
     let f1 = bl::file_idx_6_6(d.turn.from);
     let f2 = bl::file_idx_6_6(d.turn.to);
 
-    assert((bl::abs_6(r1, r2) as u12 * bl::abs_6(f1, f2) as u12) == 2, "KNIGHT move PATTERN");
+    assert((bl::abs_6(r1, r2) as u32 * bl::abs_6(f1, f2) as u32) == 2, "KNIGHT move PATTERN");
 
     // TODO: When rewritten to arrays this part can become a simpler index
     //       check without having to use bit-logic.
-    assert(bl::is_bit_set(d.game.bbs[BitboardOf::FOG], d.turn.to as u64), "KNIGHT move FOG");
+    assert(bl::is_bit_set(d.game.bbs[BitboardOf::FOG], d.turn.to), "KNIGHT move FOG");
 
     // As well as not landing on a friendly piece.
     let friendlies = d.game.bbs[d.game.army];
@@ -231,7 +231,7 @@ fn knight_legal(d: Data) {
 }
 
 // Restricts a king to 1-chebyshev distance movement.
-fn king_pre_legal(direction: u3, rankified_turn: RankifiedTurn) {
+fn king_pre_legal(direction: u8, rankified_turn: RankifiedTurn) {
     // TODO: Take out `to`? Adds a lot of gates and is only needed
     //       in this condition.
     let abs_diff = bl::abs_6(rankified_turn.from, rankified_turn.to);
@@ -258,7 +258,7 @@ fn king_pre_legal(direction: u3, rankified_turn: RankifiedTurn) {
 //   2. En-passant captures, and target setting for double-pushed pawns.
 //   3. Double-push validation (i.e. only from that pawns home rank).
 //   4. Promotions.
-fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result: &mut MoveResult) {
+fn pawn_legal(d: Data, direction: u8, rankified_turn: RankifiedTurn, move_result: &mut MoveResult) {
     let player_white = d.game.army == Player::WHITE;
 
     let correct_direction = if (player_white) {
@@ -320,7 +320,8 @@ fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result
                 d.turn.to + 8
             };
 
-            let sq_ahead = 1 << (sq as u64);
+            // let sq_ahead = 1 << (sq as u64);
+            let sq_ahead = 1 << sq;
 
             move_result.ep_capture_bb = Option::some(sq_ahead);
         } else if (direction == Sliding::DIAGONAL) {
@@ -336,7 +337,7 @@ fn pawn_legal(d: Data, direction: u3, rankified_turn: RankifiedTurn, move_result
 
     // Don't need to check that `promotion_piece` is set because it must be for
     //   the circuit to even execute to here (cannot provide a null input for
-    //   a u2).
+    //   a u8).
     if (at_promotion_rank) {
         let blah = d.to_bb;
         // println(f"to_bb: {blah}");
@@ -375,8 +376,8 @@ fn rank_legal(
     //       blocks (vertical, or diag) get reduced to the first-rank equivalent
     //       anyway. This chunk of code is purely for the already horizontal
     //       stuff.
-    let rank_shift64 = bl::rank_start_idx_6(from_idx6) as u64; // 1.1
-    let rank_mask64 = bl::rank_mask_6_64(from_idx6); // 1.2
+    let rank_shift64 = bl::rank_start_idx_6(from_idx6); // 1.1 (XXX: YOLO)
+    let rank_mask64 = bl::rank_mask_6_64(from_idx6); // 1.2 (XXX: YOLO)
 
     let us_bb8 = ((rank_mask64 & us) >> rank_shift64) as u8; // 1.3
     let them_bb8 = ((rank_mask64 & them) >> rank_shift64) as u8; // 1.3
@@ -476,7 +477,7 @@ impl Move {
             // See `XXX [420]` for magic number 2.
             bl::is_bit_set(
                 game.bbs[game.army] & game.bbs[turn.piece + 2],
-                turn.from as Bitboard
+                turn.from
             ),
            "Piece in army does NOT EXIST at given index"
         );
@@ -531,7 +532,7 @@ impl Move {
     }
 
     // XXX: Having to put tests in another file requires I make this `pub` to test it. Yuck. Should be able to put unit tests in the same file and EASILY be able to run them.
-    pub fn TEST_ONLY_rankified_sliding_data(game: Game, turn: Turn) -> (u3, RankifiedTurn) {
+    pub fn TEST_ONLY_rankified_sliding_data(game: Game, turn: Turn) -> (u8, RankifiedTurn) {
         rankified_sliding_data(Data::init(game, turn))
     }
 }

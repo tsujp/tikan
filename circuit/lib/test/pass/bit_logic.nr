@@ -12,7 +12,7 @@ global TWO: Field = 2;
 // TODO: Tests for ms1bu8 and is_bit_set
 
 // XXX: Test helper only.
-fn test_diagonal_masks<T, N>(mask_defs: [[Field; 2]; N]) {
+fn test_diagonal_masks<let N: u32>(mask_defs: [[Field; 2]; N]) {
     for i in 0..mask_defs.len() {
         let about_idx = mask_defs[i][0];
         let expected = mask_defs[i][1];
@@ -27,7 +27,7 @@ fn test_diagonal_masks<T, N>(mask_defs: [[Field; 2]; N]) {
 
 // TODO: Make it higher order later on, slightly DRYer (within reason).
 // XXX: Test helper only.
-fn test_anti_diagonal_masks<T, N>(mask_defs: [[Field; 2]; N]) {
+fn test_anti_diagonal_masks<let N: u32>(mask_defs: [[Field; 2]; N]) {
     for i in 0..mask_defs.len() {
         let about_idx = mask_defs[i][0];
         let expected = mask_defs[i][1];

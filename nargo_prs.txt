@@ -36,11 +36,11 @@ If there isn't an open issue for this bug, consider opening one at https://githu
 //     let suts = [sut_white, sut_black];
 
 //     // Index into poor-man's enum `Promote`.
-//     let mut promote_piece: u2 = 0;
+//     let mut promote_piece: u8 = 0;
 
 //     // We don't really need the SeedGame structure for these tests so it's not used for speed.
 //     for from in PAWN_START_RANKS {
-//         let data: (u1, u6) = if from > 15 {
+//         let data: (u1, u8) = if from > 15 {
 //             // White promotion at black's end.
 //             let to = from + single_move_delta;
 //             (0, to)

@@ -37,11 +37,11 @@ fn pawn_promote_vertical() {
     let sut_black = cc_promote(black, piece);
 
     // Index into poor-man's enum `Promote`.
-    let mut promote_piece: u2 = 0;
+    let mut promote_piece: u8 = 0;
 
     // We don't really need the SeedGame structure for these tests so it's not used for speed.
     for from in PAWN_START_RANKS {
-        let data: (Game, Game, u6) = if from > 15 {
+        let data: (Game, Game, u8) = if from > 15 {
             // White promotion at black's end.
             let to = from + single_move_delta;
             (white, sut_white(from, to, promote_piece), to)
@@ -62,7 +62,7 @@ fn pawn_promote_vertical() {
         //   what we expect them to be; so if they differ the following assert
         //   will fail.
         expected[t::bb::PAWN] = base.bbs[t::bb::PAWN] ^ nuked_pawn;
-        expected[(promote_piece as u3) + 2] = (2 as Field).pow_32(to) as u64;
+        expected[(promote_piece as u8) + 2] = (2 as Field).pow_32(to) as u64;
 
         assert_bbs(real, expected);
 
@@ -178,7 +178,7 @@ fn pawn_en_passant_target_double() {
     let sut_black = cc(t::sc::PAWN[1].game, piece);
 
     for from in PAWN_START_RANKS {
-        let data: (u6, Game) = if from > 15 {
+        let data: (u8, Game) = if from > 15 {
             let to = from - double_move_delta;
             let ep = from - en_passant_delta;
             (ep, sut_black(from, to))

@@ -6,11 +6,11 @@ use crate::test::util::swiss as t;
 // FAILING FOG
 //
 
-fn knight_s(from: u6, to: u6) -> () {
+fn knight_s(from: u8, to: u8) -> () {
     let _ = cc(t::sc::KNIGHT[0].with_fog.game, t::Piece::KNIGHT)(from, to);
 }
 
-fn slider_s(from: u6, to: u6, piece: u3) -> () {
+fn slider_s(from: u8, to: u8, piece: u8) -> () {
     let _ = cc(t::sc::COMMON_SLIDING[0].game, piece)(from, to);
 }
 

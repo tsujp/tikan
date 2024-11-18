@@ -1,11 +1,11 @@
 use dep::std::option::Option;
 
 type Bitboard = u64;
-type BitboardIndex = u6; // 6-bits required to index 64-bit bitboard.
+type BitboardIndex = u8; // 6-bits required to index 64-bit bitboard.
 
-global REQUIRED_BITBOARDS: Field = 9;
+global REQUIRED_BITBOARDS = 9;
 
-global PIECE_OFFSET: u3 = 2;
+global PIECE_OFFSET: u8 = 2;
 
 // 6x2 bitboard board storage.
 
@@ -13,16 +13,16 @@ global PIECE_OFFSET: u3 = 2;
 //   man's enum.
 mod BitboardOf {
     // XXX: MUST appear in same order as mod Player.
-    global WHITE: u4 = 0;
-    global BLACK: u4 = 1;
+    global WHITE: u8 = 0;
+    global BLACK: u8 = 1;
     // XXX: MUST appear in same order as mod Piece.
-    global KNIGHT: u4 = 2;
-    global BISHOP: u4 = 3;
-    global ROOK: u4 = 4;
-    global QUEEN: u4 = 5;
-    global KING: u4 = 6;
-    global PAWN: u4 = 7;
-    global FOG: u4 = 8;
+    global KNIGHT: u8 = 2;
+    global BISHOP: u8 = 3;
+    global ROOK: u8 = 4;
+    global QUEEN: u8 = 5;
+    global KING: u8 = 6;
+    global PAWN: u8 = 7;
+    global FOG: u8 = 8;
 }
 
 mod Player {
@@ -37,35 +37,35 @@ mod Player {
 //   pawns and kings are enumerated last.
 // XXX: TypeScript type of the same name is bound to this.
 mod Piece {
-    global KNIGHT: u3 = 0;
-    global BISHOP: u3 = 1;
-    global ROOK: u3 = 2;
-    global QUEEN: u3 = 3;
-    global KING: u3 = 4;
-    global PAWN: u3 = 5;
+    global KNIGHT: u8 = 0;
+    global BISHOP: u8 = 1;
+    global ROOK: u8 = 2;
+    global QUEEN: u8 = 3;
+    global KING: u8 = 4;
+    global PAWN: u8 = 5;
 }
 
-// Needs it's own because u3 -> u2. Must be in the same order as Piece.
+// Needs it's own because u8 -> u8. Must be in the same order as Piece.
 // @TEST_SUITE:BIND_PLEASE
 mod Promote {
-    global KNIGHT: u2 = 0;
-    global BISHOP: u2 = 1;
-    global ROOK: u2 = 2;
-    global QUEEN: u2 = 3;
+    global KNIGHT: u8 = 0;
+    global BISHOP: u8 = 1;
+    global ROOK: u8 = 2;
+    global QUEEN: u8 = 3;
 }
 
 mod Sliding {
-    global HORIZONTAL: u3 = 0;
-    global VERTICAL: u3 = 1;
-    global DIAGONAL: u3 = 2;
-    global ANTI_DIAGONAL: u3 = 3;
+    global HORIZONTAL: u8 = 0;
+    global VERTICAL: u8 = 1;
+    global DIAGONAL: u8 = 2;
+    global ANTI_DIAGONAL: u8 = 3;
 }
 
 struct Move {}
 
 struct SpecialBbs {
     remove: Bitboard,
-    summon: (Bitboard, u2),
+    summon: (Bitboard, u8),
 }
 
 struct MoveResult {
@@ -75,17 +75,17 @@ struct MoveResult {
 }
 
 struct Turn {
-    piece: u3,
+    piece: u8,
     from: BitboardIndex,
     to: BitboardIndex,
-    promotion_piece: u2
+    promotion_piece: u8
 }
 
 struct Game {
     // Square positions accessed in LERLEF order.
     bbs: [Bitboard; REQUIRED_BITBOARDS],
     army: u1,
-    castle_rights: u4,
+    castle_rights: u8,
     en_passant: BitboardIndex,
     halfmove: Field,
     fullmove: Field,
